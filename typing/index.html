@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>한글 타자 연습 · 귀화 작문</title>
+  <meta name="description" content="한글 자판 자리연습부터 귀화 작문 모범답안 따라 치기까지 · 두벌식 타자 연습 PWA" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#fafafa" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="한글타자" />
+
+  <!-- Pretendard(모던 산세리프): 온라인이면 로드, 오프라인이면 시스템 폰트 폴백(무해) -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 공유 비밀번호 잠금(본 앱과 같은 비밀번호·같은 기기 기억) -->
+  <div id="gate" class="gate">
+    <div class="gate__card">
+      <div class="gate__lock">🔒</div>
+      <h2 class="gate__title">비밀번호 · Password</h2>
+      <p class="gate__desc">초대받은 사람만 들어올 수 있습니다. 받은 비밀번호를 넣어 주세요.<br>请输入收到的密码 · Nhập mật khẩu bạn nhận được · ใส่รหัสผ่านที่ได้รับ</p>
+      <form id="gateForm" class="gate__form" autocomplete="off">
+        <input id="gateInput" class="gate__input" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Password" placeholder="••••••" />
+        <button class="btn btn--primary gate__btn" type="submit">확인 · Enter</button>
+      </form>
+      <p id="gateErr" class="gate__err hidden">비밀번호가 맞지 않습니다 · 密码不正确 · Mật khẩu không đúng · รหัสผ่านไม่ถูกต้อง</p>
+    </div>
+  </div>
+
+  <header class="appbar">
+    <button id="homeBtn" class="appbar__home" aria-label="홈" title="홈">
+      <svg class="appbar__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+    </button>
+    <h1 class="appbar__title" data-i18n="app.title">한글 타자 연습</h1>
+    <a class="appbar__back" href="../" title="귀화시험 앱으로">
+      <svg class="appbar__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5Z"/><path d="M13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13Z"/></svg>
+      <span data-i18n="app.toQuiz">귀화앱</span>
+    </a>
+    <button id="langBtn" class="appbar__lang" title="언어 / 语言 / Ngôn ngữ / ภาษา" aria-label="언어 선택">
+      <svg class="appbar__ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>
+      <span class="appbar__lang-name" id="langBtnName">한국어</span>
+    </button>
+  </header>
+
+  <!-- 언어 선택 -->
+  <div id="langPicker" class="lang-picker hidden" role="dialog" aria-modal="true" aria-label="Select language">
+    <div class="lang-picker__card">
+      <div class="lang-picker__title">언어 선택 · Language</div>
+      <div class="lang-picker__opts" id="langOpts"></div>
+    </div>
+  </div>
+
+  <!-- 첫 실행 온보딩 (1장) -->
+  <div id="onboard" class="onboard hidden" role="dialog" aria-modal="true" aria-label="시작 안내">
+    <div class="onboard__card" id="onboardCard"></div>
+  </div>
+
+  <main id="app">
+
+    <!-- 홈: 모드 선택 -->
+    <section id="view-home" class="view">
+      <p class="lead" data-i18n="home.lead">한글 자판이 손에 익을 때까지, 한 단계씩 천천히 연습해요.</p>
+
+      <!-- 미니 요약 스트립 (기록 있을 때만) -->
+      <div id="miniStrip" class="mini-strip hidden"></div>
+
+      <p class="lead-sub">
+        <svg class="lead-sub__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.3 1 2.5h6c0-1.2.3-1.8 1-2.5A6 6 0 0 0 12 3Z"/></svg>
+        <span data-i18n="home.imeTip">컴퓨터 입력기를 한글로 바꾸지 않아도 됩니다. 화면이 알려주는 키를 그대로 누르세요.</span>
+      </p>
+
+      <div class="mode-grid">
+        <button class="mode-card" data-mode="position">
+          <span class="mode-card__icon">
+            <svg class="mode-card__ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="1.5"/><path d="M6 9.5h.01M9 9.5h.01M12 9.5h.01M15 9.5h.01M18 9.5h.01M6.5 13.5h11"/></svg>
+          </span>
+          <span class="mode-card__title" data-i18n="mode.position.t">자리 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.position.s">ㅎ ㅁ ㅂ ㅕ · 자판 위치와 손가락 익히기</span>
+          <span class="mode-card__badge hidden" data-badge="position"></span>
+        </button>
+        <button class="mode-card" data-mode="syllable">
+          <span class="mode-card__icon"><span class="mode-card__ico-text">가</span></span>
+          <span class="mode-card__title" data-i18n="mode.syllable.t">낱글자 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.syllable.s">자음+모음을 모아 한 글자씩 완성</span>
+          <span class="mode-card__badge hidden" data-badge="syllable"></span>
+        </button>
+        <button class="mode-card" data-mode="word">
+          <span class="mode-card__icon"><span class="mode-card__ico-text">낱</span></span>
+          <span class="mode-card__title" data-i18n="mode.word.t">낱말 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.word.s">비슷한 낱말을 빠르게 구별하며 치기</span>
+          <span class="mode-card__badge hidden" data-badge="word"></span>
+        </button>
+        <button class="mode-card" data-mode="short">
+          <span class="mode-card__icon">
+            <svg class="mode-card__ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg>
+          </span>
+          <span class="mode-card__title" data-i18n="mode.short.t">단문 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.short.s">짧은 문장 따라 치기</span>
+          <span class="mode-card__badge hidden" data-badge="short"></span>
+        </button>
+        <button class="mode-card mode-card--primary" data-mode="long">
+          <span class="mode-card__icon">
+            <svg class="mode-card__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M14.5 4.5 18 8 8 18l-4 1 1-4Z"/><path d="M12.5 6.5 16 10"/></svg>
+          </span>
+          <span class="mode-card__title" data-i18n="mode.long.t">귀화 작문 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.long.s">작문 모범답안(200자) 따라 치기</span>
+          <span class="mode-card__badge hidden" data-badge="long"></span>
+        </button>
+      </div>
+
+      <p class="hint" data-i18n="home.hint">개인용 연습 도구 · 점수는 이 기기에만 저장됩니다.</p>
+    </section>
+
+    <!-- 항목/단계 선택 -->
+    <section id="view-list" class="view hidden">
+      <div class="list-head">
+        <button class="btn btn--ghost btn--sm" data-go="home">← <span data-i18n="common.home">홈</span></button>
+        <h2 class="view-title" id="listTitle">목록</h2>
+      </div>
+      <p class="view-desc" id="listDesc"></p>
+      <div id="listItems" class="select-list"></div>
+    </section>
+
+    <!-- 연습 화면 -->
+    <section id="view-practice" class="view hidden">
+      <div class="prac-top">
+        <button class="btn btn--ghost btn--sm" id="pracBack">← <span data-i18n="common.list">목록</span></button>
+        <span class="prac-title" id="pracTitle"></span>
+      </div>
+
+      <!-- 통계 -->
+      <div class="stat-bar">
+        <div class="stat"><span class="stat__label" data-i18n="stat.time">시간</span><span class="stat__val" id="statTime">0초</span></div>
+        <div class="stat"><span class="stat__label" data-i18n="stat.speed">타수</span><span class="stat__val" id="statSpeed">0</span></div>
+        <div class="stat"><span class="stat__label" data-i18n="stat.acc">정확도</span><span class="stat__val" id="statAcc">100%</span></div>
+        <div class="stat"><span class="stat__label" data-i18n="stat.miss">오타</span><span class="stat__val" id="statMiss">0</span></div>
+      </div>
+      <div class="progress-bar"><div id="pracProgress" class="progress-bar__fill"></div></div>
+
+      <!-- 의미/주제 (단문·장문) -->
+      <div id="pracMeta" class="prac-meta hidden"></div>
+
+      <!-- 타깃 표시 -->
+      <div id="targetBox" class="target-box"></div>
+
+      <!-- 실전 쓰기(자유 타이핑) 입력 영역 -->
+      <div id="fwBox" class="fw-box hidden">
+        <div id="fwEcho" class="fw-echo" aria-live="polite"></div>
+        <div class="fw-gauge-wrap">
+          <div class="fw-gauge"><div id="fwGauge" class="fw-gauge__fill"></div></div>
+          <span class="fw-count"><b id="fwCount">0</b> / 200</span>
+          <button id="fwDone" class="btn btn--primary btn--sm" type="button" data-i18n="fw.showModel">완료 · 모범답안 보기</button>
+        </div>
+      </div>
+
+      <!-- 다음 키 안내 -->
+      <div class="nextkey" id="nextKey"></div>
+
+      <!-- 발음 듣기 토글 (자리·낱글자 전용) -->
+      <div class="prac-tools">
+        <button id="soundToggle" class="sound-toggle hidden" type="button" aria-pressed="false"></button>
+      </div>
+
+      <!-- 가상 키보드 -->
+      <div class="kbd-wrap">
+        <div id="keyboard" class="keyboard" role="group" aria-label="가상 키보드"></div>
+      </div>
+
+      <!-- 완료 -->
+      <div id="pracDone" class="prac-done hidden"></div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="memberModal" class="member-modal hidden" role="dialog" aria-modal="true" aria-label="Member login">
+    <div class="member-modal__card">
+      <button id="memberCancelBtn" class="member-modal__close" type="button" aria-label="닫기">×</button>
+      <div class="member-modal__lock">🔒</div>
+      <h2 class="member-modal__title">회원 전용 콘텐츠입니다.</h2>
+      <p class="member-modal__desc">회원 로그인 후 이용할 수 있습니다.</p>
+      <form id="memberOtpForm" class="member-form" autocomplete="on">
+        <label class="member-form__label" for="memberEmail">이메일</label>
+        <div class="member-form__row">
+          <input id="memberEmail" class="member-form__input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" />
+          <button id="memberSendOtpBtn" class="btn btn--primary" type="button">인증번호 받기</button>
+        </div>
+        <label class="member-form__label" for="memberOtp">인증번호</label>
+        <div class="member-form__row">
+          <input id="memberOtp" class="member-form__input" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
+          <button id="memberVerifyBtn" class="btn btn--primary" type="submit">로그인</button>
+        </div>
+      </form>
+      <p id="memberMessage" class="member-message"></p>
+      <button id="memberLogoutBtn" class="btn btn--ghost member-logout hidden" type="button">로그아웃</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js"></script>
+  <script src="../membership.js"></script>
+  <script src="hangul.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js'); });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#2563eb"/>
+  <rect x="86" y="170" width="340" height="210" rx="28" fill="#ffffff"/>
+  <g fill="#dbe3f4">
+    <rect x="116" y="200" width="50" height="42" rx="9"/>
+    <rect x="178" y="200" width="50" height="42" rx="9"/>
+    <rect x="240" y="200" width="50" height="42" rx="9"/>
+    <rect x="302" y="200" width="50" height="42" rx="9"/>
+    <rect x="364" y="200" width="32" height="42" rx="9"/>
+    <rect x="116" y="252" width="32" height="42" rx="9"/>
+    <rect x="240" y="252" width="50" height="42" rx="9"/>
+    <rect x="302" y="252" width="50" height="42" rx="9"/>
+    <rect x="364" y="252" width="32" height="42" rx="9"/>
+    <rect x="116" y="304" width="50" height="42" rx="9"/>
+    <rect x="240" y="304" width="50" height="42" rx="9"/>
+    <rect x="364" y="304" width="32" height="42" rx="9"/>
+  </g>
+  <rect x="160" y="252" width="72" height="42" rx="9" fill="#f59e0b"/>
+  <text x="196" y="285" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif" font-size="34" font-weight="800" fill="#ffffff" text-anchor="middle">가</text>
+  <rect x="178" y="304" width="50" height="42" rx="9" fill="#dbe3f4"/>
+  <rect x="302" y="304" width="50" height="42" rx="9" fill="#dbe3f4"/>
+</svg>

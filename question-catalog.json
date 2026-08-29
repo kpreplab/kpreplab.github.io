@@ -1,0 +1,240 @@
+{
+  "version": "2026-08-18",
+  "sourceCount": 1965,
+  "exams": {
+    "pre": {
+      "total": 985,
+      "mc": 847,
+      "writing": 38,
+      "oral": 100,
+      "categories": [
+        {
+          "category": "어휘",
+          "total": 239,
+          "mc": 239,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "문법",
+          "total": 220,
+          "mc": 220,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "한국사회",
+          "total": 107,
+          "mc": 107,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "읽기·이해",
+          "total": 100,
+          "mc": 100,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "대화",
+          "total": 90,
+          "mc": 90,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "한국문화",
+          "total": 91,
+          "mc": 91,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "작문",
+          "total": 38,
+          "mc": 0,
+          "writing": 38,
+          "oral": 0
+        },
+        {
+          "category": "구술",
+          "total": 100,
+          "mc": 0,
+          "writing": 0,
+          "oral": 100
+        }
+      ]
+    },
+    "perm": {
+      "total": 935,
+      "mc": 793,
+      "writing": 42,
+      "oral": 100,
+      "categories": [
+        {
+          "category": "한국어",
+          "total": 240,
+          "mc": 240,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "역사",
+          "total": 90,
+          "mc": 90,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "정치",
+          "total": 50,
+          "mc": 50,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "법",
+          "total": 89,
+          "mc": 89,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "경제",
+          "total": 80,
+          "mc": 80,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "작문",
+          "total": 42,
+          "mc": 0,
+          "writing": 42,
+          "oral": 0
+        },
+        {
+          "category": "구술",
+          "total": 100,
+          "mc": 0,
+          "writing": 0,
+          "oral": 100
+        },
+        {
+          "category": "사회",
+          "total": 71,
+          "mc": 71,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "문화",
+          "total": 60,
+          "mc": 60,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "지리",
+          "total": 65,
+          "mc": 65,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "교육",
+          "total": 48,
+          "mc": 48,
+          "writing": 0,
+          "oral": 0
+        }
+      ]
+    },
+    "nat": {
+      "total": 980,
+      "mc": 838,
+      "writing": 42,
+      "oral": 100,
+      "categories": [
+        {
+          "category": "한국어",
+          "total": 240,
+          "mc": 240,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "역사",
+          "total": 100,
+          "mc": 100,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "정치",
+          "total": 60,
+          "mc": 60,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "법",
+          "total": 100,
+          "mc": 100,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "경제",
+          "total": 85,
+          "mc": 85,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "작문",
+          "total": 42,
+          "mc": 0,
+          "writing": 42,
+          "oral": 0
+        },
+        {
+          "category": "구술",
+          "total": 100,
+          "mc": 0,
+          "writing": 0,
+          "oral": 100
+        },
+        {
+          "category": "사회",
+          "total": 80,
+          "mc": 80,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "문화",
+          "total": 60,
+          "mc": 60,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "지리",
+          "total": 65,
+          "mc": 65,
+          "writing": 0,
+          "oral": 0
+        },
+        {
+          "category": "교육",
+          "total": 48,
+          "mc": 48,
+          "writing": 0,
+          "oral": 0
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>귀화시험 종합평가 연습</title>
+  <meta name="description" content="귀화용 종합평가(필기·작문·구술) 연습 앱" />
+  <!-- SEO: consolidate signals onto the brand-domain landing page -->
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#fafafa" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="귀화시험" />
+
+  <!-- Pretendard(모던 산세리프): 온라인이면 로드, 오프라인이면 시스템 폰트 폴백(무해) -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 공유 비밀번호 잠금: 링크와 함께 비밀번호를 받은 사람만 들어온다 -->
+  <div id="gate" class="gate" role="dialog" aria-modal="true" aria-label="Password">
+    <div class="gate__card">
+      <div class="gate__lock">🔒</div>
+      <h2 class="gate__title">비밀번호 · Password</h2>
+      <p class="gate__desc">1단계: 공유 비밀번호를 입력하세요.<br>2단계: 홈에서 회원 이메일 로그인을 진행합니다.<br>先输入公共密码，然后在首页进行会员邮箱登录。</p>
+      <form id="gateForm" class="gate__form" autocomplete="off">
+        <input id="gateInput" class="gate__input" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Password" placeholder="••••••" />
+        <button id="gateBtn" class="btn btn--primary gate__btn" type="submit">확인 · Enter</button>
+      </form>
+      <p id="gateErr" class="gate__err hidden">비밀번호가 맞지 않습니다 · 密码不正确 · Mật khẩu không đúng · รหัสผ่านไม่ถูกต้อง</p>
+    </div>
+  </div>
+
+  <!-- 첫 실행: 국가/언어(주석) 선택 -->
+  <div id="langSplash" class="lang-splash hidden" role="dialog" aria-modal="true" aria-label="Select language">
+    <div class="lang-splash__card">
+      <div class="lang-splash__flag">🇰🇷</div>
+      <h2 class="lang-splash__title">언어 선택 · Language</h2>
+      <p class="lang-splash__desc">문제와 함께 볼 모국어 주석을 고르세요.<br>Choose the language for in-question notes.</p>
+      <div class="lang-splash__opts">
+        <button class="lang-opt" data-lang="ko"><span class="lang-opt__flag">🇰🇷</span><span class="lang-opt__name">한국어</span><span class="lang-opt__sub">주석 없음</span></button>
+        <button class="lang-opt" data-lang="zh"><span class="lang-opt__flag">🇨🇳</span><span class="lang-opt__name">中文</span><span class="lang-opt__sub">中文注释</span></button>
+        <button class="lang-opt" data-lang="vi"><span class="lang-opt__flag">🇻🇳</span><span class="lang-opt__name">Tiếng Việt</span><span class="lang-opt__sub">Chú thích tiếng Việt</span></button>
+        <button class="lang-opt" data-lang="th"><span class="lang-opt__flag">🇹🇭</span><span class="lang-opt__name">ภาษาไทย</span><span class="lang-opt__sub">คำอธิบายภาษาไทย</span></button>
+      </div>
+    </div>
+  </div>
+
+  <header class="appbar">
+    <button id="homeBtn" class="appbar__home" aria-label="홈"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></button>
+    <h1 class="appbar__title" data-i18n="app.title">귀화시험 연습</h1>
+    <button id="langBtn" class="appbar__lang" title="Select Language" aria-label="Select Language">🇰🇷</button>
+    <div id="memberStatus" class="appbar__member"></div>
+    <button id="syncBtn" class="appbar__sync" title="문제 동기화">
+      <span class="appbar__sync-icon">⟳</span><span class="appbar__sync-text" data-i18n="app.sync">동기화</span>
+    </button>
+  </header>
+
+  <main id="app">
+
+    <!-- 홈 -->
+    <section id="view-home" class="view">
+      <!-- 시험 트랙 전환: 귀화 종합평가 / 사회통합 사전평가 -->
+      <div class="seg track-seg" id="trackSeg">
+        <button class="seg__btn seg__btn--active" data-exam="pre" data-i18n="track.pre">사회통합 사전평가</button>
+        <button class="seg__btn" data-exam="perm" data-i18n="track.perm">영주 종합평가</button>
+        <button class="seg__btn" data-exam="nat" data-i18n="track.nat">귀화 종합평가</button>
+      </div>
+
+      <div class="sync-status" id="syncStatus">문제를 불러오는 중…</div>
+
+      <!-- 시험일 카운트다운·페이싱 (트랙별 저장) -->
+      <div class="examdate-card" id="examDateCard">
+        <div class="examdate-card__top">
+          <span class="examdate-card__title" data-i18n="examdate.title">시험일 설정</span>
+          <span class="examdate-card__controls">
+            <input type="date" id="examDateInput" class="examdate-input" />
+            <button type="button" id="examDateClear" class="examdate-clear hidden" data-i18n="examdate.clear">지우기</button>
+          </span>
+        </div>
+        <div class="examdate-card__info" id="examDateInfo"></div>
+      </div>
+
+      <button id="resumeBanner" class="resume-banner hidden"></button>
+
+      <div class="card-grid">
+        <button class="menu-card menu-card--primary" data-go="mock">
+          <span class="menu-card__eyebrow">MOCK EXAM</span>
+          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H16l4 4v12.5A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5z"/><path d="M15 3v4h4"/><path d="M8 12h6M8 16h4"/></svg></span>
+          <span class="menu-card__title" data-i18n="home.mock.t">모의고사 보기</span>
+          <span class="menu-card__sub" data-i18n="home.mock.s">실제 시험처럼 풀기</span>
+        </button>
+        <button class="menu-card" data-go="practice">
+          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v15H5.5C4.7 19 4 18.3 4 17.5z"/><path d="M20 5.5C20 4.7 19.3 4 18.5 4H13v15h5.5c.8 0 1.5-.7 1.5-1.5z"/></svg></span>
+          <span class="menu-card__title" data-i18n="home.practice.t">영역별 연습</span>
+          <span class="menu-card__sub" data-i18n="home.practice.s">9개 영역별로 풀기</span>
+        </button>
+        <button class="menu-card" data-go="writing">
+          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6"/><path d="M4 20l1.2-4.2L15.5 5.5a2 2 0 0 1 2.8 0l.2.2a2 2 0 0 1 0 2.8L8.2 18.8z"/><path d="M4 20l4-1"/></svg></span>
+          <span class="menu-card__title" data-i18n="home.writing.t">작문·구술 연습</span>
+          <span class="menu-card__sub" data-i18n="home.writing.s">주제별 말하기·쓰기</span>
+        </button>
+        <button class="menu-card" data-go="typing">
+          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="1.8"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg></span>
+          <span class="menu-card__title" data-i18n="home.typing.t">타자 연습</span>
+          <span class="menu-card__sub" data-i18n="home.typing.s">작문 모범답안 따라 치기</span>
+        </button>
+        <button class="menu-card" data-go="wrong">
+          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.9 4.5"/><path d="M20 5v5h-5"/></svg></span>
+          <span class="menu-card__title" data-i18n="home.wrong.t">오답 노트</span>
+          <span class="menu-card__sub" id="wrongCount">틀린 문제 0개</span>
+        </button>
+        <button class="menu-card" data-go="stats">
+          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12.5" y="8" width="3" height="9"/><rect x="18" y="5" width="3" height="12" transform="translate(-4 0)"/></svg></span>
+          <span class="menu-card__title" data-i18n="home.stats.t">학습 통계</span>
+          <span class="menu-card__sub" data-i18n="home.stats.s">정답률·기록 보기</span>
+        </button>
+      </div>
+
+      <p class="hint" id="bankInfo"></p>
+      <footer class="app-credit" data-i18n-html="credit.html"></footer>
+    </section>
+
+    <!-- 영역 선택(연습) -->
+    <section id="view-practice" class="view hidden">
+      <h2 class="view-title" data-i18n="practice.title">영역별 연습</h2>
+      <p class="view-desc" data-i18n="practice.desc">한 문제씩 풀고 바로 정답·해설을 확인합니다.</p>
+      <button id="practiceResume" class="resume-banner hidden"></button>
+      <div id="categoryList" class="cat-list"></div>
+    </section>
+
+    <!-- 모의고사 표지 / 유의사항 -->
+    <section id="view-examintro" class="view hidden">
+      <div class="exam-cover">
+        <p class="exam-cover__org" data-i18n="exam.org">사회통합프로그램 (KIIP)</p>
+        <h2 class="exam-cover__title" data-i18n="exam.title">귀화용 종합평가</h2>
+        <p class="exam-cover__subtitle" data-i18n="exam.subtitle">필기시험 모의고사</p>
+        <div class="exam-cover__fields">
+          <label><span data-i18n="exam.name">성 명</span><input id="examName" type="text" data-i18n-ph="exam.namePh" placeholder="이름 입력" /></label>
+          <label><span data-i18n="exam.no">수험번호</span><input id="examNo" type="text" readonly /></label>
+        </div>
+        <div class="exam-notice">
+          <h3 data-i18n="exam.noticeTitle">유의사항</h3>
+          <ol id="examNoticeList"></ol>
+        </div>
+        <button class="btn resume-cover-btn hidden" id="examResumeBtn"></button>
+        <div class="quiz-actions">
+          <button class="btn btn--ghost" data-go="home" data-i18n="common.cancel">취소</button>
+          <button class="btn btn--primary" id="examStartBtn" data-i18n="exam.start">시험 시작</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 퀴즈(연습/모의고사 공용) -->
+    <section id="view-quiz" class="view hidden">
+      <div class="quiz-top">
+        <span id="quizProgress" class="quiz-progress">1 / 36</span>
+        <span id="quizTimer" class="quiz-timer hidden">60:00</span>
+        <span id="quizCat" class="quiz-cat"></span>
+      </div>
+      <div class="progress-bar"><div id="progressFill" class="progress-bar__fill"></div></div>
+
+      <div id="examBanner" class="exam-banner hidden"></div>
+      <!-- G: 듣고 말하기 재생기(사전평가 구술 listen 유형에서만, JS가 채움) -->
+      <div id="listenCard" class="listen-card hidden"></div>
+
+      <div id="questionBox" class="question-box"></div>
+      <div id="choices" class="choices"></div>
+
+      <div id="writeArea" class="write-area hidden">
+        <textarea id="writeInput" placeholder="여기에 답안을 작성하세요 (200자 이내)"></textarea>
+        <div class="write-area__meta"><span id="writeCount">0자</span><span data-i18n="writeCount.suffix"> / 200자</span></div>
+      </div>
+
+      <!-- E: 원고지 작성법 카드(종합평가 nat/perm 작문에서만, JS가 채움/토글) -->
+      <div id="wongojiCard" class="wongoji-card hidden"></div>
+
+      <div id="feedback" class="feedback hidden"></div>
+
+      <div class="quiz-actions">
+        <button id="prevBtn" class="btn btn--ghost hidden" data-i18n="quiz.prev">← 이전</button>
+        <button id="nextBtn" class="btn btn--primary" data-i18n="quiz.next">다음 →</button>
+        <button id="submitBtn" class="btn btn--primary hidden" data-i18n="quiz.submit">제출하고 채점</button>
+      </div>
+    </section>
+
+    <!-- 작문/구술 -->
+    <section id="view-writing" class="view hidden">
+      <h2 class="view-title" data-i18n="writing.title">작문·구술 연습</h2>
+      <div class="seg" id="writingSeg">
+        <button class="seg__btn seg__btn--active" data-wt="writing"><span class="seg__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6"/><path d="M4 20l1.2-4.2L15.5 5.5a2 2 0 0 1 2.8 0l.2.2a2 2 0 0 1 0 2.8L8.2 18.8z"/><path d="M4 20l4-1"/></svg></span><span data-i18n="seg.writing">작문</span></button>
+        <button class="seg__btn" data-wt="oral"><span class="seg__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4M9 21h6"/></svg></span><span data-i18n="seg.oral">구술</span></button>
+      </div>
+      <!-- E: 원고지 작성법 카드(작문 탭 + 종합평가 nat/perm에서만, JS가 채움/토글) -->
+      <div id="wongojiPractice" class="wongoji-card hidden"></div>
+      <div id="writingList" class="writing-list"></div>
+    </section>
+
+    <!-- 결과 -->
+    <section id="view-result" class="view hidden">
+      <h2 class="view-title" data-i18n="result.title">채점 결과</h2>
+      <div class="score-card">
+        <div class="score-card__num"><span id="scorePct">0</span><small id="scoreUnit" data-i18n="result.unit">점</small></div>
+        <div class="score-card__detail">
+          <div id="scoreFrac">0 / 0 정답</div>
+          <div id="scorePass" class="score-card__pass"></div>
+        </div>
+      </div>
+      <div id="levelResult" class="level-result hidden"></div>
+      <div id="scoreBreakdown" class="score-breakdown hidden"></div>
+      <div id="catBreakdown" class="cat-breakdown"></div>
+      <h3 class="subhead" data-i18n="result.reviewHead">문제 다시보기</h3>
+      <div id="reviewList" class="review-list"></div>
+      <div class="quiz-actions">
+        <button class="btn btn--ghost" data-go="home" data-i18n="common.home">홈으로</button>
+        <button class="btn btn--primary" id="retryWrongBtn" data-i18n="result.retryWrong">틀린 문제만 다시 풀기</button>
+      </div>
+    </section>
+
+    <!-- 오답노트 -->
+    <section id="view-wrong" class="view hidden">
+      <h2 class="view-title" data-i18n="wrong.title">오답 노트</h2>
+      <p class="view-desc" data-i18n-html="wrong.desc3">틀린 문제가 모입니다. 답은 가려져 있고, 보기를 고르면 그 자리에서 채점합니다. <b>두 번 연속</b> 맞히면 목록에서 졸업합니다.</p>
+      <div class="quiz-actions">
+        <button class="btn btn--primary" id="startWrongBtn" data-i18n="wrong.start">오답 문제 풀기</button>
+        <button class="btn btn--ghost" id="clearWrongBtn" data-i18n="wrong.clear">오답노트 비우기</button>
+      </div>
+      <div id="wrongList" class="review-list"></div>
+    </section>
+
+    <!-- 통계 -->
+    <section id="view-stats" class="view hidden">
+      <h2 class="view-title" data-i18n="stats.title">학습 통계</h2>
+      <div id="statsBox" class="stats-box"></div>
+      <h3 class="subhead" data-i18n="stats.recentHead">최근 모의고사 기록</h3>
+      <div id="historyList" class="history-list"></div>
+      <div class="quiz-actions">
+        <button class="btn btn--ghost" id="resetStatsBtn" data-i18n="stats.reset">통계 초기화</button>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="memberModal" class="member-modal hidden" role="dialog" aria-modal="true" aria-label="Member login">
+    <div class="member-modal__card">
+      <button id="memberCancelBtn" class="member-modal__close" type="button" aria-label="닫기">×</button>
+      <div class="member-modal__lock">🔒</div>
+      <h2 class="member-modal__title" data-i18n="member.title">회원 전용 콘텐츠입니다.</h2>
+      <p class="member-modal__desc" data-i18n="member.desc">회원 로그인 후 이용할 수 있습니다.</p>
+      <form id="memberOtpForm" class="member-form" autocomplete="on">
+        <label class="member-form__label" for="memberEmail" data-i18n="member.email">이메일</label>
+        <div class="member-form__row">
+          <input id="memberEmail" class="member-form__input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" />
+          <button id="memberSendOtpBtn" class="btn btn--primary" type="button" data-i18n="member.send">인증번호 받기</button>
+        </div>
+        <label class="member-form__label" for="memberOtp" data-i18n="member.otp">인증번호</label>
+        <div class="member-form__row">
+          <input id="memberOtp" class="member-form__input" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
+          <button id="memberVerifyBtn" class="btn btn--primary" type="submit" data-i18n="member.login">로그인</button>
+        </div>
+      </form>
+      <p id="memberMessage" class="member-message"></p>
+      <button id="memberLogoutBtn" class="btn btn--ghost member-logout hidden" type="button" data-i18n="member.logout">로그아웃</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="membership.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
