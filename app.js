@@ -295,7 +295,7 @@ Object.assign(I18N.ko, {
   'member.loading': '회원 정보를 확인하는 중입니다.',
   'member.ready': '회원 확인 완료',
   'sync.publicReady': '공개 목차 준비 완료 · 총 {0}문항',
-  'sync.memberReady': '회원 문제 준비 완료 · 총 {0}문항',
+  'sync.memberReady': '{0} · {1}문항 준비 완료',
 });
 Object.assign(I18N.zh, {
   'member.loginShort': '会员登录',
@@ -321,7 +321,7 @@ Object.assign(I18N.zh, {
   'member.loading': '正在确认会员信息。',
   'member.ready': '会员确认完成',
   'sync.publicReady': '公开目录已准备 · 共{0}题',
-  'sync.memberReady': '会员题库已准备 · 共{0}题',
+  'sync.memberReady': '{0} · 共{1}题 已就绪',
 });
 Object.assign(I18N.vi, {
   'member.loginShort': 'Đăng nhập hội viên',
@@ -347,7 +347,7 @@ Object.assign(I18N.vi, {
   'member.loading': 'Đang kiểm tra hội viên.',
   'member.ready': 'Đã xác nhận hội viên',
   'sync.publicReady': 'Mục lục công khai đã sẵn sàng · tổng {0} câu',
-  'sync.memberReady': 'Ngân hàng câu hỏi hội viên đã sẵn sàng · tổng {0} câu',
+  'sync.memberReady': '{0} · {1} câu đã sẵn sàng',
 });
 Object.assign(I18N.th, {
   'member.loginShort': 'เข้าสู่ระบบสมาชิก',
@@ -373,7 +373,7 @@ Object.assign(I18N.th, {
   'member.loading': 'กำลังตรวจสอบสมาชิก',
   'member.ready': 'ตรวจสอบสมาชิกเสร็จแล้ว',
   'sync.publicReady': 'สารบัญสาธารณะพร้อมแล้ว · ทั้งหมด {0} ข้อ',
-  'sync.memberReady': 'คลังข้อสอบสมาชิกพร้อมแล้ว · ทั้งหมด {0} ข้อ',
+  'sync.memberReady': '{0} · {1} ข้อ พร้อมแล้ว',
 });
 
 function t(key) {
@@ -557,6 +557,11 @@ function qById(id) { return BANK.find((q) => q.id === id); }
    심화(tier:advanced) 문항은 귀화용에만 포함(영주=기본과정, 귀화=기본+심화). */
 const poolOf = (ex) => (ex === 'pre' ? 'pre' : 'nat');
 function inExam(q) { return examOf(q) === poolOf(activeExam) && !(activeExam === 'perm' && q.tier === 'advanced'); }
+
+/* 지금 고른 시험에 실제로 나오는 문항 수.
+   BANK 에는 세 트랙이 다 들어 있다. 총합을 보여 주면 영주용을 골라 놓고도
+   사전평가 문항까지 센 숫자를 보게 되어 학습자가 오해한다. */
+function bankExamCount() { return BANK.filter(inExam).length; }
 const examBank = () => BANK.filter(inExam);
 const mcOnly = () => examBank().filter((q) => q.type === 'mc');
 const byType = (ty) => examBank().filter((q) => q.type === ty);
@@ -774,7 +779,7 @@ async function ensureMemberBank({ silent = false, force = false } = {}) {
     BANK = list;
     bankFullyLoaded = true;
     META = { version: (CATALOG && CATALOG.version) || 'Supabase', syncedAt: new Date().toISOString() };
-    setSyncStatus(t('sync.memberReady', BANK.length), false);
+    setSyncStatus(t('sync.memberReady', t('track.' + activeExam), bankExamCount()), false);
     if (!silent) toast(t('toast.syncDone', BANK.length));
     renderHome();
     return true;
@@ -1025,7 +1030,7 @@ function renderHome() {
   $('wrongCount').textContent = t('wrongCount', wrongCount());
   const mc = catalogMcCount();
   $('bankInfo').textContent = t('bankInfo', META.version, mc, fmtDate(META.syncedAt));
-  if (isActiveMember() && bankFullyLoaded && BANK.length) setSyncStatus(t('sync.memberReady', BANK.length), false);
+  if (isActiveMember() && bankFullyLoaded && BANK.length) setSyncStatus(t('sync.memberReady', t('track.' + activeExam), bankExamCount()), false);
   else setSyncStatus(t('sync.publicReady', catalogTotalCount()), false);
 
   renderExamDate();
