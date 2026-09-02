@@ -653,6 +653,7 @@ async function init() {
   loadCatalogFromStorage();
   applyStaticI18n();
   applyExamUi();
+  repairInflatedMiss();   // 되풀이 채점 버그로 부풀려진 '틀린 횟수'를 한 번만 되돌린다
   wireEvents();
   wireMemberUi();
   renderMemberStatus();
@@ -1869,6 +1870,29 @@ function reviewItem(q, chosen, writeText, sgMode, sgVal, auto) {
    - 오답: miss+1, streak=0.  정답: streak+1 → 연속 2회면 제거.
    ===================================================================== */
 /* 트랙별 오답 원장 로드(배열이면 맵으로 승격 후 저장) */
+/* 되풀이 채점 버그(sw v55 이전)로 부풀려진 틀린 횟수를 한 번만 되돌린다.
+   그 버그는 1초에 한 번씩 채점을 반복해 같은 문항의 miss 를 수백~수천까지 올렸다.
+   진짜 횟수는 알 수 없으므로, 사람이 도달할 수 없는 값은 1회로 본다.
+   졸업 판정은 streak 로 하므로 miss 를 되돌려도 학습 진행에는 영향이 없다. */
+const MISS_REPAIRED = 'nq_missfix_v1';
+function repairInflatedMiss() {
+  try {
+    if (localStorage.getItem(MISS_REPAIRED)) return;
+    for (const suf of ['', '__perm', '__pre']) {
+      const key = K.wrong + suf;
+      const raw = ls(key, null);
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+      let touched = false;
+      for (const id of Object.keys(raw)) {
+        const e = raw[id];
+        if (e && typeof e === 'object' && (e.miss || 0) > 20) { e.miss = 1; touched = true; }
+      }
+      if (touched) save(key, raw);
+    }
+    localStorage.setItem(MISS_REPAIRED, '1');
+  } catch {}
+}
+
 function loadWrong() {
   const raw = ls(ekey(K.wrong), {});
   if (Array.isArray(raw)) {
