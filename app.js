@@ -829,6 +829,10 @@ function setSyncStatus(text, isError) { const el = $('syncStatus'); el.textConte
    ===================================================================== */
 const VIEWS = ['home', 'practice', 'examintro', 'quiz', 'writing', 'result', 'wrong', 'stats'];
 function showView(name) {
+  // 같은 화면을 다시 그리는 경우(언어 변경 등)에는 스크롤을 건드리지 않는다.
+  // 결과 화면에서 refreshView() 가 renderResult 를 다시 부르면 여기로 들어오는데,
+  // 화면이 바뀐 것이 아닌데도 맨 위로 튀어 올라 읽던 자리를 잃는다.
+  const viewChanged = currentView !== name;
   currentView = name;
   stopSpeak(); // G: 화면을 옮기면 읽어 주던 음성을 멈춘다
   VIEWS.forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
@@ -837,7 +841,7 @@ function showView(name) {
     // 퀴즈를 벗어나면(예: 홈으로) 진행 상황 저장 후 타이머 정지(중복 방지)
     if (quiz && quiz.timer) { saveMockProgress(); clearInterval(quiz.timer); quiz.timer = null; }
   }
-  window.scrollTo(0, 0);
+  if (viewChanged) window.scrollTo(0, 0);
 }
 
 /* =====================================================================
