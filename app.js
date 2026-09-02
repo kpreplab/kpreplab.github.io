@@ -1164,6 +1164,10 @@ function catItem(name, count, onClick, sub) {
    ===================================================================== */
 function startQuiz(questions, mode, resume) {
   if (!questions.length) { toast(t('toast.noQ')); return; }
+  // quiz 를 갈아 끼우기 전에 돌던 타이머를 반드시 끈다.
+  // 여기서 놓치면 핸들을 잃은 채로 계속 돌면서 새 시험의 남은 시간을 깎고,
+  // 0 이하가 된 뒤에는 매초 gradeMock 을 불러 기록이 수십 개씩 쌓인다.
+  if (quiz && quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }
   quiz = {
     mode, list: questions,
     i: resume ? resume.i : 0,
@@ -1328,6 +1332,7 @@ function onWriteInput() {
 }
 
 function startTimer() {
+  if (quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }   // 두 번 켜지지 않게
   updateTimerLabel();
   quiz.timer = setInterval(() => {
     quiz.timeLeft--;
@@ -1448,6 +1453,7 @@ function onChoose(idx) {
   renderQuestion();
 }
 function nextQuestion() {
+  if (!quiz || quiz.scored) return;   // 채점이 끝난 시험에서는 아무 일도 하지 않는다
   if (quiz.mode !== 'mock' && quiz.answers[quiz.i] === null) return;
   if (quiz.i < quiz.list.length - 1) { quiz.i++; renderQuestion(); }
   else { if (quiz.mode === 'mock') gradeMock(); else finishPractice(); }
@@ -1461,6 +1467,11 @@ function finishPractice() {
   renderResult(quiz.list, quiz.answers, correct, { isMock: false, totalMc: quiz.list.length });
 }
 function gradeMock() {
+  // 이미 채점한 시험을 다시 채점하지 않는다.
+  // 다시 불리면 학습 통계에 같은 점수가 한 줄 더 쌓이고, 결과 화면이 다시 그려지면서
+  // 읽던 자리를 잃는다(맨 위로 올라간다).
+  if (quiz.scored) { showView('result'); return; }
+  quiz.scored = true;
   if (quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }
   clearMockSave(); // 채점 완료 → 중간 저장 삭제
   mockSelfGrade = {}; // 새 채점 → 작문·구술 자가채점 초기화
