@@ -2068,11 +2068,25 @@ if (TTS) {
   TTS.addEventListener('voiceschanged', () => { ttsVoice = pickKoVoice(); });
 }
 
+/* 소리로 읽을 때는 화면용 표시를 걷어낸다.
+   <br> 를 그대로 넘기면 '비 아르' 처럼 읽히고, 대화 표시 '가:' 는 '가 콜론' 이 된다.
+   화면에는 그대로 보여 주고 읽을 때만 다듬는다. */
+function speakable(text) {
+  return String(text == null ? '' : text)
+    .replace(/<br\s*\/?>/gi, ' ')       // 줄바꿈 태그는 잠깐 쉬는 자리로
+    .replace(/<[^>]*>/g, '')            // 나머지 태그 제거
+    .replace(/(^|\s)([가나다라])\s*:\s*/g, '$1')   // 대화 화자 표시 '가:' 제거
+    .replace(/[\s　]+/g, ' ')
+    .trim();
+}
+
 function speak(text, onEnd) {
   if (!TTS) { onEnd && onEnd(); return false; }
+  const say = speakable(text);
+  if (!say) { onEnd && onEnd(); return false; }
   TTS.cancel();
   if (!ttsVoice) ttsVoice = pickKoVoice();   // 첫 재생 때 아직 안 잡혔으면 다시 시도
-  const u = new SpeechSynthesisUtterance(text);
+  const u = new SpeechSynthesisUtterance(say);
   u.lang = 'ko-KR';
   u.rate = 0.92;   // 초급 학습자가 따라올 수 있는 속도
   if (ttsVoice) u.voice = ttsVoice;
