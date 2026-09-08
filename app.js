@@ -2037,7 +2037,20 @@ const TTS = window.speechSynthesis || null;
    getVoices() 로 그냥 첫 번째 한국어 음성을 고르면 이것들이 걸려서
    외계인처럼 들린다. 정식 음성(애플 Yuna, 윈도우 Heami, 안드로이드 Google)을 먼저 찾는다. */
 const TTS_NOVELTY = /^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|bells|boing|bubbles|cellos|jester|organ|superstar|trinoids|whisper|wobble|zarvox|albert|bad news|good news|bahh|deranged|hysterical|junior|kathy|princess|ralph)\b/i;
-const TTS_GOOD = /yuna|heami|google|microsoft|siri|nova|premium|enhanced|natural/i;
+/* 음성 품질에 점수를 매겨 가장 좋은 것을 고른다.
+   기기에 기본으로 깔린 것은 '압축(compact)' 판이라 기계음이 난다.
+   사용자가 시스템 설정에서 고품질 판을 내려받으면 이름에 Enhanced/Premium 이 붙는데,
+   그때 자동으로 그쪽을 쓰도록 순위를 매긴다. */
+function ttsScore(v) {
+  const n = v.name;
+  let s = 0;
+  if (/premium|siri/i.test(n)) s += 100;          // 가장 자연스러움
+  else if (/enhanced|natural|neural/i.test(n)) s += 80;
+  if (/google|microsoft/i.test(n)) s += 40;        // 안드로이드·윈도우의 정식 음성
+  if (/yuna|heami|sunhi/i.test(n)) s += 20;        // 각 플랫폼의 기본 한국어 음성
+  if (v.localService) s += 5;                      // 오프라인에서도 되는 쪽을 살짝 우대
+  return s;
+}
 
 let ttsVoice = null;
 function pickKoVoice() {
@@ -2046,10 +2059,7 @@ function pickKoVoice() {
   if (!all.length) return null;
   const plain = all.filter((v) => !TTS_NOVELTY.test(v.name.replace(/\s*\(.*\)$/, '')));
   const pool = plain.length ? plain : all;   // 전부 캐릭터뿐이면 어쩔 수 없이 그중에서
-  return pool.find((v) => TTS_GOOD.test(v.name) && v.localService)
-      || pool.find((v) => TTS_GOOD.test(v.name))
-      || pool.find((v) => v.localService)
-      || pool[0];
+  return pool.slice().sort((a, b) => ttsScore(b) - ttsScore(a))[0];
 }
 /* 음성 목록은 비동기로 채워진다. 페이지가 막 열렸을 때 getVoices() 는 빈 배열일 수 있어
    그 상태로 고르면 음성이 안 잡히고 기기 기본 음성(중국어일 수도 있다)으로 한국어를 읽는다. */
