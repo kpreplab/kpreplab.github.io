@@ -2031,14 +2031,41 @@ function renderWrong() {
    실제 시험은 음성을 듣고 답하므로, 대본은 기본으로 가려 두고 답한 뒤 확인하게 한다.
    ===================================================================== */
 const TTS = window.speechSynthesis || null;
+
+/* 애플 기기에는 Eddy·Flo·Grandma·Rocko 같은 '캐릭터 음성'이 언어마다 깔려 있다.
+   일부러 만화처럼 들리게 만든 것이라 학습용으로는 못 쓴다.
+   getVoices() 로 그냥 첫 번째 한국어 음성을 고르면 이것들이 걸려서
+   외계인처럼 들린다. 정식 음성(애플 Yuna, 윈도우 Heami, 안드로이드 Google)을 먼저 찾는다. */
+const TTS_NOVELTY = /^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|bells|boing|bubbles|cellos|jester|organ|superstar|trinoids|whisper|wobble|zarvox|albert|bad news|good news|bahh|deranged|hysterical|junior|kathy|princess|ralph)\b/i;
+const TTS_GOOD = /yuna|heami|google|microsoft|siri|nova|premium|enhanced|natural/i;
+
+let ttsVoice = null;
+function pickKoVoice() {
+  if (!TTS) return null;
+  const all = TTS.getVoices().filter((v) => /^ko/i.test(v.lang));
+  if (!all.length) return null;
+  const plain = all.filter((v) => !TTS_NOVELTY.test(v.name.replace(/\s*\(.*\)$/, '')));
+  const pool = plain.length ? plain : all;   // 전부 캐릭터뿐이면 어쩔 수 없이 그중에서
+  return pool.find((v) => TTS_GOOD.test(v.name) && v.localService)
+      || pool.find((v) => TTS_GOOD.test(v.name))
+      || pool.find((v) => v.localService)
+      || pool[0];
+}
+/* 음성 목록은 비동기로 채워진다. 페이지가 막 열렸을 때 getVoices() 는 빈 배열일 수 있어
+   그 상태로 고르면 음성이 안 잡히고 기기 기본 음성(중국어일 수도 있다)으로 한국어를 읽는다. */
+if (TTS) {
+  ttsVoice = pickKoVoice();
+  TTS.addEventListener('voiceschanged', () => { ttsVoice = pickKoVoice(); });
+}
+
 function speak(text, onEnd) {
   if (!TTS) { onEnd && onEnd(); return false; }
   TTS.cancel();
+  if (!ttsVoice) ttsVoice = pickKoVoice();   // 첫 재생 때 아직 안 잡혔으면 다시 시도
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ko-KR';
   u.rate = 0.92;   // 초급 학습자가 따라올 수 있는 속도
-  const ko = TTS.getVoices().find((v) => /^ko/i.test(v.lang));
-  if (ko) u.voice = ko;
+  if (ttsVoice) u.voice = ttsVoice;
   u.onend = u.onerror = () => onEnd && onEnd();
   TTS.speak(u);
   return true;
