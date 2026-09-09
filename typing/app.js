@@ -62,14 +62,14 @@
   // ===== I18N (ko / zh / vi / th) =====
   var I18N = {
     ko: {
-      'app.title': '한글 타자 연습', 'app.toQuiz': '귀화앱',
+      'app.title': '한글 타자 연습', 'app.toQuiz': '문제풀기',
       'home.lead': '한글 자판이 손에 익을 때까지, 한 단계씩 천천히 연습해요.',
       'home.imeTip': '컴퓨터 입력기를 한글로 바꾸지 않아도 됩니다. 화면이 알려주는 키를 그대로 누르세요.',
       'home.hint': '개인용 연습 도구 · 점수는 이 기기에만 저장됩니다.',
       'mode.position.t': '자리 연습', 'mode.position.s': 'ㅎ ㅁ ㅂ ㅕ · 자판 위치와 손가락 익히기',
       'mode.syllable.t': '낱글자 연습', 'mode.syllable.s': '자음+모음을 모아 한 글자씩 완성',
       'mode.short.t': '단문 연습', 'mode.short.s': '짧은 문장 따라 치기',
-      'mode.long.t': '귀화 작문 연습', 'mode.long.s': '작문 모범답안(200자) 따라 치기',
+      'mode.long.t': '작문 연습', 'mode.long.s': '작문 모범답안(200자) 따라 치기',
       'common.home': '홈', 'common.list': '목록', 'common.retry': '다시', 'common.next': '다음 →',
       'stat.time': '시간', 'stat.speed': '타수', 'stat.acc': '정확도', 'stat.miss': '오타',
       'next.this': '이 자리', 'next.char': '다음', 'next.space': '스페이스', 'next.enter': '엔터',
@@ -79,7 +79,7 @@
       'list.position': '단계를 골라 시작하세요. 처음에는 ‘기본 자리’부터.',
       'list.syllable': '쉬운 글자부터 한 글자씩 완성해 보세요.',
       'list.short': '짧은 문장을 따라 치며 손을 풀어요.',
-      'list.long': '귀화 작문 시험에 나오는 주제의 모범답안입니다. 의미를 보며 따라 치세요.',
+      'list.long': '종합평가 작문에 나오는 주제의 모범답안입니다. 의미를 보며 따라 치세요.',
       'sec.sec': '초', 'best.label': '최고', 'topic.label': '주제', 'echo.label': '내가 친 것',
       'mode.word.t': '낱말 연습', 'mode.word.s': '비슷한 낱말을 빠르게 구별하며 치기',
       'list.word': '비슷하게 생긴 낱말을 빠르게 알아보고 정확히 치는 연습이에요.',
@@ -110,14 +110,14 @@
       'sec.min': '분'
     },
     zh: {
-      'app.title': '韩文打字练习', 'app.toQuiz': '入籍App',
+      'app.title': '韩文打字练习', 'app.toQuiz': '去做题',
       'home.lead': '在熟悉韩文键盘之前，一步一步慢慢练习。',
       'home.imeTip': '不需要把电脑输入法切换成韩文。直接按屏幕提示的键即可。',
       'home.hint': '个人练习工具 · 成绩仅保存在本设备。',
       'mode.position.t': '指位练习', 'mode.position.s': 'ㅎ ㅁ ㅂ ㅕ — 熟悉键位与手指',
       'mode.syllable.t': '单字练习', 'mode.syllable.s': '辅音+元音，一个字一个字组合',
       'mode.short.t': '短句练习', 'mode.short.s': '跟着打短句子',
-      'mode.long.t': '入籍作文练习', 'mode.long.s': '跟着打作文范文（200字）',
+      'mode.long.t': '作文练习', 'mode.long.s': '跟着打作文范文（200字）',
       'common.home': '主页', 'common.list': '列表', 'common.retry': '重来', 'common.next': '下一个 →',
       'stat.time': '时间', 'stat.speed': '速度', 'stat.acc': '准确率', 'stat.miss': '错字',
       'next.this': '此键', 'next.char': '下一个', 'next.space': '空格', 'next.enter': '回车',
@@ -127,7 +127,7 @@
       'list.position': '选择一个阶段开始。第一次请从“基本键位”开始。',
       'list.syllable': '从简单的字开始，一个字一个字完成。',
       'list.short': '跟着打短句子，活动手指。',
-      'list.long': '这些是入籍作文考试主题的范文。看着意思跟着打。',
+      'list.long': '这些是综合评价作文考题的范文。看着意思跟着打。',
       'sec.sec': '秒', 'best.label': '最佳', 'topic.label': '主题', 'echo.label': '我打的',
       'mode.word.t': '单词练习', 'mode.word.s': '快速辨别相似的词并打出',
       'list.word': '快速识别外形相似的词并准确打出。',
@@ -152,14 +152,14 @@
       'sec.min': '分'
     },
     vi: {
-      'app.title': 'Luyện gõ tiếng Hàn', 'app.toQuiz': 'App nhập tịch',
+      'app.title': 'Luyện gõ tiếng Hàn', 'app.toQuiz': 'Làm bài',
       'home.lead': 'Luyện từng bước cho đến khi quen bàn phím tiếng Hàn.',
       'home.imeTip': 'Không cần chuyển bộ gõ máy tính sang tiếng Hàn. Chỉ cần bấm đúng phím màn hình chỉ.',
       'home.hint': 'Công cụ luyện tập cá nhân · Điểm chỉ lưu trên thiết bị này.',
       'mode.position.t': 'Luyện vị trí phím', 'mode.position.s': 'ㅎ ㅁ ㅂ ㅕ — làm quen vị trí phím và ngón tay',
       'mode.syllable.t': 'Luyện từng chữ', 'mode.syllable.s': 'Ghép phụ âm + nguyên âm thành từng chữ',
       'mode.short.t': 'Luyện câu ngắn', 'mode.short.s': 'Gõ theo câu ngắn',
-      'mode.long.t': 'Luyện viết bài nhập tịch', 'mode.long.s': 'Gõ theo bài văn mẫu (200 chữ)',
+      'mode.long.t': 'Luyện viết bài văn', 'mode.long.s': 'Gõ theo bài văn mẫu (200 chữ)',
       'common.home': 'Trang chủ', 'common.list': 'Danh sách', 'common.retry': 'Làm lại', 'common.next': 'Tiếp →',
       'stat.time': 'Thời gian', 'stat.speed': 'Tốc độ', 'stat.acc': 'Chính xác', 'stat.miss': 'Lỗi',
       'next.this': 'Phím này', 'next.char': 'Tiếp', 'next.space': 'Phím cách', 'next.enter': 'Enter',
@@ -169,7 +169,7 @@
       'list.position': 'Chọn một bước để bắt đầu. Lần đầu hãy bắt đầu từ “phím cơ bản”.',
       'list.syllable': 'Bắt đầu từ chữ dễ, hoàn thành từng chữ một.',
       'list.short': 'Gõ theo câu ngắn để làm nóng tay.',
-      'list.long': 'Đây là bài văn mẫu cho các chủ đề thi viết nhập tịch. Vừa xem nghĩa vừa gõ theo.',
+      'list.long': 'Đây là bài văn mẫu cho các chủ đề thi viết của kỳ đánh giá tổng hợp. Vừa xem nghĩa vừa gõ theo.',
       'sec.sec': ' giây', 'best.label': 'Tốt nhất', 'topic.label': 'Chủ đề', 'echo.label': 'Tôi đã gõ',
       'mode.word.t': 'Luyện từ', 'mode.word.s': 'Phân biệt nhanh các từ giống nhau và gõ',
       'list.word': 'Nhận diện nhanh các từ trông giống nhau và gõ chính xác.',
@@ -194,14 +194,14 @@
       'sec.min': ' phút'
     },
     th: {
-      'app.title': 'ฝึกพิมพ์ภาษาเกาหลี', 'app.toQuiz': 'แอปแปลงสัญชาติ',
+      'app.title': 'ฝึกพิมพ์ภาษาเกาหลี', 'app.toQuiz': 'ไปทำข้อสอบ',
       'home.lead': 'ฝึกทีละขั้นจนกว่าจะคุ้นกับแป้นพิมพ์ภาษาเกาหลี',
       'home.imeTip': 'ไม่ต้องเปลี่ยนตัวพิมพ์ในเครื่องเป็นภาษาเกาหลี แค่กดปุ่มตามที่หน้าจอบอก',
       'home.hint': 'เครื่องมือฝึกส่วนตัว · คะแนนบันทึกเฉพาะในเครื่องนี้',
       'mode.position.t': 'ฝึกตำแหน่งแป้น', 'mode.position.s': 'ㅎ ㅁ ㅂ ㅕ — คุ้นเคยกับตำแหน่งแป้นและนิ้ว',
       'mode.syllable.t': 'ฝึกตัวอักษร', 'mode.syllable.s': 'รวมพยัญชนะ+สระให้เป็นตัวอักษรทีละตัว',
       'mode.short.t': 'ฝึกประโยคสั้น', 'mode.short.s': 'พิมพ์ตามประโยคสั้น',
-      'mode.long.t': 'ฝึกเขียนเรียงความแปลงสัญชาติ', 'mode.long.s': 'พิมพ์ตามเรียงความตัวอย่าง (200 ตัว)',
+      'mode.long.t': 'ฝึกเขียนเรียงความ', 'mode.long.s': 'พิมพ์ตามเรียงความตัวอย่าง (200 ตัว)',
       'common.home': 'หน้าหลัก', 'common.list': 'รายการ', 'common.retry': 'เริ่มใหม่', 'common.next': 'ถัดไป →',
       'stat.time': 'เวลา', 'stat.speed': 'ความเร็ว', 'stat.acc': 'ความแม่นยำ', 'stat.miss': 'พิมพ์ผิด',
       'next.this': 'ปุ่มนี้', 'next.char': 'ถัดไป', 'next.space': 'เว้นวรรค', 'next.enter': 'Enter',
@@ -211,7 +211,7 @@
       'list.position': 'เลือกขั้นเพื่อเริ่ม ครั้งแรกเริ่มจาก “แป้นพื้นฐาน”',
       'list.syllable': 'เริ่มจากตัวอักษรง่าย ๆ ทำให้เสร็จทีละตัว',
       'list.short': 'พิมพ์ตามประโยคสั้นเพื่ออุ่นเครื่องนิ้ว',
-      'list.long': 'นี่คือเรียงความตัวอย่างของหัวข้อสอบเขียนแปลงสัญชาติ ดูความหมายแล้วพิมพ์ตาม',
+      'list.long': 'นี่คือเรียงความตัวอย่างของหัวข้อสอบเขียนในการประเมินรวม ดูความหมายแล้วพิมพ์ตาม',
       'sec.sec': ' วิ', 'best.label': 'ดีที่สุด', 'topic.label': 'หัวข้อ', 'echo.label': 'ที่ฉันพิมพ์',
       'mode.word.t': 'ฝึกคำศัพท์', 'mode.word.s': 'แยกแยะคำที่คล้ายกันอย่างรวดเร็วแล้วพิมพ์',
       'list.word': 'ฝึกจำคำที่หน้าตาคล้ายกันอย่างรวดเร็วและพิมพ์ให้ถูก',
@@ -315,7 +315,7 @@
     syllable: { kind: 'text', title: { ko: '낱글자 연습', zh: '单字练习', vi: 'Luyện từng chữ', th: 'ฝึกตัวอักษร' }, desc: 'list.syllable', items: SYLLABLE_STEPS },
     word: { kind: 'text', title: { ko: '낱말 연습', zh: '单词练习', vi: 'Luyện từ', th: 'ฝึกคำศัพท์' }, desc: 'list.word', items: WORD_STEPS },
     short: { kind: 'text', title: { ko: '단문 연습', zh: '短句练习', vi: 'Luyện câu ngắn', th: 'ฝึกประโยคสั้น' }, desc: 'list.short', items: SHORT_ITEMS },
-    long: { kind: 'text', title: { ko: '귀화 작문 연습', zh: '入籍作文练习', vi: 'Luyện viết bài nhập tịch', th: 'ฝึกเขียนเรียงความแปลงสัญชาติ' }, desc: 'list.long', items: LONG_ITEMS }
+    long: { kind: 'text', title: { ko: '작문 연습', zh: '作文练习', vi: 'Luyện viết bài văn', th: 'ฝึกเขียนเรียงความ' }, desc: 'list.long', items: LONG_ITEMS }
   };
   rebuildWritingData([]);
 

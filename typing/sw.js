@@ -1,6 +1,6 @@
 /* 서비스워커 — network-first + 오프라인 + 업데이트 자동 적용 (귀화앱과 동일 방식)
    배포 시 CACHE 숫자만 올리면 다음 접속 때 모든 기기가 자동 갱신됩니다. */
-const CACHE = 'typing-v22';
+const CACHE = 'typing-v23';
 const CORE = [
   './',
   './index.html',
