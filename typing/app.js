@@ -392,9 +392,15 @@
     var vs = window.speechSynthesis.getVoices() || [];
     var ko = vs.filter(function (v) { return /^ko/i.test(v.lang || ''); });
     if (!ko.length) { koVoice = null; return; }
+    // 애플 기기의 Eddy·Flo·Grandma·Rocko 등은 일부러 만화처럼 만든 캐릭터 음성이다. 학습용으로 못 쓴다.
+    var NOVELTY = /^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|bells|boing|bubbles|cellos|jester|organ|superstar|trinoids|whisper|wobble|zarvox|albert|bad news|good news|bahh|deranged|hysterical|junior|kathy|princess|ralph)\b/i;
+    var plain = ko.filter(function (v) { return !NOVELTY.test((v.name || '').replace(/\s*\(.*\)$/, '')); });
+    if (plain.length) ko = plain;
     var PREF = ['google', 'sunhi', 'sun-hi', 'seoyeon', 'yuna', 'injoon', 'jimin', 'heami', 'natural', 'neural', 'wavenet'];
     function score(v) {
       var n = (v.name || '').toLowerCase(), s = 0;
+      // 사용자가 시스템 설정에서 내려받은 고품질 판 — 압축판보다 훨씬 자연스럽다
+      if (/premium|siri/.test(n)) s += 200; else if (/enhanced/.test(n)) s += 160;
       if (n.indexOf('google') > -1) s += 100;       // Chrome의 Google 한국어(신경망) = 가장 또렷
       for (var i = 0; i < PREF.length; i++) { if (n.indexOf(PREF[i]) > -1) { s += 50; break; } }
       if (!v.localService) s += 40;                  // 네트워크 음성이 대체로 더 명확
@@ -946,12 +952,15 @@
     if (matched) { state.correct++; flashKey(code, 'pressed'); }
     else { state.errors++; flashKey(code, 'miss'); if (exp.type === 'jamo') recordWeak(exp.jamo); }
     // A7: 텍스트 모드 전반에서 음절 완성 시 TTS(자모 발음 재사용). 단, syllable은 자모 단위 발음 유지.
-    if (soundOn && produced.type === 'jamo') {
-      if (state.mode === 'syllable') speakJamo(produced.jamo);
-      else speakOnSyllableComplete();
+    if (soundOn) {
+      if (state.mode === 'syllable') { if (produced.type === 'jamo') speakJamo(produced.jamo); }
+      else if (produced.type !== 'jamo' && matched) speakOnWordComplete();
     }
     render(); updateStats();
-    if (state.pos >= state.total) finish();
+    if (state.pos >= state.total) {
+      if (soundOn && state.mode !== 'syllable') speakFinalWord();
+      finish();
+    }
     return true;
   }
 
@@ -960,6 +969,33 @@
     if (!jamo || !HG.isCons(jamo) && !HG.isVowel(jamo)) return;
     if (state && state.weakSession) state.weakSession[jamo] = (state.weakSession[jamo] || 0) + 1;
     addWeak(jamo);
+  }
+
+  function sayKo(text, rate) {
+    if (!text || !('speechSynthesis' in window) || !soundOn) return;
+    try {
+      window.speechSynthesis.cancel();
+      if (!koVoice) pickKoVoice();
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ko-KR'; u.rate = rate || 0.85; u.pitch = 1.0;
+      if (koVoice) u.voice = koVoice;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  /* 낱말·단문·장문: 한 낱말을 다 치고 공백이나 문장부호를 누르는 순간 그 낱말을 통째로 읽는다.
+     전에는 음절 하나씩('머' '리') 읽었는데, 음절은 다음 자모가 들어와야 확정되므로
+     늘 한 박자 늦었고 마지막 음절은 아예 읽히지 않아 낱자를 읽는 것처럼 들렸다.
+     친 것이 아니라 정답에서 가져온다 — 오타가 섞이면 틀린 말을 들려주게 된다. */
+  function speakOnWordComplete() {
+    var exp = state.tokens[state.pos - 1];
+    if (!exp || exp.type === 'jamo') return;          // 경계 자리에서 경계를 제대로 쳤을 때만
+    var before = HG.compose(state.tokens.slice(0, state.pos - 1));
+    var m = before.match(/[가-힣]+$/);
+    if (m) sayKo(m[0]);                               // '머리. ' 의 마침표 뒤 공백은 여기서 걸러진다
+  }
+  function speakFinalWord() {
+    var m = HG.compose(state.tokens).match(/[가-힣]+$/);
+    if (m) sayKo(m[0]);                               // 문장부호로 끝났으면 이미 읽었으므로 없다
   }
 
   // A7: 새로 '완성된' 음절 하나가 늘어나는 순간에만 그 직전 음절을 읽어 줌 (낱말·단문·장문)
