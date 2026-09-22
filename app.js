@@ -112,6 +112,7 @@ const I18N = {
     'guide.show': '💡 도움말 보기', 'guide.hide': '💡 도움말 숨기기', 'writing.draftPh': '여기에 답을 작성해 보세요 (200자 이내)',
     'model.show': '📝 모범답안 보기', 'model.hide': '📝 모범답안 숨기기', 'review.model': '모범답안',
     'resume.banner': '📌 진행 중인 모의고사 이어서 풀기 ({0}/{1})', 'exam.resume': '이어서 풀기 ({0}/{1})',
+    'nav.title': '문항 이동', 'nav.answered': '{0}/{1} 답변 완료', 'nav.question': '{0}번 문항',
     'confirm.discardMock': '진행 중인 모의고사 기록이 사라집니다. 새로 시작할까요?', 'toast.resumed': '이어서 풉니다.',
     'resume.practice': '📌 이어서 풀기 · {0} ({1}/{2})', 'practice.allLabel': '전체',
     'confirm.submit': '제출하고 채점할까요?', 'confirm.clearWrong': '오답노트를 모두 비울까요?', 'confirm.resetStats': '학습 통계와 기록을 모두 초기화할까요?',
@@ -226,6 +227,7 @@ const I18N = {
     'guide.show': '💡 查看提示', 'guide.hide': '💡 隐藏提示', 'writing.draftPh': '请在此作答（200字以内）',
     'model.show': '📝 查看范文', 'model.hide': '📝 隐藏范文', 'review.model': '范文',
     'resume.banner': '📌 继续上次的模拟考试 ({0}/{1})', 'exam.resume': '继续作答 ({0}/{1})',
+    'nav.title': '题号', 'nav.answered': '{0}/{1} 已作答', 'nav.question': '第{0}题',
     'confirm.discardMock': '正在进行的模拟考试记录将被删除。要重新开始吗？', 'toast.resumed': '继续作答。',
     'resume.practice': '📌 继续上次练习 — {0} ({1}/{2})', 'practice.allLabel': '全部',
     'confirm.submit': '要提交并评分吗？', 'confirm.clearWrong': '要清空错题本吗？', 'confirm.resetStats': '要重置所有学习统计和记录吗？',
@@ -324,6 +326,7 @@ Object.assign(I18N.zh, {
   'sync.memberReady': '{0} · 共{1}题 已就绪',
 });
 Object.assign(I18N.vi, {
+  'nav.title': 'Câu hỏi', 'nav.answered': 'Đã trả lời {0}/{1}', 'nav.question': 'Câu {0}',
   'member.loginShort': 'Đăng nhập hội viên',
   'member.title': 'Nội dung dành cho hội viên.',
   'member.desc': 'Vui lòng đăng nhập hội viên để sử dụng.',
@@ -350,6 +353,7 @@ Object.assign(I18N.vi, {
   'sync.memberReady': '{0} · {1} câu đã sẵn sàng',
 });
 Object.assign(I18N.th, {
+  'nav.title': 'ข้อคำถาม', 'nav.answered': 'ตอบแล้ว {0}/{1}', 'nav.question': 'ข้อ {0}',
   'member.loginShort': 'เข้าสู่ระบบสมาชิก',
   'member.title': 'เนื้อหาสำหรับสมาชิกเท่านั้น',
   'member.desc': 'กรุณาเข้าสู่ระบบสมาชิกก่อนใช้งาน',
@@ -721,7 +725,7 @@ function setExam(key) {
 }
 function refreshView() {
   if (currentView === 'home') renderHome();
-  else if (currentView === 'examintro') { renderExamIntro(); const s = getMockSave(); const btn = $('examResumeBtn'); if (s) btn.textContent = t('exam.resume', s.i + 1, s.list.length); }
+  else if (currentView === 'examintro') { renderExamIntro(); const s = getMockSaveRaw(); const btn = $('examResumeBtn'); if (s) btn.textContent = t('exam.resume', s.i + 1, s.ids.length); }
   else if (currentView === 'practice') renderCategories();
   else if (currentView === 'quiz' && quiz) renderQuestion();
   else if (currentView === 'writing') renderWriting();
@@ -840,7 +844,9 @@ function showView(name) {
   if (name !== 'quiz') {
     document.body.classList.remove('exam-mode');
     // 퀴즈를 벗어나면(예: 홈으로) 진행 상황 저장 후 타이머 정지(중복 방지)
-    if (quiz && quiz.timer) { saveMockProgress(); clearInterval(quiz.timer); quiz.timer = null; }
+    saveMockProgress();
+    savePracticeProgress();
+    if (quiz && quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }
   }
   if (viewChanged) window.scrollTo(0, 0);
 }
@@ -1041,9 +1047,9 @@ function renderHome() {
   renderExamDate();
 
   // 진행 중인 모의고사 이어풀기 배너
-  const s = getMockSave();
+  const s = getMockSaveRaw();
   const rb = $('resumeBanner');
-  if (s) { rb.textContent = t('resume.banner', s.i + 1, s.list.length); rb.classList.remove('hidden'); }
+  if (s) { rb.textContent = t('resume.banner', s.i + 1, s.ids.length); rb.classList.remove('hidden'); }
   else rb.classList.add('hidden');
 }
 
@@ -1089,9 +1095,9 @@ function clearExamDate() { try { localStorage.removeItem(ekey(K.examdate)); } ca
    ===================================================================== */
 function renderCategories() {
   // 진행 중인 연습 이어풀기 배너
-  const s = getPracticeSave();
+  const s = getPracticeSaveRaw();
   const rb = $('practiceResume');
-  if (s) { const lab = s.label ? catName(s.label) : t('practice.allLabel'); rb.textContent = t('resume.practice', lab, s.i + 1, s.list.length); rb.classList.remove('hidden'); }
+  if (s) { const lab = s.label ? catName(s.label) : t('practice.allLabel'); rb.textContent = t('resume.practice', lab, s.i + 1, s.ids.length); rb.classList.remove('hidden'); }
   else rb.classList.add('hidden');
 
   const cats = {};
@@ -1171,11 +1177,11 @@ function startQuiz(questions, mode, resume) {
   if (quiz && quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }
   quiz = {
     mode, list: questions,
-    i: resume ? resume.i : 0,
+    i: resume ? Math.min(Math.max(0, resume.i || 0), questions.length - 1) : 0,
     answers: resume ? resume.answers : new Array(questions.length).fill(null),
     text: resume ? (resume.text || {}) : {},
     graded: mode === 'practice' || mode === 'wrong',
-    order: {}, // A1: 보기 표시 순서(표시위치→원본인덱스), 문항별 지연 생성
+    order: resume ? (resume.order || {}) : {}, // A1: 보기 표시 순서(표시위치→원본인덱스), 문항별 지연 생성
     timer: null,
     timeLeft: resume ? resume.timeLeft : exam().mock.time,
   };
@@ -1195,25 +1201,31 @@ function hydrateSavedQuiz(s) {
   const list = s.ids.map(qById).filter(Boolean);
   return list.length === s.ids.length ? Object.assign({}, s, { list }) : null;
 }
-function getMockSave() { return hydrateSavedQuiz(ls(ekey(K.mockSave), null)); }
+function getSavedQuizRaw(key) {
+  const s = ls(ekey(key), null);
+  return s && Array.isArray(s.ids) && s.ids.length ? s : null;
+}
+function getMockSaveRaw() { return getSavedQuizRaw(K.mockSave); }
+function getMockSave() { return hydrateSavedQuiz(getMockSaveRaw()); }
 function clearMockSave() { try { localStorage.removeItem(ekey(K.mockSave)); } catch {} }
 function saveMockProgress() {
   if (!quiz || quiz.mode !== 'mock') return;
-  save(ekey(K.mockSave), { ids: quiz.list.map((q) => q.id), i: quiz.i, answers: quiz.answers, text: quiz.text, timeLeft: quiz.timeLeft, savedAt: new Date().toISOString() });
+  save(ekey(K.mockSave), { ids: quiz.list.map((q) => q.id), i: quiz.i, answers: quiz.answers, text: quiz.text, order: quiz.order, timeLeft: quiz.timeLeft, savedAt: new Date().toISOString() });
 }
 
 /* ---------- 영역별 연습 중간 저장 / 이어풀기 ---------- */
-function getPracticeSave() { return hydrateSavedQuiz(ls(ekey(K.practiceSave), null)); }
+function getPracticeSaveRaw() { return getSavedQuizRaw(K.practiceSave); }
+function getPracticeSave() { return hydrateSavedQuiz(getPracticeSaveRaw()); }
 function clearPracticeSave() { try { localStorage.removeItem(ekey(K.practiceSave)); } catch {} }
 function savePracticeProgress() {
   if (!quiz || quiz.mode !== 'practice') return;
   const cats = new Set(quiz.list.map((q) => q.category));
-  save(ekey(K.practiceSave), { ids: quiz.list.map((q) => q.id), i: quiz.i, answers: quiz.answers, label: cats.size === 1 ? [...cats][0] : null, savedAt: new Date().toISOString() });
+  save(ekey(K.practiceSave), { ids: quiz.list.map((q) => q.id), i: quiz.i, answers: quiz.answers, order: quiz.order, label: cats.size === 1 ? [...cats][0] : null, savedAt: new Date().toISOString() });
 }
 function resumePractice() {
   const s = getPracticeSave();
-  if (!s) { renderCategories(); return; }
-  startQuiz(s.list, 'practice', { i: s.i, answers: s.answers });
+  if (!s) { clearPracticeSave(); renderCategories(); return; }
+  startQuiz(s.list, 'practice', { i: s.i, answers: s.answers, order: s.order });
   toast(t('toast.resumed'));
 }
 
@@ -1231,14 +1243,14 @@ function renderExamIntro() {
 function showExamIntro() {
   renderExamIntro();
   $('examNo').value = exam().noPrefix + '-' + String(Math.floor(1000 + Math.random() * 9000));
-  const s = getMockSave();
+  const s = getMockSaveRaw();
   const btn = $('examResumeBtn');
-  if (s) { btn.textContent = t('exam.resume', s.i + 1, s.list.length); btn.classList.remove('hidden'); }
+  if (s) { btn.textContent = t('exam.resume', s.i + 1, s.ids.length); btn.classList.remove('hidden'); }
   else btn.classList.add('hidden');
   showView('examintro');
 }
 async function startMockExam() {
-  if (getMockSave() && !confirm(t('confirm.discardMock'))) return;
+  if (getMockSaveRaw() && !confirm(t('confirm.discardMock'))) return;
   clearMockSave();
   const cfg = exam().mock;
   let mcPool = [];
@@ -1319,8 +1331,8 @@ function pickOral(n, source) {
 
 function resumeMock() {
   const s = getMockSave();
-  if (!s) { showView('home'); renderHome(); return; }
-  startQuiz(s.list, 'mock', { i: s.i, answers: s.answers, text: s.text, timeLeft: s.timeLeft });
+  if (!s) { clearMockSave(); showView('home'); renderHome(); return; }
+  startQuiz(s.list, 'mock', { i: s.i, answers: s.answers, text: s.text, order: s.order, timeLeft: s.timeLeft });
   toast(t('toast.resumed'));
 }
 function onWriteInput() {
@@ -1329,6 +1341,7 @@ function onWriteInput() {
   quiz.text[q.id] = val;
   $('writeCount').textContent = t('count.char', val.length);
   $('writeArea').querySelector('.write-area__meta').classList.toggle('over', val.length > 200);
+  renderQuestionNavigator();
   if (quiz.mode === 'mock') saveMockProgress();
 }
 
@@ -1354,6 +1367,37 @@ function orderFor(i, q) {
   return quiz.order[i];
 }
 
+function isQuestionAnswered(i) {
+  const q = quiz && quiz.list[i];
+  if (!q) return false;
+  if (q.type === 'mc') return quiz.answers[i] !== null && quiz.answers[i] !== undefined;
+  return !!String(quiz.text[q.id] || '').trim();
+}
+
+function renderQuestionNavigator() {
+  const nav = $('questionNavigator');
+  if (!nav) return;
+  const visible = !!quiz && quiz.mode === 'mock';
+  nav.classList.toggle('hidden', !visible);
+  if (!visible) return;
+  const answered = quiz.list.reduce((n, q, i) => n + (isQuestionAnswered(i) ? 1 : 0), 0);
+  $('questionNavCount').textContent = t('nav.answered', answered, quiz.list.length);
+  const grid = $('questionNavGrid');
+  grid.innerHTML = '';
+  quiz.list.forEach((q, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'question-nav__item';
+    if (isQuestionAnswered(i)) btn.classList.add('is-answered');
+    if (i === quiz.i) btn.classList.add('is-current');
+    btn.textContent = String(i + 1);
+    btn.setAttribute('aria-label', t('nav.question', i + 1));
+    if (i === quiz.i) btn.setAttribute('aria-current', 'true');
+    btn.addEventListener('click', () => { quiz.i = i; renderQuestion(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    grid.appendChild(btn);
+  });
+}
+
 function renderQuestion() {
   const q = quiz.list[quiz.i];
   const total = quiz.list.length;
@@ -1370,6 +1414,7 @@ function renderQuestion() {
     else if (q.type === 'writing') $('examBanner').textContent = t('banner.writing', doneOf('writing'), countOf('writing'));
     else $('examBanner').textContent = t('banner.oral', doneOf('oral'), countOf('oral'));
   }
+  renderQuestionNavigator();
 
   $('questionBox').innerHTML = bi(q.q, gl(q, 'q'));
 
@@ -2309,6 +2354,17 @@ function wireEvents() {
   $('examResumeBtn').addEventListener('click', () => requireMembership(resumeMock, { loadBank: true }));
   $('practiceResume').addEventListener('click', () => requireMembership(resumePractice, { loadBank: true }));
   $('writeInput').addEventListener('input', onWriteInput);
+
+  window.addEventListener('pagehide', () => {
+    saveMockProgress();
+    savePracticeProgress();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      saveMockProgress();
+      savePracticeProgress();
+    }
+  });
 
   $('writingSeg').querySelectorAll('.seg__btn').forEach((b) => { b.addEventListener('click', () => requireMembership(() => openWritingView(b.dataset.wt))); });
 
