@@ -388,6 +388,17 @@ function t(key) {
 function catName(c) { return (LANG !== 'ko' && CAT_TR[LANG] && CAT_TR[LANG][c]) || c; }
 /* 한국어 본문 + (주석 언어면) 모국어 주석을 함께 표시 */
 function bi(ko, g) { return (LANG !== 'ko' && g) ? `${ko}<span class="zh">${g}</span>` : (ko || ''); }
+/* 면접심사는 귀화에만 있는 절차다. 같은 문항을 영주용에서도 말하기 연습으로 쓰지만,
+   '[면접]' 이라고 적혀 있으면 영주 준비생이 자기에게도 면접이 있는 줄 알게 된다.
+   데이터는 그대로 두고 화면에 그릴 때만 '[구술]' 로 바꾼다. */
+const IV_TAG = { ko: ['[면접]', '[구술]'], zh: ['[面试]', '[口试]'],
+                 vi: ['[Phỏng vấn]', '[Vấn đáp]'], th: ['[สัมภาษณ์]', '[ปากเปล่า]'] };
+function qLabel(text) {
+  if (activeExam !== 'perm' || !text) return text;
+  let out = String(text);
+  Object.values(IV_TAG).forEach(([from, to]) => { out = out.split(from).join(to); });
+  return out;
+}
 /* 문제의 주석 필드(q_zh / q_vi / q_th …)를 현재 언어로 선택 */
 function gl(q, base) { return (LANG !== 'ko' && q && q[base + '_' + LANG]) || ''; }
 function glc(q, idx) { if (LANG === 'ko' || !q) return ''; const a = q['choices_' + LANG]; return (a && a[idx]) || ''; }
@@ -1416,7 +1427,7 @@ function renderQuestion() {
   }
   renderQuestionNavigator();
 
-  $('questionBox').innerHTML = bi(q.q, gl(q, 'q'));
+  $('questionBox').innerHTML = bi(qLabel(q.q), qLabel(gl(q, 'q')));
 
   const chosen = quiz.answers[quiz.i];
   const showAnswer = quiz.graded && !isWriting && chosen !== null;
@@ -1891,7 +1902,7 @@ function reviewItem(q, chosen, writeText, sgMode, sgVal, auto) {
       sgHtml = `<div class="sg-grade"><span class="sg-grade__label">${t(auto ? 'sg.headOverride' : 'sg.head')}</span><div class="sg-btns">${btns}</div></div>`;
     }
     const autoHtml = auto ? autoBox(q, auto) : '';
-    el.innerHTML = `<div class="review-item__q">${isOral ? '🗣️' : '✍️'} ${bi(q.q, gl(q, 'q'))}</div>
+    el.innerHTML = `<div class="review-item__q">${isOral ? '🗣️' : '✍️'} ${bi(qLabel(q.q), qLabel(gl(q, 'q')))}</div>
       <div class="review-item__write ${ans ? '' : 'empty-ans'}">${ans || empty}</div>
       ${autoHtml}
       ${q.guide ? `<div class="review-item__exp">💡 ${bi(q.guide, gl(q, 'guide'))}</div>` : ''}
@@ -1906,7 +1917,7 @@ function reviewItem(q, chosen, writeText, sgMode, sgVal, auto) {
     opts += `<div class="review-item__opt ${cls}">${NUM[idx]} ${bi(c, czh)}${idx === q.answer ? ' ✓' : ''}</div>`;
   });
   const unanswered = chosen === null || chosen === undefined;
-  el.innerHTML = `<div class="review-item__q">${bi(q.q, gl(q, 'q'))}</div>${opts}
+  el.innerHTML = `<div class="review-item__q">${bi(qLabel(q.q), qLabel(gl(q, 'q')))}</div>${opts}
     ${unanswered ? `<div class="review-item__opt chosen-wrong">${t('review.unanswered')}</div>` : ''}
     ${q.explanation ? `<div class="review-item__exp">💡 ${bi(q.explanation, gl(q, 'explanation'))}</div>` : ''}`;
   return el;
@@ -1993,7 +2004,7 @@ function wrongCard(q) {
   el.className = 'review-item wrong-card';
   el.innerHTML = `<div class="wrong-meta"><span class="wrong-meta__badges"></span>
       <button type="button" class="wrong-del" title="${t('wrong.del')}" aria-label="${t('wrong.del')}">✕</button></div>
-    <div class="review-item__q">${bi(q.q, gl(q, 'q'))}</div>
+    <div class="review-item__q">${bi(qLabel(q.q), qLabel(gl(q, 'q')))}</div>
     <div class="choices wrong-card__choices"></div>
     <div class="feedback hidden"></div>
     <div class="wrong-card__actions hidden"><button type="button" class="btn btn--ghost wrong-retry">${t('wrong.retry')}</button></div>`;
@@ -2222,7 +2233,7 @@ function renderWriting() {
       </div>` : '';
     card.innerHTML = `
       ${hasListen(q) ? `<div class="listen-card">${listenCardHtml(q)}</div>` : ''}
-      <div class="writing-card__q">${bi(q.q, gl(q, 'q'))}</div>
+      <div class="writing-card__q">${bi(qLabel(q.q), qLabel(gl(q, 'q')))}</div>
       ${isOralMode && !hasListen(q) ? `<div class="oral-recite">${t('oral.recite')}</div>` : ''}
       ${isWriting ? `<textarea data-id="${q.id}" placeholder="${t('writing.draftPh')}">${drafts[q.id] || ''}</textarea>
         <div class="writing-card__meta"><span class="writing-card__count">0${CHAR_UNIT[LANG] || '자'}</span></div>` : ''}
