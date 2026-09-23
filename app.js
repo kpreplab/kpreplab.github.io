@@ -544,6 +544,18 @@ let writingViewKey = '';
 /* ---------- 유틸 ---------- */
 const $ = (id) => document.getElementById(id);
 const NUM = ['①', '②', '③', '④', '⑤'];
+/* 해설이 "③은 잘못된 설명이다" 처럼 보기 번호로 가리키는 문항이 있다.
+   그런데 문제를 풀 때 보기는 섞어서 보여 주므로(orderFor), 해설의 ③ 과
+   화면의 ③ 이 서로 다른 보기가 된다. 원본 번호를 화면 번호로 바꿔 준다.
+   채점 결과 화면(review)은 보기를 원래 순서로 보여 주므로 손대지 않는다. */
+const NUM_OF = { '①': 0, '②': 1, '③': 2, '④': 3, '⑤': 4 };
+function renumber(text, order) {
+  if (!text || !order || !order.length) return text;
+  return String(text).replace(/[①②③④⑤]/g, (ch) => {
+    const pos = order.indexOf(NUM_OF[ch]);
+    return pos < 0 ? ch : NUM[pos];
+  });
+}
 function ls(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; } }
 function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 function escHtml(s) { return String(s || '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
@@ -1531,7 +1543,7 @@ function renderQuestion() {
       const ansPos = order.indexOf(q.answer);       // 정답의 표시 위치로 번호 라벨 재부여
       const head = ok ? t('fb.correct') : t('fb.wrong', NUM[ansPos] + ' ' + q.choices[q.answer]);
       fb.className = 'feedback' + (ok ? '' : ' is-wrong');
-      fb.innerHTML = `<strong>${head}</strong>${bi(q.explanation || '', gl(q, 'explanation'))}`;
+      fb.innerHTML = `<strong>${head}</strong>${bi(renumber(q.explanation || '', order), renumber(gl(q, 'explanation'), order))}`;
       fb.classList.remove('hidden');
     } else { fb.classList.add('hidden'); }
   }
@@ -2110,7 +2122,7 @@ function wrongCard(q) {
     const ansPos = order.indexOf(q.answer);
     const head = ok ? t('fb.correct') : t('fb.wrong', NUM[ansPos] + ' ' + q.choices[q.answer]);
     fb.className = 'feedback' + (ok ? '' : ' is-wrong');
-    fb.innerHTML = `<strong>${head}</strong>${bi(q.explanation || '', gl(q, 'explanation'))}` +
+    fb.innerHTML = `<strong>${head}</strong>${bi(renumber(q.explanation || '', order), renumber(gl(q, 'explanation'), order))}` +
       (graduated ? `<div class="wrong-card__grad">${t('wrong.grad')}</div>` : '');
     fb.classList.remove('hidden');
     if (graduated) { el.classList.add('is-graduated'); badges.innerHTML = ''; }

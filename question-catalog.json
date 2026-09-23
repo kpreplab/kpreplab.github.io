@@ -1,52 +1,52 @@
 {
   "version": "2026-08-18",
-  "sourceCount": 1965,
+  "sourceCount": 3168,
   "exams": {
     "pre": {
-      "total": 985,
-      "mc": 847,
+      "total": 1379,
+      "mc": 1241,
       "writing": 38,
       "oral": 100,
       "categories": [
         {
           "category": "어휘",
-          "total": 239,
-          "mc": 239,
+          "total": 383,
+          "mc": 383,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "문법",
-          "total": 220,
-          "mc": 220,
+          "total": 264,
+          "mc": 264,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "한국사회",
-          "total": 107,
-          "mc": 107,
+          "total": 166,
+          "mc": 166,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "읽기·이해",
-          "total": 100,
-          "mc": 100,
+          "total": 160,
+          "mc": 160,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "대화",
-          "total": 90,
-          "mc": 90,
+          "total": 138,
+          "mc": 138,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "한국문화",
-          "total": 91,
-          "mc": 91,
+          "total": 130,
+          "mc": 130,
           "writing": 0,
           "oral": 0
         },
@@ -67,170 +67,170 @@
       ]
     },
     "perm": {
-      "total": 935,
-      "mc": 793,
-      "writing": 42,
-      "oral": 100,
+      "total": 1660,
+      "mc": 1249,
+      "writing": 65,
+      "oral": 346,
       "categories": [
         {
           "category": "한국어",
-          "total": 240,
-          "mc": 240,
+          "total": 305,
+          "mc": 305,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "역사",
-          "total": 90,
-          "mc": 90,
+          "total": 150,
+          "mc": 150,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "정치",
-          "total": 50,
-          "mc": 50,
+          "total": 95,
+          "mc": 95,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "법",
-          "total": 89,
-          "mc": 89,
+          "total": 147,
+          "mc": 147,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "경제",
-          "total": 80,
-          "mc": 80,
+          "total": 118,
+          "mc": 118,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "작문",
-          "total": 42,
+          "total": 65,
           "mc": 0,
-          "writing": 42,
+          "writing": 65,
           "oral": 0
         },
         {
           "category": "구술",
-          "total": 100,
+          "total": 346,
           "mc": 0,
           "writing": 0,
-          "oral": 100
+          "oral": 346
         },
         {
           "category": "사회",
-          "total": 71,
-          "mc": 71,
+          "total": 127,
+          "mc": 127,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "문화",
-          "total": 60,
-          "mc": 60,
+          "total": 133,
+          "mc": 133,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "지리",
-          "total": 65,
-          "mc": 65,
+          "total": 93,
+          "mc": 93,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "교육",
-          "total": 48,
-          "mc": 48,
+          "total": 81,
+          "mc": 81,
           "writing": 0,
           "oral": 0
         }
       ]
     },
     "nat": {
-      "total": 980,
-      "mc": 838,
-      "writing": 42,
-      "oral": 100,
+      "total": 1789,
+      "mc": 1372,
+      "writing": 66,
+      "oral": 351,
       "categories": [
         {
           "category": "한국어",
-          "total": 240,
-          "mc": 240,
+          "total": 305,
+          "mc": 305,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "역사",
-          "total": 100,
-          "mc": 100,
+          "total": 167,
+          "mc": 167,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "정치",
-          "total": 60,
-          "mc": 60,
+          "total": 115,
+          "mc": 115,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "법",
-          "total": 100,
-          "mc": 100,
+          "total": 179,
+          "mc": 179,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "경제",
-          "total": 85,
-          "mc": 85,
+          "total": 140,
+          "mc": 140,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "작문",
-          "total": 42,
+          "total": 66,
           "mc": 0,
-          "writing": 42,
+          "writing": 66,
           "oral": 0
         },
         {
           "category": "구술",
-          "total": 100,
+          "total": 351,
           "mc": 0,
           "writing": 0,
-          "oral": 100
+          "oral": 351
         },
         {
           "category": "사회",
-          "total": 80,
-          "mc": 80,
+          "total": 155,
+          "mc": 155,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "문화",
-          "total": 60,
-          "mc": 60,
+          "total": 135,
+          "mc": 135,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "지리",
-          "total": 65,
-          "mc": 65,
+          "total": 94,
+          "mc": 94,
           "writing": 0,
           "oral": 0
         },
         {
           "category": "교육",
-          "total": 48,
-          "mc": 48,
+          "total": 82,
+          "mc": 82,
           "writing": 0,
           "oral": 0
         }
