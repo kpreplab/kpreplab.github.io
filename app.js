@@ -1356,24 +1356,47 @@ async function startMockExam() {
   if (!mcPool.length) { toast(t('toast.noQ')); return; }
   let mc;
   if (cfg.ladder) {
-    // 사전평가: 한국어 영역 80% + 문화·사회 20%, 번호↑=난이도↑(level 오름차순) 재현
+    /* 사전평가: 번호↑=난이도↑(level 오름차순)에 한국어 영역이 앞, 문화·사회가 뒤.
+       비율은 법무부 사전평가 견본(48문항)을 직접 세어 맞췄다 — 1~40번이 한국어,
+       41~48번이 한국문화·한국사회로 8문항(1/6)이다. 옛 값 20%(약 10문항)보다 적다. */
     const korCats = ['어휘', '문법', '읽기·이해', '대화'];
     const all = mcPool;
     const kor = all.filter((q) => korCats.includes(q.category));
     const cs = all.filter((q) => !korCats.includes(q.category));
-    const nCS = Math.min(cs.length, Math.round(cfg.mc * 0.2));
+    const nCS = Math.min(cs.length, Math.round(cfg.mc * 8 / 48));
     const nKor = cfg.mc - nCS;
     const korPick = shuffle(kor).slice(0, nKor).sort((a, b) => (a.level || 2) - (b.level || 2));
     const csPick = shuffle(cs).slice(0, nCS);
     mc = korPick.concat(csPick); // 문화·사회를 뒤쪽(실제 41~48번처럼)
   } else {
-    // 종합평가 객관식 36문항: 무작위 대신 영역 쿼터 추첨(책 실전모의 6회 평균 재현)
-    const quota = { '한국어': 12, '법': 5, '사회': 4, '역사': 4, '문화': 3, '정치': 3, '경제': 3, '교육': 1, '지리': 1 };
+    /* 종합평가 객관식 36문항의 영역 구성. 근거 둘을 맞춰 정했다.
+       ① 법무부가 공개한 종합평가 견본(KINAT, 38문항)은 1~18번이 한국어,
+          19~38번이 한국사회 이해다. 19~38번을 영역별로 세면
+          문화 4 · 법 3 · 사회 3 · 역사 3 · 정치 2 · 경제 2 · 지리 2 · 교육 1.
+       ② 교재 제3편 실전 모의고사 3회분의 공통 36문항을 직접 세어 평균한 값은
+          한국어 15.7 · 문화 4.3 · 법 3.0 · 사회 3.0 · 역사 3.3 · 정치 2.0 ·
+          경제 2.0 · 교육 1.3 · 지리 1.3.
+       둘이 거의 같아서 평균해 36에 맞췄다. 옛 쿼터는 한국어를 12로 잡고 있었는데
+       두 근거 모두 16~17이라, 실제보다 언어 문항이 한참 적게 나오고 있었다. */
+    const quota = { '한국어': 16, '문화': 4, '법': 3, '사회': 3, '역사': 3, '정치': 2, '경제': 2, '지리': 2, '교육': 1 };
     const all = mcPool;
-    const byCat = {};
-    all.forEach((q) => { (byCat[q.category] = byCat[q.category] || []).push(q); });
+    /* 귀화용은 같은 36문항 중 10문항이 귀화 전용(심화)이다. 교재 430쪽의 교체표가
+       회차마다 "영주용 18번 → 귀화용 01번" 식으로 10문항을 바꾸라고 지시하고,
+       바뀌는 자리는 세 회차 모두 18번 이후 — 한국사회 이해 구역이다.
+       한국어 문항은 한 번도 교체되지 않는다.
+       심화는 은행의 9%뿐이라 그냥 무작위로 36개를 뽑으면 3개쯤밖에 들어오지 않는다. */
+    const advCount = activeExam === 'nat' ? 10 : 0;
+    const isAdv = (q) => q.tier === 'advanced';
+    const left = Object.assign({}, quota);
     let picked = [];
-    Object.keys(quota).forEach((cat) => { picked = picked.concat(shuffle(byCat[cat] || []).slice(0, quota[cat])); });
+    if (advCount) {
+      picked = shuffle(all.filter(isAdv)).slice(0, advCount);
+      // 심화로 채운 만큼 그 영역의 기본 문항 몫을 줄인다(한국어는 심화가 없어 그대로다)
+      picked.forEach((q) => { if (left[q.category] > 0) left[q.category] -= 1; });
+    }
+    const byCat = {};
+    all.forEach((q) => { if (!advCount || !isAdv(q)) (byCat[q.category] = byCat[q.category] || []).push(q); });
+    Object.keys(left).forEach((cat) => { picked = picked.concat(shuffle(byCat[cat] || []).slice(0, left[cat])); });
     // cfg.mc 하드코딩 금지: quota 합이나 특정 카테고리 풀이 cfg.mc와 어긋나도 비례조정 없이 무작위 가감으로 총수를 맞춘다.
     if (picked.length < cfg.mc) {
       const pickedIds = new Set(picked.map((q) => q.id));
