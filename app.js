@@ -1336,6 +1336,41 @@ function showExamIntro() {
   else btn.classList.add('hidden');
   showView('examintro');
 }
+/* 한국사회 이해 구역의 문항 생김새를 실제 시험에 맞춘다.
+   법무부 종합평가 견본의 19~38번 20문항을 세어 보면 선택지가 낱말인 문항은
+   5개(25%)뿐이고 나머지 15개는 완결된 서술문이다. 그런데 우리 은행의 종합평가
+   사회 계열 1,067문항은 단어형이 54%다. 그대로 뽑으면 모의고사가 실제보다
+   쉬운 쪽으로 기울어, 점수가 실력보다 높게 나온다 — 하필 학습자가 가장
+   힘들어하는 '선택지가 문장인 문항'에서 덜 나온다.
+   그래서 뽑아 놓은 사회 계열 문항 가운데 단어형 비율을 25%에 맞춰 바꿔 끼운다.
+   영역별 개수는 건드리지 않는다(같은 영역 안에서만 맞바꾼다). */
+const SOCIAL_EASY_RATIO = 0.25;
+function matchSocialLevel(picked, pool) {
+  const social = picked.filter((q) => q.category !== '한국어');
+  if (!social.length) return picked;
+  const target = Math.round(social.length * SOCIAL_EASY_RATIO);
+  const easy = social.filter((q) => !isHardQ(q));
+  const want = easy.length - target;          // 양수면 단어형이 너무 많다
+  if (!want) return picked;
+  const usedIds = new Set(picked.map((q) => q.id));
+  // 귀화 전용(심화) 문항은 회차마다 개수가 정해져 있으니(교재 430쪽 교체표) 빼지 않는다.
+  const swappable = (q) => q.tier !== 'advanced';
+  const from = shuffle((want > 0 ? easy : social.filter(isHardQ)).filter(swappable))
+    .slice(0, Math.abs(want));
+  const out = picked.slice();
+  from.forEach((old) => {
+    // 같은 영역에서, 반대 성격이면서 아직 안 쓴 문항을 찾아 바꿔 끼운다
+    const cand = pool.filter((q) => q.category === old.category && !usedIds.has(q.id)
+      && (want > 0 ? isHardQ(q) : !isHardQ(q)));
+    if (!cand.length) return;
+    const fresh = shuffle(cand)[0];
+    out[out.indexOf(old)] = fresh;
+    usedIds.delete(old.id);
+    usedIds.add(fresh.id);
+  });
+  return out;
+}
+
 async function startMockExam() {
   if (getMockSaveRaw() && !confirm(t('confirm.discardMock'))) return;
   clearMockSave();
@@ -1404,6 +1439,7 @@ async function startMockExam() {
     } else if (picked.length > cfg.mc) {
       picked = shuffle(picked).slice(0, cfg.mc);
     }
+    picked = matchSocialLevel(picked, all);
     // 출제 순서: 한국어 먼저(내부 셔플) → 나머지 영역(영역 간 섞어 셔플) — 사전평가 ladder(한국어 앞배치)와 일관
     const korMc = picked.filter((q) => q.category === '한국어');
     const restMc = picked.filter((q) => q.category !== '한국어');
