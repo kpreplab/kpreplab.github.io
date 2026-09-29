@@ -138,7 +138,10 @@
   async function signOut() {
     var sb = getClient();
     if (sb) {
-      try { await sb.auth.signOut(); } catch (e) {}
+      // scope 를 안 주면 supabase-js v2 의 기본값이 'global' 이다. 그러면 회원이
+      // 휴대폰에서 로그아웃했을 뿐인데 본인의 PC·태블릿 로그인까지 함께 끊긴다.
+      // 여기서 끊어야 하는 것은 '이 기기'뿐이므로 'local' 로 못 박는다.
+      try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
     }
     setStatus({ signedIn: false, email: '', active: false, reason: 'not_signed_in', loading: false });
   }
