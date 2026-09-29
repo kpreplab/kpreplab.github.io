@@ -226,22 +226,35 @@ a.menu-card, a.menu-card:link, a.menu-card:visited { color: var(--ink); text-dec
 .progress-bar { height: 4px; background: var(--cream-2); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 18px; }
 .progress-bar__fill { height: 100%; width: 0; background: var(--copper); transition: width var(--dur) var(--ease); }
 
+/* 문항 이동표 — 문제 왼쪽에 세우는 좁은 칸.
+   예전에는 문제 위에 가로로 펼쳐서 36문항이면 네 줄을 차지했고, 그만큼
+   문제와 선택지가 아래로 밀려 답을 고르기 불편했다. */
+.quiz-body { display: flex; align-items: flex-start; gap: 14px; }
+.quiz-main { flex: 1 1 auto; min-width: 0; }
 .question-nav {
+  flex: 0 0 auto; width: 120px; align-self: flex-start; position: sticky; top: 12px;
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md);
-  padding: 14px; margin-bottom: 16px; box-shadow: var(--shadow-soft);
+  padding: 9px 8px; box-shadow: var(--shadow-soft);
 }
-.question-nav__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.question-nav__head strong { color: var(--ink); font-size: .92rem; }
-.question-nav__head span { color: var(--muted); font-size: .82rem; font-weight: 600; }
-.question-nav__grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
+.question-nav__head { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; margin-bottom: 7px; }
+.question-nav__head strong { color: var(--ink); font-size: .74rem; }
+.question-nav__head span { color: var(--muted); font-size: .68rem; font-weight: 600; }
+.question-nav__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
 .question-nav__item {
-  aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--card); color: var(--ink-soft); font-family: var(--font-mono); font-size: .78rem; cursor: pointer;
+  aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--card); color: var(--ink-soft); font-family: var(--font-mono); font-size: .68rem; cursor: pointer;
 }
 .question-nav__item.is-answered { border-color: #7bc8a4; background: var(--ok-bg); color: var(--ok); }
 .question-nav__item.is-current { border: 2px solid var(--copper); color: var(--copper); font-weight: 700; }
 .question-nav__item:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
-@media (max-width: 420px) { .question-nav__grid { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+/* 좁은 화면에서는 왼쪽에 세울 자리가 없다. 문제 위로 돌아가되 예전보다 촘촘하게. */
+@media (max-width: 640px) {
+  .quiz-body { display: block; }
+  .question-nav { width: auto; position: static; margin-bottom: 12px; padding: 10px 12px; }
+  .question-nav__head { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .question-nav__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+}
+@media (max-width: 380px) { .question-nav__grid { grid-template-columns: repeat(9, minmax(0, 1fr)); } }
 
 .question-box {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md);

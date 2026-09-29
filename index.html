@@ -186,28 +186,36 @@
       <div class="progress-bar"><div id="progressFill" class="progress-bar__fill"></div></div>
 
       <div id="examBanner" class="exam-banner hidden"></div>
-      <aside id="questionNavigator" class="question-nav hidden" aria-label="Question navigator">
-        <div class="question-nav__head">
-          <strong data-i18n="nav.title">문항 이동</strong>
-          <span id="questionNavCount"></span>
+
+      <!-- 문항 이동표는 문제 왼쪽에 세로로 둔다. 위에 가로로 놓으면 문제가 그만큼
+           아래로 밀려 답을 고르는 데 방해가 된다. 좁은 화면에서는 위로 돌아간다. -->
+      <div class="quiz-body">
+        <aside id="questionNavigator" class="question-nav hidden" aria-label="Question navigator">
+          <div class="question-nav__head">
+            <strong data-i18n="nav.title">문항 이동</strong>
+            <span id="questionNavCount"></span>
+          </div>
+          <div id="questionNavGrid" class="question-nav__grid"></div>
+        </aside>
+
+        <div class="quiz-main">
+          <!-- G: 듣고 말하기 재생기(사전평가 구술 listen 유형에서만, JS가 채움) -->
+          <div id="listenCard" class="listen-card hidden"></div>
+
+          <div id="questionBox" class="question-box"></div>
+          <div id="choices" class="choices"></div>
+
+          <div id="writeArea" class="write-area hidden">
+            <textarea id="writeInput" placeholder="여기에 답안을 작성하세요 (200자 이내)"></textarea>
+            <div class="write-area__meta"><span id="writeCount">0자</span><span data-i18n="writeCount.suffix"> / 200자</span></div>
+          </div>
+
+          <!-- E: 원고지 작성법 카드(종합평가 nat/perm 작문에서만, JS가 채움/토글) -->
+          <div id="wongojiCard" class="wongoji-card hidden"></div>
+
+          <div id="feedback" class="feedback hidden"></div>
         </div>
-        <div id="questionNavGrid" class="question-nav__grid"></div>
-      </aside>
-      <!-- G: 듣고 말하기 재생기(사전평가 구술 listen 유형에서만, JS가 채움) -->
-      <div id="listenCard" class="listen-card hidden"></div>
-
-      <div id="questionBox" class="question-box"></div>
-      <div id="choices" class="choices"></div>
-
-      <div id="writeArea" class="write-area hidden">
-        <textarea id="writeInput" placeholder="여기에 답안을 작성하세요 (200자 이내)"></textarea>
-        <div class="write-area__meta"><span id="writeCount">0자</span><span data-i18n="writeCount.suffix"> / 200자</span></div>
       </div>
-
-      <!-- E: 원고지 작성법 카드(종합평가 nat/perm 작문에서만, JS가 채움/토글) -->
-      <div id="wongojiCard" class="wongoji-card hidden"></div>
-
-      <div id="feedback" class="feedback hidden"></div>
 
       <div class="quiz-actions">
         <button id="prevBtn" class="btn btn--ghost hidden" data-i18n="quiz.prev">← 이전</button>
