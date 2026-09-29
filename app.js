@@ -542,7 +542,9 @@ const EXAMS = {
     mockSub: { ko: '실제 시험처럼 풀기 (객관식+작문+구술)', zh: '像真实考试一样作答（选择+写作+口试）' },
     practiceSub: { ko: '어휘·문법·읽기·대화·문화·사회', zh: '词汇·语法·阅读·对话·文化·社会' },
     noPrefix: 'KIIP',
-    mock: { mc: 48, writing: 2, oral: 5, time: 60 * 60, ladder: true },
+    // 사전평가 필기는 50분이다(법무부 견본 문제지 표지에 그렇게 적혀 있다).
+    // 60분으로 두면 연습이 실제보다 넉넉해져서 시험장에서 시간에 쫓긴다.
+    mock: { mc: 48, writing: 2, oral: 5, time: 50 * 60, ladder: true },
     points: { mc: 72, writing: 3, oral: 25 },
     grading: 'level',
     notices: {
