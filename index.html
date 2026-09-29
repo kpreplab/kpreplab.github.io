@@ -77,6 +77,14 @@
         <button class="seg__btn" data-exam="nat" data-i18n="track.nat">귀화 종합평가</button>
       </div>
 
+      <!-- 처음 온 사람에게 이 앱이 다른 연습 앱과 무엇이 다른지 먼저 보여 준다.
+           회원이 되면 사라진다(이미 아는 사람에게는 자리만 차지한다). -->
+      <section class="intro-card hidden" id="introCard">
+        <h2 class="intro-card__title" id="introTitle"></h2>
+        <p class="intro-card__counts" id="introCounts"></p>
+        <ul class="intro-card__list" id="introList"></ul>
+      </section>
+
       <div class="sync-status" id="syncStatus">문제를 불러오는 중…</div>
 
       <!-- 시험일 카운트다운·페이싱 (트랙별 저장) -->

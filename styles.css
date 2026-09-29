@@ -692,3 +692,24 @@ body.exam-mode .question-box .zh { color: var(--muted); }
   font-family: var(--font-ko); cursor: pointer;
 }
 .member-join__copy:hover { background: var(--cream-2); }
+
+/* 처음 온 사람용 소개 카드 — 회원이 되면 renderIntroCard 가 숨긴다 */
+.intro-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 16px 18px; margin-bottom: 14px; box-shadow: var(--shadow-soft);
+}
+.intro-card.hidden { display: none; }
+.intro-card__title { margin: 0; font-size: .98rem; font-weight: 700; color: var(--ink); line-height: 1.4; }
+.intro-card__counts {
+  margin: 7px 0 12px; font-size: .78rem; font-weight: 600; color: var(--copper);
+  background: var(--copper-bg); border-radius: 9999px; padding: 5px 11px; display: inline-block;
+}
+.intro-card__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.intro-card__list li {
+  position: relative; padding-left: 17px; font-size: .82rem; color: var(--ink-soft); line-height: 1.55;
+}
+.intro-card__list li::before {
+  content: ''; position: absolute; left: 3px; top: .58em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--copper);
+}
+.intro-card__list b { color: var(--ink); font-weight: 700; }
