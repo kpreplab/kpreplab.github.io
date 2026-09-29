@@ -602,30 +602,6 @@ body.exam-mode .question-box .zh { color: var(--muted); }
 .lang-opt__sub { font-size: .68rem; color: var(--muted); }
 
 /* ===== 공유 비밀번호 잠금 화면 ===== */
-.gate {
-  position: fixed; inset: 0; z-index: 200;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px; background: var(--cream);
-}
-.gate.hidden { display: none; }
-.gate__card {
-  width: 100%; max-width: 360px; background: var(--card);
-  border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lift);
-  padding: 30px 22px 24px; text-align: center;
-}
-.gate__lock { font-size: 2rem; line-height: 1; }
-.gate__title { margin: 12px 0 6px; font-size: 1.1rem; color: var(--navy); font-weight: 700; }
-.gate__desc { margin: 0 0 18px; font-size: .78rem; color: var(--muted); line-height: 1.6; }
-.gate__form { display: grid; gap: 10px; }
-.gate__input {
-  width: 100%; padding: 13px 14px; font-size: 1.05rem; text-align: center; letter-spacing: .2em;
-  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-md);
-  color: var(--ink); font-family: inherit;
-}
-.gate__input:focus { outline: none; border-color: var(--copper); box-shadow: var(--shadow-soft); }
-.gate__btn { width: 100%; }
-.gate__err { margin: 14px 0 0; font-size: .72rem; color: var(--bad); line-height: 1.5; }
-.gate__err.hidden { display: none; }
 
 /* ===== 홈 하단 제작자 크레딧 ===== */
 .app-credit {
@@ -699,3 +675,20 @@ body.exam-mode .question-box .zh { color: var(--muted); }
 
 /* 난이도 고르기 안내문 — 세그먼트 바로 아래, 카드 목록 위 */
 .diff-hint { margin: -8px 0 14px; font-size: .86rem; }
+
+/* 회원 모달의 가입 안내 — "회원이 아닙니다"에서 길이 끊기지 않도록 다음 걸음을 준다 */
+.member-join { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; }
+.member-join__q { margin: 0; font-size: .86rem; font-weight: 700; color: var(--ink); }
+.member-join__d { margin: 4px 0 10px; font-size: .78rem; color: var(--muted); line-height: 1.5; }
+.member-join__row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.member-join__mail {
+  font-family: var(--font-mono); font-size: .82rem; color: var(--copper);
+  background: var(--copper-bg); border-radius: var(--radius-sm); padding: 7px 11px; text-decoration: none;
+}
+.member-join__mail:hover { background: var(--copper-line); color: #fff; }
+.member-join__copy {
+  border: 1px solid var(--border); background: var(--card); color: var(--ink-soft);
+  border-radius: var(--radius-sm); padding: 7px 12px; font-size: .78rem; font-weight: 600;
+  font-family: var(--font-ko); cursor: pointer;
+}
+.member-join__copy:hover { background: var(--cream-2); }

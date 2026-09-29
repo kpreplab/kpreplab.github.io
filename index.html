@@ -40,18 +40,6 @@
 </head>
 <body>
   <!-- 공유 비밀번호 잠금: 링크와 함께 비밀번호를 받은 사람만 들어온다 -->
-  <div id="gate" class="gate" role="dialog" aria-modal="true" aria-label="Password">
-    <div class="gate__card">
-      <div class="gate__lock">🔒</div>
-      <h2 class="gate__title">비밀번호 · Password</h2>
-      <p class="gate__desc">1단계: 공유 비밀번호를 입력하세요.<br>2단계: 홈에서 회원 이메일 로그인을 진행합니다.<br>先输入公共密码，然后在首页进行会员邮箱登录。</p>
-      <form id="gateForm" class="gate__form" autocomplete="off">
-        <input id="gateInput" class="gate__input" type="password" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Password" placeholder="••••••" />
-        <button id="gateBtn" class="btn btn--primary gate__btn" type="submit">확인 · Enter</button>
-      </form>
-      <p id="gateErr" class="gate__err hidden">비밀번호가 맞지 않습니다 · 密码不正确 · Mật khẩu không đúng · รหัสผ่านไม่ถูกต้อง</p>
-    </div>
-  </div>
 
   <!-- 첫 실행: 국가/언어(주석) 선택 -->
   <div id="langSplash" class="lang-splash hidden" role="dialog" aria-modal="true" aria-label="Select language">
@@ -304,6 +292,16 @@
       </form>
       <p id="memberMessage" class="member-message"></p>
       <button id="memberLogoutBtn" class="btn btn--ghost member-logout hidden" type="button" data-i18n="member.logout">로그아웃</button>
+      <!-- 아직 회원이 아닌 사람에게 다음에 무엇을 하면 되는지 알려 준다.
+           이게 없으면 "회원이 아닙니다"에서 길이 끊긴다. -->
+      <div class="member-join">
+        <p class="member-join__q" data-i18n="member.joinQ">아직 회원이 아니신가요?</p>
+        <p class="member-join__d" data-i18n="member.joinD">아래 메일로 연락 주시면 안내해 드립니다.</p>
+        <div class="member-join__row">
+          <a id="memberJoinMail" class="member-join__mail" href="mailto:herring2141@gmail.com?subject=KIIP%20%EC%97%B0%EC%8A%B5%20%ED%9A%8C%EC%9B%90%20%EB%AC%B8%EC%9D%98">herring2141@gmail.com</a>
+          <button id="memberJoinCopy" class="member-join__copy" type="button" data-i18n="member.joinCopy">복사</button>
+        </div>
+      </div>
     </div>
   </div>
 
