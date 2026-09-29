@@ -713,3 +713,24 @@ body.exam-mode .question-box .zh { color: var(--muted); }
   width: 5px; height: 5px; border-radius: 50%; background: var(--copper);
 }
 .intro-card__list b { color: var(--ink); font-weight: 700; }
+
+/* 무료 체험 */
+.intro-card__try { width: 100%; margin-top: 14px; }
+.intro-card__try:disabled { background: var(--cream-2); color: var(--muted); cursor: default; }
+.trial-end {
+  background: var(--copper-bg); border: 1px solid var(--copper-line); border-radius: var(--radius-md);
+  padding: 16px 18px; margin-bottom: 16px;
+}
+.trial-end.hidden { display: none; }
+.trial-end__head { margin: 0; font-size: .92rem; font-weight: 700; color: var(--ink); }
+.trial-end__score { margin: 6px 0 0; font-size: 1.05rem; font-weight: 700; color: var(--copper); }
+.trial-end__wrong { margin: 4px 0 0; font-size: .8rem; color: var(--ink-soft); }
+.trial-end__list { margin: 12px 0 14px; padding: 0; list-style: none; display: grid; gap: 6px; }
+.trial-end__list li { position: relative; padding-left: 16px; font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
+.trial-end__list li::before { content: ''; position: absolute; left: 3px; top: .56em; width: 5px; height: 5px; border-radius: 50%; background: var(--copper); }
+
+/* 가격 — 체험 종료 화면과 회원 모달 양쪽에서 쓴다 */
+.member-join__price, .trial-end__price {
+  margin: 6px 0 8px; font-size: .88rem; font-weight: 700; color: var(--ink);
+}
+.trial-end__price { margin: 0 0 10px; }

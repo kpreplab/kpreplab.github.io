@@ -179,6 +179,21 @@
     return rows.map(function (row) { return row.content; }).filter(Boolean);
   }
 
+  /* 무료 체험 문항 — public.trial_questions 에서 읽는다.
+     이 표는 로그인 없이 누구나 읽을 수 있고(정책이 그렇게 되어 있다),
+     들어 있는 139행이 공개 상한이다. 원본 questions 표와는 별개다. */
+  async function fetchTrialQuestions(track) {
+    var sb = getClient();
+    if (!sb) throw new Error('not_configured');
+    var res = await sb.from('trial_questions').select('content')
+      .eq('track', track).order('question_number', { ascending: true });
+    if (res.error) {
+      console.error('[Gwiwha] trial questions query failed', res.error);
+      throw res.error;
+    }
+    return (res.data || []).map(function (row) { return row.content; }).filter(Boolean);
+  }
+
   async function countQuestions(filters) {
     var sb = getClient();
     if (!sb) throw new Error('not_configured');
@@ -201,5 +216,6 @@
     signOut: signOut,
     fetchQuestions: fetchQuestions,
     countQuestions: countQuestions,
+    fetchTrialQuestions: fetchTrialQuestions,
   };
 })();
