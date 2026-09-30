@@ -232,27 +232,83 @@ a.menu-card, a.menu-card:link, a.menu-card:visited { color: var(--ink); text-dec
 .quiz-body { display: flex; align-items: flex-start; gap: 14px; }
 .quiz-main { flex: 1 1 auto; min-width: 0; }
 .question-nav {
-  flex: 0 0 auto; width: 120px; align-self: flex-start; position: sticky; top: 12px;
+  /* 상단바가 sticky·58px 이므로 그 아래에 세운다. 12px 로 두면 카드 윗머리가 가린다.
+     세로가 짧은 화면(가로로 든 휴대폰)에서는 카드가 화면 밖으로 나가 아래쪽 번호에
+     닿을 수 없으므로, 넘치면 카드 안에서 굴러가게 한다. */
+  flex: 0 0 auto; width: 176px; align-self: flex-start; position: sticky; top: 70px;
+  max-height: calc(100vh - 86px); overflow-y: auto; overscroll-behavior: contain;
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md);
-  padding: 9px 8px; box-shadow: var(--shadow-soft);
+  padding: 14px 13px; box-shadow: var(--shadow-soft);
 }
-.question-nav__head { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; margin-bottom: 7px; }
-.question-nav__head strong { color: var(--ink); font-size: .74rem; }
-.question-nav__head span { color: var(--muted); font-size: .68rem; font-weight: 600; }
-.question-nav__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+.question-nav__head {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; margin-bottom: 11px;
+  width: 100%; padding: 0; background: none; border: 0; text-align: left; font: inherit; cursor: default;
+}
+
+.question-nav__chev { display: none; }
+.question-nav__head strong { color: var(--ink); font-size: .88rem; }
+.question-nav__head span { color: var(--muted); font-size: .76rem; font-weight: 600; }
+.question-nav__grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .question-nav__item {
-  aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--border); border-radius: 4px;
-  background: var(--card); color: var(--ink-soft); font-family: var(--font-mono); font-size: .68rem; cursor: pointer;
+  aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--card); color: var(--ink-soft); font-family: var(--font-mono); font-size: .82rem; cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
+
+.question-nav__item:hover { border-color: var(--copper-line); }
 .question-nav__item.is-answered { border-color: #7bc8a4; background: var(--ok-bg); color: var(--ok); }
+/* 헷갈림 표시는 답을 골랐는지와 별개다. 골라 놓고도 자신이 없을 수 있으니 초록을 덮어쓴다. */
+.question-nav__item.is-flagged { border-color: #e6a6ad; background: var(--bad-bg); color: var(--bad); font-weight: 700; }
+
+/* '지금 풀고 있는 칸' 은 무슨 색 위에서도 보여야 한다. 그래서 분홍·초록보다 뒤에 둔다. */
 .question-nav__item.is-current { border: 2px solid var(--copper); color: var(--copper); font-weight: 700; }
+
+.question-nav__item.is-current.is-flagged { border-color: var(--copper); background: var(--bad-bg); }
+
+.question-nav__legend { list-style: none; margin: 11px 0 0; padding: 9px 0 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+
+.question-nav__legend li { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .7rem; }
+
+.question-nav__legend .dot { width: 11px; height: 11px; border-radius: 3px; border: 1px solid var(--border); flex: 0 0 auto; }
+
+.question-nav__legend .dot--done { border-color: #7bc8a4; background: var(--ok-bg); }
+
+.question-nav__legend .dot--flag { border-color: #e6a6ad; background: var(--bad-bg); }
+
+.question-nav__legend .dot--todo { background: var(--cream-2); }
 .question-nav__item:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 /* 좁은 화면에서는 왼쪽에 세울 자리가 없다. 문제 위로 돌아가되 예전보다 촘촘하게. */
 @media (max-width: 640px) {
   .quiz-body { display: block; }
   .question-nav { width: auto; position: static; margin-bottom: 12px; padding: 10px 12px; }
-  .question-nav__head { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  /* 좁은 화면에서는 이동표가 문제 위에 놓인다. 55문항을 다 펼치면 336px 을 먹어서
+     문제가 화면 한참 아래로 밀린다. 그래서 기본은 접어 두고, 머리를 누르면 펼친다.
+     넓은 화면은 문제 왼쪽에 따로 서 있으므로 늘 펼쳐 둔다. */
+  .question-nav__head { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; cursor: pointer; }
+
+  .question-nav__head strong { flex: 0 0 auto; }
+
+  .question-nav__head span { margin-left: auto; }
+
+  .question-nav__chev {
+    display: block; flex: 0 0 auto; width: 8px; height: 8px; margin-left: 2px;
+    border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+    transform: rotate(-135deg) translate(-2px, -2px); transition: transform var(--dur) var(--ease);
+  }
+
+  .question-nav.is-collapsed .question-nav__head { margin-bottom: 0; }
+
+  .question-nav.is-collapsed .question-nav__chev { transform: rotate(45deg) translate(-2px, -2px); }
+
+  .question-nav.is-collapsed .question-nav__grid,
+  .question-nav.is-collapsed .question-nav__legend { display: none; }
   .question-nav__grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+
+  .question-nav__item { border-radius: 5px; font-size: .68rem; }
+
+  /* 좁은 화면에서는 이동표가 문제 위에 놓인다. 범례까지 세로로 쌓으면 문제가 그만큼
+     아래로 밀리므로 한 줄로 눕힌다. */
+  .question-nav__legend { flex-direction: row; flex-wrap: wrap; gap: 4px 14px; margin-top: 9px; padding-top: 8px; }
 }
 @media (max-width: 380px) { .question-nav__grid { grid-template-columns: repeat(9, minmax(0, 1fr)); } }
 
@@ -568,6 +624,74 @@ body.exam-mode .choice.is-selected .choice__num { color: var(--navy); }
 }
 .choice .zh { color: var(--muted); }
 body.exam-mode .question-box .zh { color: var(--muted); }
+
+/* ── 시험지처럼 ─────────────────────────────────────────────────────
+   교재 시험지는 문항 번호를 크게 왼쪽에 놓고, 지시문 한 줄 아래에 지문을 옅은 색
+   상자로 앉힌다. 묻는 말과 읽을 글이 한눈에 갈린다. 우리도 그 배치를 따른다. */
+.question-box__stem { display: flex; align-items: baseline; gap: 12px; }
+
+.question-box__no {
+  flex: 0 0 auto; min-width: 1.6em; color: var(--copper);
+  font-family: var(--font-mono); font-size: 1.5rem; font-weight: 700; line-height: 1.15;
+}
+
+.question-box__passage {
+  margin-top: 14px; padding: 17px 19px; border-radius: var(--radius-sm);
+  background: #fdf8e4; border: 1px solid #efe3b8;
+  font-size: 1.04rem; font-weight: 400; line-height: 1.85; color: var(--ink);
+  letter-spacing: -.1px;
+}
+
+.question-box__passage .zh { color: #6b6450; }
+
+/* 세 토막짜리 문항의 '무엇을 묻는가' 한 줄. 지문 상자 밖 아래에 둔다. */
+.question-box__ask { margin-top: 13px; font-weight: 600; line-height: 1.6; }
+
+.question-box__ask .zh { color: var(--muted); }
+
+
+/* 넓은 화면에서는 시험지를 크게 편다. 720px 상한 안에 이동표(176px)까지 들어가면
+   문제에 남는 폭이 520px 뿐이라 지문이 잘게 끊어져 읽기 힘들다. */
+@media (min-width: 900px) {
+  body.exam-mode #app { max-width: 1060px; padding-left: 22px; padding-right: 22px; }
+  body.exam-mode .question-box { font-size: 1.22rem; }
+  body.exam-mode .question-box__no { font-size: 1.8rem; }
+  body.exam-mode .question-box__passage { padding: 22px 26px; font-size: 1.13rem; line-height: 1.9; }
+  body.exam-mode .choice { font-size: 1.1rem; padding: 13px 10px; }
+  body.exam-mode .choice__num { font-size: 1.15rem; }
+  .question-nav { width: 204px; padding: 16px 15px; }
+  .question-nav__item { font-size: .88rem; }
+  .question-nav__legend li { font-size: .74rem; }
+  .quiz-body { gap: 20px; }
+}
+
+@media (max-width: 640px) {
+  .question-box__no { font-size: 1.25rem; }
+  .question-box__stem { gap: 9px; }
+  .question-box__passage { padding: 14px 15px; font-size: 1rem; line-height: 1.8; }
+}
+
+/* 헷갈림 표시 버튼 — 다음/이전과 성격이 다르므로 왼쪽에 따로 떨어뜨린다 */
+.quiz-actions { align-items: stretch; }
+
+/* .btn 이 flex:1 이라 세 버튼이 자리를 똑같이 나눠 가진다. 그 상태에서는 margin auto 가
+   먹을 빈 자리가 없다. 표시 버튼만 제 글자 폭으로 두어야 왼쪽으로 떨어진다. */
+.btn--flag {
+  flex: 0 0 auto; margin-right: auto; background: var(--card); color: var(--muted);
+  border: 1px solid var(--border); font-weight: 600;
+}
+
+.btn--flag:hover { border-color: #e6a6ad; color: var(--bad); }
+
+.btn--flag.is-on { background: var(--bad-bg); border-color: #e6a6ad; color: var(--bad); }
+
+/* 좁은 화면에서는 버튼 셋이 한 줄에 겨우 들어간다. 태국어처럼 글자가 긴 말에서는
+   표시 버튼 안에서 줄이 바뀌어 혼자만 키가 커진다. 말을 줄이는 대신 한 줄을 준다. */
+@media (max-width: 640px) {
+  .quiz-actions { flex-wrap: wrap; }
+  /* .btn 이 flex:1 이라 width 로는 안 늘어난다. 기준 폭 자체를 한 줄로 준다. */
+  .btn--flag { order: -1; flex: 1 0 100%; margin-right: 0; }
+}
 .feedback .zh { color: var(--ink-soft); }
 
 /* ===== 시험 트랙 전환(홈 상단) ===== */

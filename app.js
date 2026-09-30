@@ -113,6 +113,8 @@ const I18N = {
     'model.show': '📝 모범답안 보기', 'model.hide': '📝 모범답안 숨기기', 'review.model': '모범답안',
     'resume.banner': '📌 진행 중인 모의고사 이어서 풀기 ({0}/{1})', 'exam.resume': '이어서 풀기 ({0}/{1})',
     'nav.title': '문항 이동', 'nav.answered': '{0}/{1} 답변 완료', 'nav.question': '{0}번 문항',
+    'nav.legendDone': '답한 것', 'nav.legendFlag': '헷갈리는 것', 'nav.legendTodo': '안 푼 것',
+    'quiz.flag': '헷갈림 표시', 'quiz.unflag': '표시 해제',
     'confirm.discardMock': '진행 중인 모의고사 기록이 사라집니다. 새로 시작할까요?', 'toast.resumed': '이어서 풉니다.',
     'resume.practice': '📌 이어서 풀기 · {0} ({1}/{2})', 'practice.allLabel': '전체',
     'confirm.submit': '제출하고 채점할까요?', 'confirm.clearWrong': '오답노트를 모두 비울까요?', 'confirm.resetStats': '학습 통계와 기록을 모두 초기화할까요?',
@@ -230,6 +232,8 @@ const I18N = {
     'model.show': '📝 查看范文', 'model.hide': '📝 隐藏范文', 'review.model': '范文',
     'resume.banner': '📌 继续上次的模拟考试 ({0}/{1})', 'exam.resume': '继续作答 ({0}/{1})',
     'nav.title': '题号', 'nav.answered': '{0}/{1} 已作答', 'nav.question': '第{0}题',
+    'nav.legendDone': '已作答', 'nav.legendFlag': '不确定', 'nav.legendTodo': '未作答',
+    'quiz.flag': '标记不确定', 'quiz.unflag': '取消标记',
     'confirm.discardMock': '正在进行的模拟考试记录将被删除。要重新开始吗？', 'toast.resumed': '继续作答。',
     'resume.practice': '📌 继续上次练习 — {0} ({1}/{2})', 'practice.allLabel': '全部',
     'confirm.submit': '要提交并评分吗？', 'confirm.clearWrong': '要清空错题本吗？', 'confirm.resetStats': '要重置所有学习统计和记录吗？',
@@ -381,6 +385,8 @@ Object.assign(I18N.zh, {
 });
 Object.assign(I18N.vi, {
   'nav.title': 'Câu hỏi', 'nav.answered': 'Đã trả lời {0}/{1}', 'nav.question': 'Câu {0}',
+  'nav.legendDone': 'Đã trả lời', 'nav.legendFlag': 'Chưa chắc', 'nav.legendTodo': 'Chưa làm',
+  'quiz.flag': 'Đánh dấu chưa chắc', 'quiz.unflag': 'Bỏ đánh dấu',
   'member.loginShort': 'Đăng nhập hội viên',
   'member.title': 'Nội dung dành cho hội viên.',
   'member.desc': 'Vui lòng đăng nhập hội viên để sử dụng.',
@@ -408,6 +414,8 @@ Object.assign(I18N.vi, {
 });
 Object.assign(I18N.th, {
   'nav.title': 'ข้อคำถาม', 'nav.answered': 'ตอบแล้ว {0}/{1}', 'nav.question': 'ข้อ {0}',
+  'nav.legendDone': 'ตอบแล้ว', 'nav.legendFlag': 'ไม่แน่ใจ', 'nav.legendTodo': 'ยังไม่ทำ',
+  'quiz.flag': 'ทำเครื่องหมายไม่แน่ใจ', 'quiz.unflag': 'ลบเครื่องหมาย',
   'member.loginShort': 'เข้าสู่ระบบสมาชิก',
   'member.title': 'เนื้อหาสำหรับสมาชิกเท่านั้น',
   'member.desc': 'กรุณาเข้าสู่ระบบสมาชิกก่อนใช้งาน',
@@ -1335,6 +1343,9 @@ function startQuiz(questions, mode, resume) {
     text: resume ? (resume.text || {}) : {},
     graded: mode === 'practice' || mode === 'wrong',
     order: resume ? (resume.order || {}) : {}, // A1: 보기 표시 순서(표시위치→원본인덱스), 문항별 지연 생성
+    /* 헷갈리는 문항에 표시해 두고 나중에 돌아오게 한다. 실제 시험에서도 다들 하는 일이고,
+       답을 골라 놓았는지(초록)와 자신이 없는지(분홍)는 다른 정보다. 번호별 참/거짓. */
+    flags: resume ? (resume.flags || {}) : {},
     timer: null,
     timeLeft: resume ? resume.timeLeft : exam().mock.time,
   };
@@ -1345,6 +1356,7 @@ function startQuiz(questions, mode, resume) {
   $('quizTimer').classList.toggle('hidden', !isMock);
   $('quizCat').classList.toggle('hidden', isMock);
   if (isMock) startTimer();
+  setNavCollapsed(navIsNarrow());
   renderQuestion();
 }
 
@@ -1362,8 +1374,11 @@ function getMockSaveRaw() { return getSavedQuizRaw(K.mockSave); }
 function getMockSave() { return hydrateSavedQuiz(getMockSaveRaw()); }
 function clearMockSave() { try { localStorage.removeItem(ekey(K.mockSave)); } catch {} }
 function saveMockProgress() {
-  if (!quiz || quiz.mode !== 'mock') return;
-  save(ekey(K.mockSave), { ids: quiz.list.map((q) => q.id), i: quiz.i, answers: quiz.answers, text: quiz.text, order: quiz.order, timeLeft: quiz.timeLeft, savedAt: new Date().toISOString() });
+  /* 채점이 끝난 시험은 다시 저장하지 않는다. gradeMock 이 clearMockSave 로 지워도
+     곧바로 renderResult → showView('result') 가 이리로 들어와 되살려 놓고 있었다.
+     그러면 다 푼 시험이 '이어서 풀기' 로 남아 다시 열리고, 표시와 남은 시간까지 돌아온다. */
+  if (!quiz || quiz.mode !== 'mock' || quiz.scored) return;
+  save(ekey(K.mockSave), { ids: quiz.list.map((q) => q.id), i: quiz.i, answers: quiz.answers, text: quiz.text, order: quiz.order, flags: quiz.flags, timeLeft: quiz.timeLeft, savedAt: new Date().toISOString() });
 }
 
 /* ---------- 영역별 연습 중간 저장 / 이어풀기 ---------- */
@@ -1428,7 +1443,8 @@ function matchPassageLength(picked, pool, wantLong, wantMid) {
     if (need <= 0) return;
     const used = new Set(out.map((q) => q.id));
     // 같은 영역 안에서만 바꿔 끼운다. 영역별 개수는 그대로 둔다.
-    const cand = shuffle(pool.filter((q) => band(q) === kind && !used.has(q.id)));
+    // 넣는 쪽이 심화면 귀화 회차의 심화가 10개를 넘는다(교재 430쪽 교체표가 10개로 정한다)
+    const cand = shuffle(pool.filter((q) => band(q) === kind && q.tier !== 'advanced' && !used.has(q.id)));
     for (const fresh of cand) {
       if (need <= 0) break;
       let i = -1;
@@ -1453,8 +1469,9 @@ function matchPassageLength(picked, pool, wantLong, wantMid) {
     for (let i = 0; i < out.length && extra > 0; i++) {
       const q = out[i];
       if (band(q) !== kind || q.tier === 'advanced') continue;
+      // 넣는 쪽도 심화면 안 된다. 귀화 회차의 심화는 교재 교체표대로 10개로 정해져 있다.
       const cand = shuffle(pool.filter((p) => p.category === q.category
-        && band(p) !== kind && !used.has(p.id)));
+        && band(p) !== kind && p.tier !== 'advanced' && !used.has(p.id)));
       if (!cand.length) continue;
       used.delete(q.id); used.add(cand[0].id);
       out[i] = cand[0]; extra -= 1;
@@ -1491,8 +1508,9 @@ function matchSocialLevel(picked, pool) {
   const out = picked.slice();
   from.forEach((old) => {
     // 같은 영역에서, 반대 성격이면서 아직 안 쓴 문항을 찾아 바꿔 끼운다
+    // 빼는 쪽만 심화를 지키고 넣는 쪽을 안 보면 심화가 10개를 넘는다
     const cand = pool.filter((q) => q.category === old.category && !usedIds.has(q.id)
-      && (want > 0 ? isHardQ(q) : !isHardQ(q)));
+      && q.tier !== 'advanced' && (want > 0 ? isHardQ(q) : !isHardQ(q)));
     if (!cand.length) return;
     const fresh = shuffle(cand)[0];
     out[out.indexOf(old)] = fresh;
@@ -1672,7 +1690,9 @@ async function startMockExam() {
       const pickedIds = new Set(picked.map((q) => q.id));
       picked = picked.concat(shuffle(all.filter((q) => !pickedIds.has(q.id))).slice(0, cfg.mc - picked.length));
     } else if (picked.length > cfg.mc) {
-      picked = shuffle(picked).slice(0, cfg.mc);
+      /* 그냥 잘라 내면 심화도 같이 빠져 회차마다 정해진 10개가 깨진다(교재 430쪽 교체표).
+         심화는 남기고 기본 문항부터 덜어 낸다. */
+      picked = shuffle(picked.filter(isAdv)).concat(shuffle(picked.filter((q) => !isAdv(q)))).slice(0, cfg.mc);
     }
     picked = matchSocialLevel(picked, all);
     picked = matchPassageLength(picked, all);
@@ -1714,7 +1734,7 @@ function pickOral(n, source) {
 function resumeMock() {
   const s = getMockSave();
   if (!s) { clearMockSave(); showView('home'); renderHome(); return; }
-  startQuiz(s.list, 'mock', { i: s.i, answers: s.answers, text: s.text, order: s.order, timeLeft: s.timeLeft });
+  startQuiz(s.list, 'mock', { i: s.i, answers: s.answers, text: s.text, order: s.order, flags: s.flags, timeLeft: s.timeLeft });
   toast(t('toast.resumed'));
 }
 function onWriteInput() {
@@ -1767,6 +1787,56 @@ function orderFor(i, q) {
   return quiz.order[i];
 }
 
+/* 좁은 화면에서 이동표를 접어 둔다. 55문항을 펼치면 문제가 화면 절반 아래로 밀린다.
+   넓은 화면은 문제 왼쪽에 따로 서 있으므로 접지 않는다. */
+const NAV_NARROW = 640;
+function navIsNarrow() { return window.innerWidth <= NAV_NARROW; }
+function setNavCollapsed(on) {
+  const nav = $('questionNavigator'); const head = $('navToggle');
+  if (!nav) return;
+  nav.classList.toggle('is-collapsed', !!on);
+  if (!head) return;
+  /* 넓은 화면에서 이 머리는 누를 수 없는 그냥 제목이다. 그런데도 button 이라
+     탭 차례에 끼어들고 낭독기가 '접었다 폈다 하는 것' 으로 읽어 준다.
+     접을 수 있을 때만 그렇게 알린다. */
+  if (navIsNarrow()) {
+    head.setAttribute('aria-expanded', on ? 'false' : 'true');
+    head.removeAttribute('tabindex');
+    head.removeAttribute('aria-disabled');
+  } else {
+    head.removeAttribute('aria-expanded');
+    head.setAttribute('tabindex', '-1');
+    head.setAttribute('aria-disabled', 'true');
+  }
+}
+function toggleNav() {
+  if (!navIsNarrow()) return;   // 넓은 화면에서는 머리가 그냥 제목이다
+  setNavCollapsed(!$('questionNavigator').classList.contains('is-collapsed'));
+}
+
+/* 헷갈림 표시는 모의고사에서만 쓴다. 연습 모드는 바로 정답을 보여 주므로 표시할 일이 없다. */
+function updateFlagBtn() {
+  const btn = $('flagBtn');
+  if (!btn) return;
+  const on = !!(quiz && quiz.mode === 'mock');
+  btn.classList.toggle('hidden', !on);
+  if (!on) return;
+  const marked = !!(quiz.flags && quiz.flags[quiz.i]);
+  btn.classList.toggle('is-on', marked);
+  /* 이름이 '헷갈림 표시' ↔ '표시 해제' 로 바뀐다. 거기에 aria-pressed 까지 붙이면
+     낭독기가 "표시 해제, 선택됨" 처럼 어긋나는 둘을 읽는다. 이름만으로 충분하다. */
+  btn.textContent = t(marked ? 'quiz.unflag' : 'quiz.flag');
+}
+function toggleFlag() {
+  if (!quiz || quiz.mode !== 'mock') return;
+  if (!quiz.flags) quiz.flags = {};
+  if (quiz.flags[quiz.i]) delete quiz.flags[quiz.i];
+  else quiz.flags[quiz.i] = true;
+  updateFlagBtn();
+  renderQuestionNavigator();
+  saveMockProgress();
+}
+
 function isQuestionAnswered(i) {
   const q = quiz && quiz.list[i];
   if (!q) return false;
@@ -1780,6 +1850,7 @@ function renderQuestionNavigator() {
   const visible = !!quiz && quiz.mode === 'mock';
   nav.classList.toggle('hidden', !visible);
   if (!visible) return;
+  nav.setAttribute('aria-label', t('nav.title'));   // index.html 의 영어 이름을 언어에 맞춘다
   const answered = quiz.list.reduce((n, q, i) => n + (isQuestionAnswered(i) ? 1 : 0), 0);
   $('questionNavCount').textContent = t('nav.answered', answered, quiz.list.length);
   const grid = $('questionNavGrid');
@@ -1789,13 +1860,67 @@ function renderQuestionNavigator() {
     btn.type = 'button';
     btn.className = 'question-nav__item';
     if (isQuestionAnswered(i)) btn.classList.add('is-answered');
+    if (quiz.flags && quiz.flags[i]) btn.classList.add('is-flagged');
     if (i === quiz.i) btn.classList.add('is-current');
     btn.textContent = String(i + 1);
-    btn.setAttribute('aria-label', t('nav.question', i + 1));
+    /* 눈으로는 색으로 알지만 화면 낭독기에는 색이 안 들린다. 이름에 상태를 붙인다. */
+    const tags = [];
+    if (isQuestionAnswered(i)) tags.push(t('nav.legendDone'));
+    if (quiz.flags && quiz.flags[i]) tags.push(t('nav.legendFlag'));
+    btn.setAttribute('aria-label', t('nav.question', i + 1) + (tags.length ? ', ' + tags.join(', ') : ''));
     if (i === quiz.i) btn.setAttribute('aria-current', 'true');
-    btn.addEventListener('click', () => { quiz.i = i; renderQuestion(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    btn.addEventListener('click', () => {
+      quiz.i = i; renderQuestion();
+      if (navIsNarrow()) setNavCollapsed(true);   // 옮겼으면 문제가 바로 보여야 한다
+      /* renderQuestion 안에서 이동표를 통째로 다시 그리므로 방금 누른 버튼이 사라진다.
+         키보드만 쓰는 사람은 초점을 잃고 페이지 맨 위부터 다시 탭을 눌러야 한다.
+         새로 그려진 같은 번호 칸으로 초점을 옮겨 준다. */
+      const fresh = $('questionNavGrid').children[i];
+      if (fresh) fresh.focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
     grid.appendChild(btn);
   });
+}
+
+/* 시험지처럼 보이게 한다. 교재의 시험지는 지시문 한 줄을 위에 두고 지문은 옅은 색
+   상자에 담는데, 우리는 둘을 한 덩어리로 붙여 내보내고 있었다. 200자가 넘는 지문이
+   줄글로 이어지면 어디까지가 묻는 말이고 어디부터가 읽을 글인지 한눈에 안 들어온다.
+   문항 데이터는 지시문과 지문을 <br><br> 로 갈라 두었다(지문이 있는 739문항 전부,
+   네 언어 모두 갈라져 있다). 갈라져 있지 않으면 예전처럼 한 덩어리로 그린다. */
+const STEM_SEP = '<br><br>';
+/* 문항은 토막이 하나에서 넷까지 있다(객관식 2,725문항 기준 1토막 1,986 · 2토막 678 ·
+   3토막 60 · 4토막 1). 세 토막짜리는 '읽어라 / 지문 / 무엇을 묻는가' 순서다.
+   묻는 말까지 노란 상자에 넣으면 지문의 일부처럼 보이므로 상자 밖 아래에 따로 둔다. */
+function plainLen(html) { return String(html || '').replace(/<[^>]+>/g, '').trim().length; }
+function splitStem(text) {
+  const parts = String(text || '').split(STEM_SEP);
+  if (parts.length < 2) return null;
+  /* 거의 모든 문항이 '지시문 / 지문' 순서지만(2토막 678문항 중 669), 안내문을 먼저 놓고
+     "위 안내에 따라 …는?" 으로 나중에 묻는 문항이 있다. 그대로 가르면 묻는 말이
+     노란 상자 안으로 들어간다. 앞이 훨씬 길고 뒤가 물음표로 끝나면 순서를 뒤집어 읽는다. */
+  if (parts.length === 2 && plainLen(parts[0]) > plainLen(parts[1]) * 2
+      && String(parts[1]).replace(/<[^>]+>/g, '').trim().endsWith('?')) {
+    return { stem: '', body: parts[0], ask: parts[1] };
+  }
+  return { stem: parts[0], body: parts.slice(1, -1).join(STEM_SEP) || parts[1], ask: parts.length > 2 ? parts[parts.length - 1] : '' };
+}
+/* showNo 는 모의고사 풀이 화면에서만 참이다. 오답 노트·결과 해설·작문 연습도 같은 함수를
+   써야 한 문항이 화면마다 다르게 보이지 않는다(200자 지문이 굵은 줄글로 나오던 곳들). */
+function questionHtml(q, showNo) {
+  const koRaw = qLabel(q.q);
+  const trRaw = qLabel(gl(q, 'q'));
+  const ko = splitStem(koRaw);
+  const tr = trRaw ? splitStem(trRaw) : null;
+  const no = showNo ? `<span class="question-box__no">${quiz.i + 1}</span>` : '';
+  const head = (a, b) => `<div class="question-box__stem">${no}<span>${bi(a, b)}</span></div>`;
+  // 한국어와 번역의 토막 수가 어긋나면 줄이 밀리므로 나누지 않고 예전처럼 한 덩어리로 둔다
+  const same = !trRaw || (tr && koRaw.split(STEM_SEP).length === trRaw.split(STEM_SEP).length);
+  if (!ko || !same) return head(koRaw, trRaw);
+  let out = (ko.stem || no) ? head(ko.stem, tr ? tr.stem : '') : '';
+  out += `<div class="question-box__passage">${bi(ko.body, tr ? tr.body : '')}</div>`;
+  if (ko.ask) out += `<div class="question-box__ask">${bi(ko.ask, tr ? tr.ask : '')}</div>`;
+  return out;
 }
 
 function renderQuestion() {
@@ -1816,7 +1941,7 @@ function renderQuestion() {
   }
   renderQuestionNavigator();
 
-  $('questionBox').innerHTML = bi(qLabel(q.q), qLabel(gl(q, 'q')));
+  $('questionBox').innerHTML = questionHtml(q, quiz.mode === 'mock');
 
   const chosen = quiz.answers[quiz.i];
   const showAnswer = quiz.graded && !isWriting && chosen !== null;
@@ -1860,6 +1985,8 @@ function renderQuestion() {
       fb.classList.remove('hidden');
     } else { fb.classList.add('hidden'); }
   }
+
+  updateFlagBtn();
 
   // G: 듣고 말하기 재생기 — listen 대본이 있는 구술 문항에서만
   const lc = $('listenCard');
@@ -2293,7 +2420,7 @@ function reviewItem(q, chosen, writeText, sgMode, sgVal, auto) {
       sgHtml = `<div class="sg-grade"><span class="sg-grade__label">${t(auto ? 'sg.headOverride' : 'sg.head')}</span><div class="sg-btns">${btns}</div></div>`;
     }
     const autoHtml = auto ? autoBox(q, auto) : '';
-    el.innerHTML = `<div class="review-item__q">${isOral ? '🗣️' : '✍️'} ${bi(qLabel(q.q), qLabel(gl(q, 'q')))}</div>
+    el.innerHTML = `<div class="review-item__q">${isOral ? '🗣️' : '✍️'} ${questionHtml(q, false)}</div>
       <div class="review-item__write ${ans ? '' : 'empty-ans'}">${ans || empty}</div>
       ${autoHtml}
       ${q.guide ? `<div class="review-item__exp">💡 ${bi(q.guide, gl(q, 'guide'))}</div>` : ''}
@@ -2308,7 +2435,7 @@ function reviewItem(q, chosen, writeText, sgMode, sgVal, auto) {
     opts += `<div class="review-item__opt ${cls}">${NUM[idx]} ${bi(c, czh)}${idx === q.answer ? ' ✓' : ''}</div>`;
   });
   const unanswered = chosen === null || chosen === undefined;
-  el.innerHTML = `<div class="review-item__q">${bi(qLabel(q.q), qLabel(gl(q, 'q')))}</div>${opts}
+  el.innerHTML = `<div class="review-item__q">${questionHtml(q, false)}</div>${opts}
     ${unanswered ? `<div class="review-item__opt chosen-wrong">${t('review.unanswered')}</div>` : ''}
     ${q.explanation ? `<div class="review-item__exp">💡 ${bi(q.explanation, gl(q, 'explanation'))}</div>` : ''}`;
   return el;
@@ -2395,7 +2522,7 @@ function wrongCard(q) {
   el.className = 'review-item wrong-card';
   el.innerHTML = `<div class="wrong-meta"><span class="wrong-meta__badges"></span>
       <button type="button" class="wrong-del" title="${t('wrong.del')}" aria-label="${t('wrong.del')}">✕</button></div>
-    <div class="review-item__q">${bi(qLabel(q.q), qLabel(gl(q, 'q')))}</div>
+    <div class="review-item__q">${questionHtml(q, false)}</div>
     <div class="choices wrong-card__choices"></div>
     <div class="feedback hidden"></div>
     <div class="wrong-card__actions hidden"><button type="button" class="btn btn--ghost wrong-retry">${t('wrong.retry')}</button></div>`;
@@ -2624,7 +2751,7 @@ function renderWriting() {
       </div>` : '';
     card.innerHTML = `
       ${hasListen(q) ? `<div class="listen-card">${listenCardHtml(q)}</div>` : ''}
-      <div class="writing-card__q">${bi(qLabel(q.q), qLabel(gl(q, 'q')))}</div>
+      <div class="writing-card__q">${questionHtml(q, false)}</div>
       ${isOralMode && !hasListen(q) ? `<div class="oral-recite">${t('oral.recite')}</div>` : ''}
       ${isWriting ? `<textarea data-id="${q.id}" placeholder="${t('writing.draftPh')}">${drafts[q.id] || ''}</textarea>
         <div class="writing-card__meta"><span class="writing-card__count">0${CHAR_UNIT[LANG] || '자'}</span></div>` : ''}
@@ -2752,6 +2879,19 @@ function wireEvents() {
 
   $('nextBtn').addEventListener('click', nextQuestion);
   $('prevBtn').addEventListener('click', prevQuestion);
+  $('flagBtn').addEventListener('click', toggleFlag);
+  $('navToggle').addEventListener('click', toggleNav);
+  // 화면을 돌리거나 창을 넓히면 접힘 상태를 그 폭에 맞게 되돌린다
+  /* 폭이 바뀌면 그 폭에 맞는 상태로 되돌린다. 넓어지면 펼치고, 좁아지면 접는다.
+     한쪽만 처리하면 휴대폰을 가로로 들었다가 세로로 돌렸을 때 펼쳐진 채로 남아
+     문제가 다시 화면 아래로 밀린다. */
+  let navWasNarrow = navIsNarrow();
+  window.addEventListener('resize', () => {
+    const now = navIsNarrow();
+    if (now === navWasNarrow) return;   // 경계를 넘을 때만 건드린다(사용자가 편 것을 뺏지 않는다)
+    navWasNarrow = now;
+    setNavCollapsed(now);
+  });
   $('submitBtn').addEventListener('click', () => { if (confirm(t('confirm.submit'))) gradeMock(); });
   $('examStartBtn').addEventListener('click', () => requireMembership(startMockExam));
   $('resumeBanner').addEventListener('click', () => requireMembership(resumeMock, { loadBank: true }));

@@ -188,11 +188,17 @@
            아래로 밀려 답을 고르는 데 방해가 된다. 좁은 화면에서는 위로 돌아간다. -->
       <div class="quiz-body">
         <aside id="questionNavigator" class="question-nav hidden" aria-label="Question navigator">
-          <div class="question-nav__head">
+          <button type="button" id="navToggle" class="question-nav__head" aria-expanded="true" aria-controls="questionNavGrid">
             <strong data-i18n="nav.title">문항 이동</strong>
             <span id="questionNavCount"></span>
-          </div>
+            <i class="question-nav__chev" aria-hidden="true"></i>
+          </button>
           <div id="questionNavGrid" class="question-nav__grid"></div>
+          <ul class="question-nav__legend">
+            <li><i class="dot dot--done"></i><span data-i18n="nav.legendDone">답한 것</span></li>
+            <li><i class="dot dot--flag"></i><span data-i18n="nav.legendFlag">헷갈리는 것</span></li>
+            <li><i class="dot dot--todo"></i><span data-i18n="nav.legendTodo">안 푼 것</span></li>
+          </ul>
         </aside>
 
         <div class="quiz-main">
@@ -215,6 +221,7 @@
       </div>
 
       <div class="quiz-actions">
+        <button id="flagBtn" class="btn btn--flag hidden" type="button" data-i18n="quiz.flag">헷갈림 표시</button>
         <button id="prevBtn" class="btn btn--ghost hidden" data-i18n="quiz.prev">← 이전</button>
         <button id="nextBtn" class="btn btn--primary" data-i18n="quiz.next">다음 →</button>
         <button id="submitBtn" class="btn btn--primary hidden" data-i18n="quiz.submit">제출하고 채점</button>
