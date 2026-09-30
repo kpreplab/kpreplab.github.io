@@ -1,10 +1,10 @@
 {
   "version": "2026-08-18",
-  "sourceCount": 3168,
+  "sourceCount": 3280,
   "exams": {
     "pre": {
-      "total": 1379,
-      "mc": 1241,
+      "total": 1399,
+      "mc": 1261,
       "writing": 38,
       "oral": 100,
       "categories": [
@@ -31,8 +31,8 @@
         },
         {
           "category": "읽기·이해",
-          "total": 160,
-          "mc": 160,
+          "total": 180,
+          "mc": 180,
           "writing": 0,
           "oral": 0
         },
@@ -67,15 +67,15 @@
       ]
     },
     "perm": {
-      "total": 1660,
-      "mc": 1249,
+      "total": 1752,
+      "mc": 1341,
       "writing": 65,
       "oral": 346,
       "categories": [
         {
           "category": "한국어",
-          "total": 305,
-          "mc": 305,
+          "total": 397,
+          "mc": 397,
           "writing": 0,
           "oral": 0
         },
@@ -152,15 +152,15 @@
       ]
     },
     "nat": {
-      "total": 1789,
-      "mc": 1372,
+      "total": 1881,
+      "mc": 1464,
       "writing": 66,
       "oral": 351,
       "categories": [
         {
           "category": "한국어",
-          "total": 305,
-          "mc": 305,
+          "total": 397,
+          "mc": 397,
           "writing": 0,
           "oral": 0
         },

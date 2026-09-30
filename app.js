@@ -1402,6 +1402,71 @@ function showExamIntro() {
   else btn.classList.add('hidden');
   showView('examintro');
 }
+/* 지문 길이를 실제 시험에 맞춘다.
+   법무부 종합평가 견본을 문항별로 세어 보면 문항+지문 길이가
+   100~199자인 것이 21%, 200자 넘는 것이 3% 다. 36문항으로 치면
+   중간 길이 7문항, 긴 지문 1~2문항이다. 사용자도 교재 모의고사를 풀고
+   "아주 긴 건 두 개쯤, 중간 길이는 많다" 고 했다.
+   그런데 은행에서 그냥 뽑으면 중간 2.3문항·긴 것 0.6문항밖에 안 들어온다.
+   긴 지문은 전체 1,372문항 중 24개뿐이라 확률로는 거의 안 나온다.
+   읽는 부담이야말로 이 시험에서 갈리는 지점이라, 연습에서 빠지면 안 된다. */
+const LONG_Q = 200;          // 이 길이를 넘으면 '긴 지문'
+const MID_Q = 100;           // 여기부터 '중간 길이'
+const WANT_LONG = 2;
+const WANT_MID = 7;
+function qLen(q) { return String(q && q.q || '').replace(/<[^>]+>/g, '').length; }
+function matchPassageLength(picked, pool, wantLong, wantMid) {
+  const band = (q) => (qLen(q) >= LONG_Q ? 'long' : qLen(q) >= MID_Q ? 'mid' : 'short');
+  let out = picked.slice();
+  /* 어떤 문항을 빼고 그 자리에 넣을지. 긴 지문을 채울 때 짧은 문항이 남아 있지 않은
+     영역이 있다(사전평가 읽기·이해는 180문항 중 짧은 것이 19개뿐이다). 그때는
+     중간 길이 문항을 내준다. 내주지 않으면 긴 지문이 한 개도 안 들어간다. */
+  const donorsFor = (kind) => (kind === 'long' ? ['short', 'mid'] : ['short']);
+  const fill = (kind, want) => {
+    const have = out.filter((q) => band(q) === kind).length;
+    let need = want - have;
+    if (need <= 0) return;
+    const used = new Set(out.map((q) => q.id));
+    // 같은 영역 안에서만 바꿔 끼운다. 영역별 개수는 그대로 둔다.
+    const cand = shuffle(pool.filter((q) => band(q) === kind && !used.has(q.id)));
+    for (const fresh of cand) {
+      if (need <= 0) break;
+      let i = -1;
+      for (const donor of donorsFor(kind)) {
+        i = out.findIndex((q) => band(q) === donor && q.category === fresh.category
+          && q.tier !== 'advanced');   // 심화는 회차마다 개수가 정해져 있으니 건드리지 않는다
+        if (i >= 0) break;
+      }
+      if (i < 0) continue;
+      used.delete(out[i].id); used.add(fresh.id);
+      out[i] = fresh; need -= 1;
+    }
+  };
+  /* 모자랄 때만 채우면 반대쪽으로 넘어간다. 읽기 문항을 보강한 뒤로는 한국어 영역에
+     긴 지문이 많아져서, 그냥 뽑으면 36문항에 4~5개가 들어왔다. 실제 시험은 2개쯤이다.
+     연습이 실제보다 어려우면 점수가 실력보다 낮게 나와 학습자가 잘못 판단한다.
+     그래서 남을 때는 같은 영역의 짧은 문항으로 되돌린다. */
+  const trim = (kind, want) => {
+    let extra = out.filter((q) => band(q) === kind).length - want;
+    if (extra <= 0) return;
+    const used = new Set(out.map((q) => q.id));
+    for (let i = 0; i < out.length && extra > 0; i++) {
+      const q = out[i];
+      if (band(q) !== kind || q.tier === 'advanced') continue;
+      const cand = shuffle(pool.filter((p) => p.category === q.category
+        && band(p) !== kind && !used.has(p.id)));
+      if (!cand.length) continue;
+      used.delete(q.id); used.add(cand[0].id);
+      out[i] = cand[0]; extra -= 1;
+    }
+  };
+  const wantL = wantLong == null ? WANT_LONG : wantLong;
+  trim('long', wantL);
+  fill('long', wantL);
+  fill('mid', wantMid == null ? WANT_MID : wantMid);
+  return out;
+}
+
 /* 한국사회 이해 구역의 문항 생김새를 실제 시험에 맞춘다.
    법무부 종합평가 견본의 19~38번 20문항을 세어 보면 선택지가 낱말인 문항은
    5개(25%)뿐이고 나머지 15개는 완결된 서술문이다. 그런데 우리 은행의 종합평가
@@ -1532,9 +1597,16 @@ async function startMockExam() {
     const cs = all.filter((q) => !korCats.includes(q.category));
     const nCS = Math.min(cs.length, Math.round(cfg.mc * 8 / 48));
     const nKor = cfg.mc - nCS;
-    const korPick = shuffle(kor).slice(0, nKor).sort((a, b) => (a.level || 2) - (b.level || 2));
+    /* 사전평가 48문항에도 긴 지문이 들어가야 한다. 교재의 사전평가 실전 모의고사는
+       회차마다 29~32번이 중간 길이 읽기 네 문항, 33~34번이 200자쯤 되는 지문 하나에
+       달린 두 문항이다. 그래서 긴 지문 2 · 중간 6을 목표로 잡는다. */
+    let korPick = shuffle(kor).slice(0, nKor);
     const csPick = shuffle(cs).slice(0, nCS);
-    mc = korPick.concat(csPick); // 문화·사회를 뒤쪽(실제 41~48번처럼)
+    mc = matchPassageLength(korPick.concat(csPick), all, 2, 6);
+    // 길이를 맞추며 문항이 바뀌었으므로 한국어 영역을 다시 난이도순으로 세운다
+    const isKor = (q) => korCats.includes(q.category);
+    mc = mc.filter(isKor).sort((a, b) => (a.level || 2) - (b.level || 2))
+      .concat(mc.filter((q) => !isKor(q)));   // 문화·사회를 뒤쪽(실제 41~48번처럼)
   } else {
     /* 종합평가 객관식 36문항의 영역 구성. 근거 둘을 맞춰 정했다.
        ① 법무부가 공개한 종합평가 견본(KINAT, 38문항)은 1~18번이 한국어,
@@ -1572,6 +1644,7 @@ async function startMockExam() {
       picked = shuffle(picked).slice(0, cfg.mc);
     }
     picked = matchSocialLevel(picked, all);
+    picked = matchPassageLength(picked, all);
     // 출제 순서: 한국어 먼저(내부 셔플) → 나머지 영역(영역 간 섞어 셔플) — 사전평가 ladder(한국어 앞배치)와 일관
     const korMc = picked.filter((q) => q.category === '한국어');
     const restMc = picked.filter((q) => q.category !== '한국어');
@@ -1635,12 +1708,30 @@ function startTimer() {
 }
 function updateTimerLabel() { const m = Math.floor(quiz.timeLeft / 60), s = quiz.timeLeft % 60; $('quizTimer').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
 
+/* 보기가 ㉠㉡㉢㉣ 이나 (가)(나)(다)(라) 처럼 순서가 있는 기호일 때가 있다.
+   읽기 문항에서 지문 안의 자리를 가리키는 보기다. 이런 보기를 섞으면
+   화면에 ㉢ ㉠ ㉣ ㉡ 처럼 나와서 지문과 맞춰 보기가 어려워진다. 섞지 않는다. */
+const LABEL_SETS = [
+  ['㉠', '㉡', '㉢', '㉣', '㉤'],
+  ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ'],
+  ['(가)', '(나)', '(다)', '(라)', '(마)'],
+  ['가', '나', '다', '라', '마'],
+  ['①', '②', '③', '④', '⑤'],
+];
+function isLabelChoices(choices) {
+  if (!choices || choices.length < 3) return false;
+  const plain = choices.map((c) => String(c).replace(/<[^>]+>/g, '').replace(/\s+/g, ''));
+  if (new Set(plain).size !== plain.length) return false;
+  return LABEL_SETS.some((set) => plain.every((c) => set.indexOf(c) >= 0));
+}
+
 /* A1: 문항 i의 보기 표시 순서(표시위치→원본인덱스). 한 번 정하면 quiz 안에서 고정. */
 function orderFor(i, q) {
   if (!quiz.order) quiz.order = {};
   if (!quiz.order[i]) {
     const n = (q && q.choices) ? q.choices.length : 0;
-    quiz.order[i] = shuffle(Array.from({ length: n }, (_, k) => k));
+    const seq = Array.from({ length: n }, (_, k) => k);
+    quiz.order[i] = isLabelChoices(q && q.choices) ? seq : shuffle(seq);
   }
   return quiz.order[i];
 }
