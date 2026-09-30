@@ -1542,6 +1542,15 @@ let isTrialRun = false;
 
 /* 체험이 끝났을 때, 그 사람이 방금 만든 자기 기록으로 이야기한다.
    "회원이 되세요" 보다 "당신은 47점이고 합격선까지 13점 남았다" 가 힘이 세다. */
+/* 체험 종료 화면에 적는 것은 "이 사람이 회원이 되면 실제로 받는 것"이어야 한다.
+   교재에서 뽑은 실전 모의고사 세 세트(mk 156문항)는 전부 종합평가 문항이다.
+   사전평가 응시자에게는 그 세트가 없으므로 그 줄을 보여 주지 않는다. */
+function trialBullets(left) {
+  const list = [t('trial.b1', left), t('trial.b2'), t('trial.b3'), t('trial.b5')];
+  if (activeExam !== 'pre') list.push(t('trial.b4'));
+  return list;
+}
+
 function renderTrialEnd(pct, correct, totalMc) {
   const box = $('trialEnd');
   if (!box) return;
@@ -1553,9 +1562,7 @@ function renderTrialEnd(pct, correct, totalMc) {
     `<p class="trial-end__head">${t('trial.endHead')}</p>` +
     `<p class="trial-end__score">${t('trial.endScore', pct, correct, totalMc)}</p>` +
     (wrong ? `<p class="trial-end__wrong">${t('trial.endWrong', wrong)}</p>` : '') +
-    `<ul class="trial-end__list">${[
-      t('trial.b1', left), t('trial.b2'), t('trial.b3'), t('trial.b5'), t('trial.b4'),
-    ].map((x) => `<li>${x}</li>`).join('')}</ul>` +
+    `<ul class="trial-end__list">${trialBullets(left).map((x) => `<li>${x}</li>`).join('')}</ul>` +
     `<div class="price-box"><span class="price-box__num">${t('member.priceNum')}<span class="price-box__unit">${t('member.priceUnit')}</span></span><span class="price-box__note">${t('member.priceNote')}</span></div>` +
     `<div class="member-join__row">` +
       `<a class="member-join__mail" href="mailto:${TRIAL_MAIL}">${TRIAL_MAIL}</a>` +
@@ -1593,20 +1600,44 @@ async function startMockExam() {
        41~48번이 한국문화·한국사회로 8문항(1/6)이다. 옛 값 20%(약 10문항)보다 적다. */
     const korCats = ['어휘', '문법', '읽기·이해', '대화'];
     const all = mcPool;
-    const kor = all.filter((q) => korCats.includes(q.category));
-    const cs = all.filter((q) => !korCats.includes(q.category));
-    const nCS = Math.min(cs.length, Math.round(cfg.mc * 8 / 48));
-    const nKor = cfg.mc - nCS;
-    /* 사전평가 48문항에도 긴 지문이 들어가야 한다. 교재의 사전평가 실전 모의고사는
-       회차마다 29~32번이 중간 길이 읽기 네 문항, 33~34번이 200자쯤 되는 지문 하나에
-       달린 두 문항이다. 그래서 긴 지문 2 · 중간 6을 목표로 잡는다. */
-    let korPick = shuffle(kor).slice(0, nKor);
-    const csPick = shuffle(cs).slice(0, nCS);
-    mc = matchPassageLength(korPick.concat(csPick), all, 2, 6);
+    /* 사전평가 48문항의 영역 구성. 교재 제2편 실전 모의고사 다섯 회분의 번호표를
+       한 회씩 세어 맞췄다. 다섯 회차가 1~48번까지 똑같았다.
+         1번·3~14번  어휘 13   (반대말·비슷한 말·빈칸 낱말)
+         2번·15~28번 문법 15   (조사·활용형 고르기, 틀린 곳 고르기)
+         29~38번·47~48번 읽기·이해 12
+         39~46번  한국문화 4 + 한국사회 4
+       47~48번은 내용이 금융·선거라 사회처럼 보이지만, 다섯 회차 모두 노란 상자에
+       설명문 한 편을 놓고 "다음 글의 내용과 다른 것은?" 을 묻는 읽기 문항이다.
+       내용이 아니라 묻는 방식으로 갈라야 한다.
+
+       교재에는 '대화' 영역이 따로 없다. 대화는 어휘·문법을 묻는 틀로 쓰일 뿐이다.
+       그런데 우리 은행에는 대화 문항이 138개 있고(처음 뵙겠습니다 → 만나서 반갑습니다
+       처럼 상황에 맞는 말 고르기), 138개 중 활용형 고르기는 6개뿐이라 내용은 어휘 쪽이다.
+       그래서 어휘 몫 13을 은행 비율대로 어휘 10 · 대화 3으로 나눠 준다.
+
+       이 쿼터를 넣기 전에는 네 영역을 한 통에 넣고 무작위로 뽑고 있었다. 그러면
+       은행 비율대로 나와서 어휘가 21문항, 문법이 3문항인 회차가 생겼다. */
+    const quota = { '어휘': 10, '대화': 3, '문법': 15, '읽기·이해': 12, '한국문화': 4, '한국사회': 4 };
+    const byCat = {};
+    all.forEach((q) => { (byCat[q.category] = byCat[q.category] || []).push(q); });
+    let picked = [];
+    Object.keys(quota).forEach((cat) => {
+      const want = Math.round(quota[cat] * cfg.mc / 48);
+      picked = picked.concat(shuffle(byCat[cat] || []).slice(0, want));
+    });
+    // cfg.mc 하드코딩 금지: 쿼터 합이나 특정 영역 풀이 cfg.mc 와 어긋나도 무작위 가감으로 맞춘다
+    if (picked.length < cfg.mc) {
+      const got = new Set(picked.map((q) => q.id));
+      picked = picked.concat(shuffle(all.filter((q) => !got.has(q.id))).slice(0, cfg.mc - picked.length));
+    } else if (picked.length > cfg.mc) {
+      picked = shuffle(picked).slice(0, cfg.mc);
+    }
+    /* 긴 지문도 실제 시험만큼 넣는다. 33~34번이 200자쯤 되는 지문 하나에 달린 두 문항이다. */
+    mc = matchPassageLength(picked, all, 2, 6);
     // 길이를 맞추며 문항이 바뀌었으므로 한국어 영역을 다시 난이도순으로 세운다
     const isKor = (q) => korCats.includes(q.category);
     mc = mc.filter(isKor).sort((a, b) => (a.level || 2) - (b.level || 2))
-      .concat(mc.filter((q) => !isKor(q)));   // 문화·사회를 뒤쪽(실제 41~48번처럼)
+      .concat(mc.filter((q) => !isKor(q)));   // 문화·사회를 뒤쪽(실제 39~46번처럼)
   } else {
     /* 종합평가 객관식 36문항의 영역 구성. 근거 둘을 맞춰 정했다.
        ① 법무부가 공개한 종합평가 견본(KINAT, 38문항)은 1~18번이 한국어,
