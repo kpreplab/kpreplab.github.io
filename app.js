@@ -1,1466 +1,2921 @@
-/* app.js — 한글 타자 연습 (두벌식)
-   모드: 자리연습 / 낱글자 / 단문 / 귀화 작문(장문)
-   입력은 hangul.js 오토마타로 처리(OS IME 불필요). 정답은 키스트로크 단위 비교.
-   언어: ko/zh/vi/th (귀화앱과 동일). 귀화앱이 고른 언어(nq_lang)를 물려받음. */
-(function () {
-  'use strict';
-  var $ = function (s, r) { return (r || document).querySelector(s); };
-  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+/* =====================================================================
+   귀화시험 종합평가 연습 앱  (순수 정적 PWA · 한국어/중국어 지원)
+   - 공개 화면: question-catalog.json 으로 영역과 문항 수만 표시
+   - 회원 콘텐츠: Supabase Auth + members RLS + questions RLS 로 읽기
+   - 언어: 한국어(ko) / 중국어(zh). zh 모드에서는 한국어 + 중국어를 함께 표시
+   ===================================================================== */
 
-  var LANG_NAME = { ko: '한국어', zh: '中文', vi: 'Tiếng Việt', th: 'ภาษาไทย' };
-  var LANG_FLAG = { ko: '🇰🇷', zh: '🇨🇳', vi: '🇻🇳', th: '🇹🇭' };
-  var LANG_ORDER = ['ko', 'zh', 'vi', 'th'];
-  var LINE_BUDGET = 28; // 장문 줄바꿈 기준(글자 수)
+'use strict';
 
-  // ===== I18N (ko / zh / vi / th) =====
-  var I18N = {
-    ko: {
-      'app.title': '한글 타자 연습', 'app.toQuiz': '문제풀기',
-      'home.lead': '한글 자판이 손에 익을 때까지, 한 단계씩 천천히 연습해요.',
-      'home.imeTip': '컴퓨터 입력기를 한글로 바꾸지 않아도 됩니다. 화면이 알려주는 키를 그대로 누르세요.',
-      'home.hint': '개인용 연습 도구 · 점수는 이 기기에만 저장됩니다.',
-      'mode.position.t': '자리 연습', 'mode.position.s': 'ㅎ ㅁ ㅂ ㅕ · 자판 위치와 손가락 익히기',
-      'mode.syllable.t': '낱글자 연습', 'mode.syllable.s': '자음+모음을 모아 한 글자씩 완성',
-      'mode.short.t': '단문 연습', 'mode.short.s': '짧은 문장 따라 치기',
-      'mode.long.t': '작문 연습', 'mode.long.s': '작문 모범답안(200자) 따라 치기',
-      'common.home': '홈', 'common.list': '목록', 'common.retry': '다시', 'common.next': '다음 →',
-      'stat.time': '시간', 'stat.speed': '타수', 'stat.acc': '정확도', 'stat.miss': '오타',
-      'next.this': '이 자리', 'next.char': '다음', 'next.space': '스페이스', 'next.enter': '엔터',
-      'next.shift': 'Shift 함께', 'done.title': '잘했어요! 완성', 'done.best': '최고 기록 경신!',
-      'done.speed': '타/분', 'done.acc': '정확도', 'done.time': '걸린 시간',
-      'done.nextHint': 'Enter로 다음', 'done.listHint': 'Enter로 목록',
-      'list.position': '단계를 골라 시작하세요. 처음에는 ‘기본 자리’부터.',
-      'list.syllable': '쉬운 글자부터 한 글자씩 완성해 보세요.',
-      'list.short': '짧은 문장을 따라 치며 손을 풀어요.',
-      'list.long': '종합평가 작문에 나오는 주제의 모범답안입니다. 의미를 보며 따라 치세요.',
-      'sec.sec': '초', 'best.label': '최고', 'topic.label': '주제', 'echo.label': '내가 친 것',
-      'mode.word.t': '낱말 연습', 'mode.word.s': '비슷한 낱말을 빠르게 구별하며 치기',
-      'list.word': '비슷하게 생긴 낱말을 빠르게 알아보고 정확히 치는 연습이에요.',
-      'sound.on': '소리 켜짐', 'sound.off': '소리 듣기',
-      // A1 정확도 게이트
-      'gate.msg': '정확도 95% 이상일 때 기록으로 인정됩니다.',
-      // A2 성장
-      'delta.label': '지난 판 대비', 'delta.speed': '타수', 'delta.acc': '정확도',
-      'mini.week': '이번 주', 'mini.games': '판', 'mini.avgspeed': '평균 타수', 'mini.acc': '정확도',
-      // A3 약한 키
-      'weak.title': '자주 틀리는 키', 'weak.drill': '약한 키 보충 연습',
-      'weak.pracTitle': '약한 키 보충', 'weak.none': '이번 판은 다 잘 쳤어요!',
-      // A4 온보딩
-      'ob.eyebrow': '시작하기 전에', 'ob.title': '30초만 읽어 주세요',
-      'ob.s1': '<b>왼손은 자음, 오른손은 모음</b>이에요. 자판을 안 외워도 화면이 알려줍니다.',
-      'ob.s2': '한 글자는 자모의 조합이에요. 예를 들어 ',
-      'ob.s2b': ' 는 ', 'ob.s2c': ' 를 차례로 누르면 완성돼요.',
-      'ob.s3': '<b>화면이 알려주는 키</b>를 그대로 누르면 됩니다. 천천히 시작해요.',
-      'ob.start': '시작하기',
-      // A5 홈 배지
-      'badge.best': '최고', 'badge.empty': '아직 연습 안 함',
-      // A6 실전 쓰기
-      'list.freewrite': '실전 쓰기', 'list.follow': '따라 치기',
-      'fw.badge': '실전', 'fw.ph': '여기에 자유롭게 답안을 쓰세요.',
-      'fw.showModel': '완료 · 모범답안 보기', 'fw.modelLabel': '모범답안 (스스로 비교해 보세요)',
-      'fw.selfQ': '스스로 평가하면?', 'fw.good': '잘함', 'fw.ok': '보통', 'fw.poor': '부족',
-      'fw.done': '수고했어요! 스스로 대조해 보세요.', 'fw.guide': '작성 도움말', 'fw.chars': '글자',
-      'sec.min': '분'
+/* ---------- 저장소 키 ---------- */
+const K = {
+  bank: 'nq_bank', meta: 'nq_meta', wrong: 'nq_wrong',
+  stats: 'nq_stats', history: 'nq_history', drafts: 'nq_drafts', lang: 'nq_lang',
+  mockSave: 'nq_mocksave', practiceSave: 'nq_practicesave', exam: 'nq_exam',
+  examdate: 'nq_examdate', catalog: 'nq_catalog', diff: 'nq_diff', trial: 'nq_trial',
+};
+
+/* ---------- 공개 폴백(민감한 문제 본문은 넣지 않는다) ---------- */
+const FALLBACK = {
+  version: 'catalog-fallback',
+  questions: [],
+};
+
+/* ---------- 다국어 사전 ---------- */
+let LANG = 'ko';
+/* 언어별 카테고리명(ko=원문, 나머지는 주석 언어). vi/th는 빌드 외부 데이터로 주입 */
+const CAT_TR = {
+  zh: {
+    '한국어': '韩国语', '사회': '社会', '문화': '文化', '정치': '政治', '경제': '经济', '교육': '教育', '법': '法律', '역사': '历史', '지리': '地理', '작문': '写作', '구술': '口试',
+    '어휘': '词汇', '문법': '语法', '읽기·이해': '阅读理解', '대화': '对话', '한국문화': '韩国文化', '한국사회': '韩国社会',
+  },
+  vi: {}, th: {},
+};
+/* EXAMS·PRE_LEVELS의 {ko,zh} 객체에 vi/th가 없을 때 쓰는 한국어→번역 보조사전 */
+const T2 = { vi: {}, th: {} };
+/* 상단바 언어 버튼에 표시할 현재 언어 표식, 글자수 단위 */
+const LANG_LABEL = { ko: '🇰🇷', zh: '🇨🇳', vi: '🇻🇳', th: '🇹🇭' };
+const CHAR_UNIT = { ko: '자', zh: '字', vi: ' ký tự', th: ' ตัวอักษร' };
+const I18N = {
+  ko: {
+    'app.title': '귀화시험 연습', 'app.sync': '동기화', 'lang.select': 'Select Language',
+    'home.mock.t': '모의고사 보기', 'home.mock.s': '실제 시험처럼 풀기',
+    'home.practice.t': '영역별 연습', 'home.practice.s': '9개 영역별로 풀기',
+    'home.writing.t': '작문·구술 연습', 'home.writing.s': '주제별 말하기·쓰기',
+    'home.typing.t': '타자 연습', 'home.typing.s': '작문 모범답안 따라 치기',
+    'home.wrong.t': '오답 노트', 'home.stats.t': '학습 통계', 'home.stats.s': '정답률·기록 보기',
+    'practice.title': '영역별 연습', 'practice.desc': '한 문제씩 풀고 바로 정답·해설을 확인합니다.', 'practice.all': '전체 무작위',
+    'exam.org': '사회통합프로그램 (KIIP)', 'exam.title': '귀화용 종합평가', 'exam.subtitle': '필기시험 모의고사',
+    'exam.name': '성 명', 'exam.namePh': '이름 입력', 'exam.no': '수험번호', 'exam.noticeTitle': '유의사항',
+    'exam.n1': '귀화용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.',
+    'exam.n2': '이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.',
+    'exam.n3': '객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>200자 이내</b>로 작성합니다.',
+    'exam.n4': '객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.',
+    'exam.n5': '실제 시험의 구술은 별도 10분 세션입니다. 사회통합프로그램 5단계 수료 + 합격 시 <b>귀화 면접심사 면제</b>가 가능합니다.',
+    'common.cancel': '취소', 'common.home': '홈으로', 'exam.start': '시험 시작',
+    'quiz.prev': '← 이전', 'quiz.next': '다음 →', 'quiz.result': '결과 보기', 'quiz.submit': '제출하고 채점',
+    'writing.title': '작문·구술 연습', 'seg.writing': '작문', 'seg.oral': '구술',
+    'result.title': '채점 결과', 'result.unit': '점', 'result.reviewHead': '문제 다시보기', 'result.retryWrong': '틀린 문제만 다시 풀기', 'result.retrySame': '같은 문제로 다시 풀기',
+    'wrong.title': '오답 노트', 'wrong.desc': '틀렸던 문제가 모입니다. 맞히면 목록에서 사라집니다.', 'wrong.start': '오답 문제 풀기', 'wrong.clear': '오답노트 비우기',
+    'stats.title': '학습 통계', 'stats.recentHead': '최근 모의고사 기록', 'stats.reset': '통계 초기화', 'writeCount.suffix': ' / 200자',
+    'sync.ready': '준비 완료 · 총 {0}문항 (객관식 {1})', 'sync.never': '동기화를 누르면 최신 문제를 받아옵니다.',
+    'sync.offline': '오프라인 · 마지막 동기화한 {0}문항으로 진행', 'sync.first': '아직 문제를 받지 못했습니다. 인터넷 연결 후 동기화를 눌러주세요.',
+    'sync.synced': '최신 문제로 동기화됨 · 총 {0}문항',
+    'toast.syncing': '최신 문제를 받는 중…', 'toast.syncDone': '동기화 완료! 총 {0}문항', 'toast.offline': '인터넷 연결을 확인하세요. 저장된 문제로 계속할 수 있어요.', 'toast.syncFail': '문제를 받지 못했습니다.',
+    'bankInfo': '문제집 버전: {0} · 객관식 {1}문항 · 마지막 동기화: {2}', 'noSync': '없음',
+    'credit.html': '<span class="cred-mission">사회통합프로그램 종합평가·사전평가 연습</span><span class="cred-links">법무부·한국이민재단의 공식 시험이 아니며, 개인이 만든 연습용 자료입니다.</span>',
+    'wrongCount': '틀린 문제 {0}개', 'cat.count': '{0}문항',
+    'banner.mc': '【객관식】  {0} / {1}', 'banner.writing': '【작문형】  {0} / {1}  ·  200자 이내', 'banner.oral': '【구술】  {0} / {1}  ·  소리 내어 말하기',
+    'fb.correct': '정답입니다! ✅', 'fb.wrong': '오답입니다 ❌  정답: {0}',
+    'write.phWrite': '여기에 답안을 작성하세요 (200자 이내)', 'write.phOral': '소리 내어 답해 보세요. (핵심을 메모해 두어도 됩니다 · 선택)',
+    'result.frac': '객관식 {0}문항 중 {1}문항 정답', 'result.fracMore': ' · 작문·구술은 아래에서 직접 확인',
+    'sg.head': '작문·구술 자가채점', 'sg.note': '작문·구술은 자유 서술이라 자동 채점이 어렵습니다. 모범답안과 비교해 직접 점수를 매기면 합계에 반영됩니다.', 'sg.prompt': '↓ 작문·구술을 직접 채점하면 점수에 반영됩니다', 'sg.good': '잘 씀', 'sg.mid': '보통', 'sg.poor': '부족', 'sg.ungraded': '미채점', 'bd.mc': '객관식', 'bd.writing': '작문', 'bd.oral': '구술', 'bd.total': '합계',
+    'result.pass': '합격선(60점) 통과 🎉', 'result.fail': '합격선(60점)까지 조금 더!', 'result.practice': '연습 모드 결과입니다.',
+    'result.estLevel': '예상 배정 단계: {0}',
+    'result.levelDisclaimer': '※ 이 점수는 실제 배정 점수가 아니라 <b>연습용 예상치</b>입니다. 실제 사전평가는 <b>필기 75점(객관식 48문항 72점 + 작문 2문항 3점) + 구술 25점 = 100점</b>이며, 객관식과 작문은 여기서 자동 채점되지만 <b>구술은 직접 매겨야</b> 총점이 나옵니다. 또한 <b>구술이 3점 미만이면 0단계</b>로 배정됩니다. 정확한 단계는 시험 당일 점수로 정해집니다.',
+    'result.paperScore': '필기(객관식+작문)',
+    'result.paperOf': '{0} / {1}점',
+    'result.wAuto': '작문 자동채점 반영',
+    'sg.noteAuto': '작문은 답안 내용을 자동 채점했습니다. 구술은 자유 발화라 모범답안과 비교해 직접 매겨 주세요. 자동 점수가 마음에 들지 않으면 버튼으로 덮어쓸 수 있습니다.',
+    'sg.headOverride': '직접 다시 매기기',
+    'bd.autoTag': '자동',
+    'auto.ok': '정답입니다 ✅',
+    'auto.no': '오답입니다 ❌',
+    'auto.empty': '작성한 답안이 없습니다 ❌',
+    'result.oralFloor': '구술 3점 미만',
+    'auto.task': '과제 수행 (①②③④ 각 2.5점)',
+    'auto.checkHead': '점검 항목 (점수에 넣지 않음)',
+    'auto.len': '분량',
+    'auto.style': '문체',
+    'auto.title': '제목',
+    'auto.flow': '문장 연결',
+    'auto.w.over': '200칸을 넘습니다',
+    'auto.w.short': '조금 짧습니다',
+    'auto.w.mixed': '문체가 섞였습니다',
+    'auto.w.titled': '제목은 쓰지 않습니다',
+    'auto.capped': '분량이 모자라 점수에 상한을 두었습니다. 네 갈래를 다 다루기에는 글이 너무 짧습니다.',
+    'auto.noteNat': '※ 공식 배점은 <b>작문형 10점 = 4문항 × 2.5점</b>(법무부·한국이민재단 공개)이고, 그 안의 세부 채점 기준은 <b>법령상 비공개</b>입니다. 여기 점수는 네 갈래를 <b>다뤘는지만</b> 본 학습용 근사치이며, <b>어휘·문법의 정확성과 내용의 깊이는 채점하지 않았습니다</b>. 실제 시험은 감독관이 직접 읽고 채점합니다.',
+    'auto.notePre': '※ 실제 사전평가의 단답형 주관식은 1문항 1.5점이며, 부분점수가 있는지는 공개되어 있지 않습니다. △는 연습용 표시입니다.',
+    'auto.mid': '문법은 맞지만 표현이 아쉽습니다 △',
+    'auto.w.choppy': '문장이 너무 적습니다',
+    'auto.overNote': '200칸을 넘겼습니다. 실제 시험지는 200칸 원고지 1장뿐이라 넘긴 부분은 쓸 자리가 없습니다. 여기서도 앞 200칸까지만 채점했습니다.',
+    'style.formal': '습니다체',
+    'style.polite': '해요체',
+    'style.plain': '문어체',
+    'style.casual': '반말',
+    'auto.w.banmal': '반말은 시험 답안에 쓰지 않습니다',
+    'count.sent': '{0}문장',
+    'track.nat': '귀화 종합평가', 'track.perm': '영주 종합평가', 'track.pre': '사회통합 사전평가',
+    'review.unanswered': '선택 안 함', 'review.emptyWrite': '작성한 답안이 없습니다.', 'review.emptyOral': '메모한 내용이 없습니다.',
+    'stats.total': '총 푼 문제', 'stats.acc': '전체 정답률', 'stats.noHistory': '아직 모의고사 기록이 없습니다.',
+    'wrong.empty': '틀린 문제가 없습니다. 잘하고 있어요! 👏', 'writing.empty': '해당 유형의 문제가 없습니다.',
+    'guide.show': '💡 도움말 보기', 'guide.hide': '💡 도움말 숨기기', 'writing.draftPh': '여기에 답을 작성해 보세요 (200자 이내)',
+    'model.show': '📝 모범답안 보기', 'model.hide': '📝 모범답안 숨기기', 'review.model': '모범답안',
+    'resume.banner': '📌 진행 중인 모의고사 이어서 풀기 ({0}/{1})', 'exam.resume': '이어서 풀기 ({0}/{1})',
+    'nav.title': '문항 이동', 'nav.answered': '{0}/{1} 답변 완료', 'nav.question': '{0}번 문항',
+    'nav.legendDone': '답한 것', 'nav.legendFlag': '헷갈리는 것', 'nav.legendTodo': '안 푼 것',
+    'quiz.flag': '헷갈림 표시', 'quiz.unflag': '표시 해제',
+    'confirm.discardMock': '진행 중인 모의고사 기록이 사라집니다. 새로 시작할까요?', 'toast.resumed': '이어서 풉니다.',
+    'resume.practice': '📌 이어서 풀기 · {0} ({1}/{2})', 'practice.allLabel': '전체',
+    'confirm.submit': '제출하고 채점할까요?', 'confirm.clearWrong': '오답노트를 모두 비울까요?', 'confirm.resetStats': '학습 통계와 기록을 모두 초기화할까요?',
+    'toast.clearedWrong': '오답노트를 비웠습니다.', 'toast.resetStats': '초기화했습니다.', 'toast.noQ': '풀 수 있는 문제가 없습니다. 동기화를 먼저 해주세요.', 'toast.timeUp': '시간 종료! 자동 채점합니다.',
+    'count.char': '{0}자',
+    /* A2 오답노트 숙련 원장 */
+    'wrong.desc2': '틀린 문제가 모입니다. <b>두 번 연속</b> 맞히면 목록에서 졸업합니다.',
+    'wrong.miss': '{0}회 틀림', 'wrong.almost': '한 번 더 맞히면 졸업',
+    /* F: 오답노트 — 답 가리고 다시 풀기 + 문항별 삭제 */
+    'wrong.desc3': '틀린 문제가 모입니다. 답은 가려져 있고, 보기를 고르면 그 자리에서 채점합니다. <b>두 번 연속</b> 맞히면 목록에서 졸업합니다.',
+    'wrong.del': '삭제', 'wrong.confirmDel': '이 문제를 오답노트에서 지울까요?', 'wrong.deleted': '오답노트에서 지웠습니다.',
+    'wrong.grad': '졸업! 이 문제는 목록에서 빠집니다. 🎓', 'wrong.retry': '다시 풀기',
+    /* G: 듣고 말하기 */
+    'listen.head': '🎧 듣고 말하기', 'listen.play': '▶ 듣기', 'listen.replay': '↻ 다시 듣기', 'listen.stop': '■ 멈춤',
+    'listen.script': '대본 보기', 'listen.scriptHide': '대본 숨기기',
+    'listen.hint': '먼저 소리만 듣고 답해 보세요. 대본은 답한 뒤에 확인하는 것이 좋습니다.',
+    'listen.no': '이 브라우저는 음성 재생을 지원하지 않습니다. 대본을 보고 연습하세요.',
+    /* A3 시험일 카운트다운 */
+    'examdate.title': '시험일 설정', 'examdate.set': '설정', 'examdate.clear': '지우기',
+    'examdate.dday': 'D-{0}', 'examdate.today': 'D-DAY',
+    'examdate.pace': '하루 권장: 문항 {0}개', 'examdate.left': '남은 문항 {0}개',
+    'examdate.past': '시험일이 지났습니다. 새 시험일을 설정하세요',
+    'examdate.hint': '시험 날짜를 정하면 하루 권장 학습량을 알려드립니다.',
+    /* A4 결과 점수 분리 */
+    'result.mcScore': '객관식', 'result.mcOf': '{0} / 65점',
+    'result.estTotal': '자가채점 포함 추정 총점', 'result.estOf': '{0} / 100',
+    'result.ungradedN': '미채점 {0}개 · 채점하면 총점이 나옵니다',
+    'result.mcOnly': '객관식만으로 {0} / 65',
+    /* A5 통계 → 연습 */
+    'stats.practiceCat': '이 영역만 연습', 'practice.weak': '약점 우선', 'practice.weakSub': '틀린 영역을 더 자주',
+    'diff.all': '전체', 'diff.hard': '문장형', 'diff.easy': '단어형',
+    'diff.hint': '선택지가 문장인 실전 교재형 문제만 골라 풉니다.', 'diff.hintEasy': '선택지가 짧은 단어인 기본 문제만 풉니다.',
+    /* A6 구술 가리고 말하기 */
+    'oral.recite': '모범답안을 가린 채로 소리 내어 답해 보세요.',
+    'oral.reveal': '모범답안 보기', 'oral.hideModel': '모범답안 숨기기',
+    'oral.selfHead': '스스로 평가', 'oral.good': '잘함', 'oral.mid': '보통', 'oral.poor': '부족',
+    'oral.saved': '기록했습니다.',
+    /* E: 원고지 작성법 가이드(종합평가 작문 전용) */
+    'wongoji.title': '원고지 작성법 (실제 시험은 원고지에 씁니다)',
+    'wongoji.body': '<ul><li>① 한글은 한 칸에 한 글자씩 쓴다.</li><li>② 두 자리 이상 숫자와 알파벳 소문자는 한 칸에 2자씩, 한 자리 숫자·대문자는 한 칸에 1자.</li><li>③ 글 첫머리와 새 문단은 첫 칸을 비우고 둘째 칸부터 쓴다.</li><li>④ 둘째 줄부터는 띄어쓰기와 관계없이 줄 맨 앞 칸부터 채워 쓴다.</li><li>⑤ 쉼표(,)·마침표(.) 뒤는 칸을 비우지 않고, 물음표(?)·느낌표(!) 뒤는 한 칸 비운다.</li><li>⑥ 문장부호는 줄 첫 칸에 쓰지 않고 앞 줄 끝 칸에 함께 쓴다.</li><li>⑦ \'수 있다/없다\', \'것 같다\', 한글 수와 단위 명사(\'세 명\') 등은 띄어 쓴다.</li></ul>',
+  },
+  zh: {
+    'app.title': '归化考试练习', 'app.sync': '同步',
+    'home.mock.t': '模拟考试', 'home.mock.s': '像真实考试一样作答',
+    'home.practice.t': '分领域练习', 'home.practice.s': '按9个领域练习',
+    'home.writing.t': '写作·口试练习', 'home.writing.s': '按主题说·写',
+    'home.typing.t': '打字练习', 'home.typing.s': '跟着打作文范文',
+    'home.wrong.t': '错题本', 'home.stats.t': '学习统计', 'home.stats.s': '查看正确率·记录',
+    'practice.title': '分领域练习', 'practice.desc': '逐题作答，立即查看答案与解析。', 'practice.all': '全部随机',
+    'exam.org': '社会统合项目 (KIIP)', 'exam.title': '归化用综合评价', 'exam.subtitle': '笔试模拟考试',
+    'exam.name': '姓 名', 'exam.namePh': '输入姓名', 'exam.no': '准考证号', 'exam.noticeTitle': '注意事项',
+    'exam.n1': '归化用综合评价为 <b>选择题36题(65分) + 写作(10分) + 口试(25分) = 100分</b>，<b>60分以上合格</b>。',
+    'exam.n2': '本模拟考试 <b>笔试(选择题+写作)在60分钟内</b>完成，随后继续练习<b>口试题</b>。',
+    'exam.n3': '选择题从①②③④中选一个，写作在<b>200字以内</b>完成。',
+    'exam.n4': '仅选择题自动评分；写作·口试以参考答案·提示自我检查。',
+    'exam.n5': '真实考试的口试为单独的10分钟环节。修完社会统合项目第5阶段并合格时，<b>可免除归化面试</b>。',
+    'common.cancel': '取消', 'common.home': '返回主页', 'exam.start': '开始考试',
+    'quiz.prev': '← 上一题', 'quiz.next': '下一题 →', 'quiz.result': '查看结果', 'quiz.submit': '提交并评分',
+    'writing.title': '写作·口试练习', 'seg.writing': '写作', 'seg.oral': '口试',
+    'result.title': '评分结果', 'result.unit': '分', 'result.reviewHead': '重新查看题目', 'result.retryWrong': '只重做错题', 'result.retrySame': '用同一套题再做一次',
+    'wrong.title': '错题本', 'wrong.desc': '答错的题会汇集在这里，答对后将从列表中消失。', 'wrong.start': '做错题', 'wrong.clear': '清空错题本',
+    'stats.title': '学习统计', 'stats.recentHead': '最近的模拟考试记录', 'stats.reset': '重置统计', 'writeCount.suffix': ' / 200字',
+    'sync.ready': '准备完成 · 共{0}题 (选择题{1})', 'sync.never': '点击同步即可获取最新题目。',
+    'sync.offline': '离线 — 使用上次同步的{0}题继续', 'sync.first': '尚未获取题目。请联网后点击同步。',
+    'sync.synced': '已同步到最新题目 · 共{0}题',
+    'toast.syncing': '正在获取最新题目…', 'toast.syncDone': '同步完成！共{0}题', 'toast.offline': '请检查网络连接。可使用已保存的题目继续。', 'toast.syncFail': '未能获取题目。',
+    'bankInfo': '题库版本：{0} · 选择题{1}题 · 上次同步：{2}', 'noSync': '无',
+    'credit.html': '<span class="cred-mission">社会统合项目 综合评价·事前评价 练习</span><span class="cred-links">非法务部·韩国移民财团的官方考试，为个人制作的练习资料。</span>',
+    'wrongCount': '错题 {0} 道', 'cat.count': '{0}题',
+    'banner.mc': '【选择题】  {0} / {1}', 'banner.writing': '【写作】  {0} / {1}  ·  200字以内', 'banner.oral': '【口试】  {0} / {1}  ·  请朗读作答',
+    'fb.correct': '回答正确！✅', 'fb.wrong': '回答错误 ❌  正确答案：{0}',
+    'write.phWrite': '请在此作答（200字以内）', 'write.phOral': '请朗读作答。（也可记下要点 — 可选）',
+    'result.frac': '选择题{0}题中答对{1}题', 'result.fracMore': ' · 写作·口试请在下方自行确认',
+    'sg.head': '写作·口试 自评', 'sg.note': '写作·口试是自由作答，难以自动评分。对照范文自己打分后会计入总分。', 'sg.prompt': '↓ 自评写作·口试后会计入分数', 'sg.good': '写得好', 'sg.mid': '一般', 'sg.poor': '不足', 'sg.ungraded': '未评分', 'bd.mc': '选择题', 'bd.writing': '写作', 'bd.oral': '口试', 'bd.total': '合计',
+    'result.pass': '已达合格线（60分）🎉', 'result.fail': '距合格线（60分）还差一点！', 'result.practice': '这是练习模式的结果。',
+    'result.estLevel': '预计分配阶段：{0}',
+    'result.levelDisclaimer': '※ 此分数不是实际分配分数，而是 <b>练习用预估值</b>。实际事前评价为 <b>笔试75分（选择题48题72分 + 写作2题3分）+ 口试25分 = 100分</b>；选择题和写作在这里自动评分，但 <b>口试需要你自己打分</b>才能得出总分。另外 <b>口试不足3分则分配到0阶段</b>。准确阶段以考试当天分数为准。',
+    'result.paperScore': '笔试(选择题+写作)',
+    'result.paperOf': '{0} / {1}分',
+    'result.wAuto': '已计入写作自动评分',
+    'sg.noteAuto': '写作已按答案内容自动评分。口试是自由发挥，请对照参考答案自己打分。对自动分数不满意时，可以用按钮覆盖。',
+    'sg.headOverride': '自己重新打分',
+    'bd.autoTag': '自动',
+    'auto.ok': '答对了 ✅',
+    'auto.no': '答错了 ❌',
+    'auto.empty': '没有作答 ❌',
+    'result.oralFloor': '口试不足3分',
+    'auto.task': '任务完成度 (①②③④ 各2.5分)',
+    'auto.checkHead': '检查项 (不计入分数)',
+    'auto.len': '篇幅',
+    'auto.style': '文体',
+    'auto.title': '标题',
+    'auto.flow': '句子衔接',
+    'auto.w.over': '超过200格',
+    'auto.w.short': '略短',
+    'auto.w.mixed': '文体混用',
+    'auto.w.titled': '不要写标题',
+    'auto.capped': '篇幅不足，分数已设上限。这么短的篇幅不可能把四个小点都写到。',
+    'auto.noteNat': '※ 官方分值为 <b>写作10分 = 4题 × 2.5分</b>（法务部·韩国移民财团公开），其内部的细则评分标准 <b>依法不公开</b>。这里的分数只看四个小点 <b>有没有写到</b>，是练习用的近似值，<b>没有评判用词语法的准确性和内容的深度</b>。真实考试由监考官阅卷评分。',
+    'auto.notePre': '※ 真实事前评价的简答主观题为每题1.5分，是否有部分分数并未公开。△ 是练习用的标记。',
+    'auto.mid': '语法对了，但表达欠妥 △',
+    'auto.w.choppy': '句子太少',
+    'auto.overNote': '超过了200格。真实考试只有一张200格稿纸，超出部分没有地方可写。这里也只评了前200格。',
+    'style.formal': '습니다体',
+    'style.polite': '해요体',
+    'style.plain': '书面体',
+    'style.casual': '半语',
+    'auto.w.banmal': '考试答案不用半语',
+    'count.sent': '{0}句',
+    'track.nat': '归化综合评价', 'track.perm': '永居综合评价', 'track.pre': '社会统合事前评价',
+    'review.unanswered': '未作答', 'review.emptyWrite': '没有作答内容。', 'review.emptyOral': '没有记录内容。',
+    'stats.total': '已做题数', 'stats.acc': '总正确率', 'stats.noHistory': '还没有模拟考试记录。',
+    'wrong.empty': '没有错题，做得很好！👏', 'writing.empty': '没有该类型的题目。',
+    'guide.show': '💡 查看提示', 'guide.hide': '💡 隐藏提示', 'writing.draftPh': '请在此作答（200字以内）',
+    'model.show': '📝 查看范文', 'model.hide': '📝 隐藏范文', 'review.model': '范文',
+    'resume.banner': '📌 继续上次的模拟考试 ({0}/{1})', 'exam.resume': '继续作答 ({0}/{1})',
+    'nav.title': '题号', 'nav.answered': '{0}/{1} 已作答', 'nav.question': '第{0}题',
+    'nav.legendDone': '已作答', 'nav.legendFlag': '不确定', 'nav.legendTodo': '未作答',
+    'quiz.flag': '标记不确定', 'quiz.unflag': '取消标记',
+    'confirm.discardMock': '正在进行的模拟考试记录将被删除。要重新开始吗？', 'toast.resumed': '继续作答。',
+    'resume.practice': '📌 继续上次练习 — {0} ({1}/{2})', 'practice.allLabel': '全部',
+    'confirm.submit': '要提交并评分吗？', 'confirm.clearWrong': '要清空错题本吗？', 'confirm.resetStats': '要重置所有学习统计和记录吗？',
+    'toast.clearedWrong': '已清空错题本。', 'toast.resetStats': '已重置。', 'toast.noQ': '没有可作答的题目。请先同步。', 'toast.timeUp': '时间到！自动评分。',
+    'count.char': '{0}字',
+    /* A2 错题熟练度台账 */
+    'wrong.desc2': '答错的题会汇集在这里。<b>连续两次</b>答对就从列表毕业。',
+    'wrong.miss': '错{0}次', 'wrong.almost': '再答对一次就毕业',
+    'wrong.desc3': '答错的题会汇集在这里。答案已隐藏，选择选项后当场评分。<b>连续两次</b>答对就从列表毕业。',
+    'wrong.del': '删除', 'wrong.confirmDel': '要把这道题从错题本中删除吗？', 'wrong.deleted': '已从错题本删除。',
+    'wrong.grad': '毕业！这道题将从列表中移除。🎓', 'wrong.retry': '再做一次',
+    'listen.head': '🎧 听后说', 'listen.play': '▶ 播放', 'listen.replay': '↻ 再听一次', 'listen.stop': '■ 停止',
+    'listen.script': '查看文本', 'listen.scriptHide': '隐藏文本',
+    'listen.hint': '请先只听声音作答。文本最好在回答之后再确认。',
+    'listen.no': '此浏览器不支持语音播放。请看文本进行练习。',
+    /* A3 考试日倒计时 */
+    'examdate.title': '设置考试日', 'examdate.set': '设置', 'examdate.clear': '清除',
+    'examdate.dday': '倒数{0}天', 'examdate.today': '就是今天',
+    'examdate.pace': '每天建议：{0}题', 'examdate.left': '剩余{0}题',
+    'examdate.past': '考试日已过 — 请设置新的考试日',
+    'examdate.hint': '设定考试日期后，会告诉你每天建议做多少题。',
+    /* A4 成绩分开显示 */
+    'result.mcScore': '选择题', 'result.mcOf': '{0} / 65分',
+    'result.estTotal': '含自评的预估总分', 'result.estOf': '{0} / 100',
+    'result.ungradedN': '还有{0}题未评分 — 评分后才能算出总分',
+    'result.mcOnly': '仅选择题 {0} / 65',
+    /* A5 统计 → 练习 */
+    'stats.practiceCat': '只练这个领域', 'practice.weak': '弱项优先', 'practice.weakSub': '答错多的领域出得更频繁',
+    'diff.all': '全部', 'diff.hard': '长句题', 'diff.easy': '短词题',
+    'diff.hint': '只练选项是整句的实战教材型难题。', 'diff.hintEasy': '只练选项是短词的基础题。',
+    /* A6 口试遮住作答 */
+    'oral.recite': '请遮住范文，先出声作答一遍。',
+    'oral.reveal': '查看范文', 'oral.hideModel': '隐藏范文',
+    'oral.selfHead': '自我评价', 'oral.good': '答得好', 'oral.mid': '一般', 'oral.poor': '不足',
+    'oral.saved': '已记录。',
+    /* E: 答题纸书写规则（综合评价写作专用） */
+    'wongoji.title': '答题纸书写规则（正式考试须书写在答题纸上）',
+    'wongoji.body': '<ul><li>① 韩文每格写一个字。</li><li>② 两位数以上的数字和小写字母每格写2个字符，个位数数字和大写字母每格写1个字符。</li><li>③ 文章开头和新段落要空出第一格，从第二格开始写。</li><li>④ 从第二行开始，无论是否需要空格，都从行首格开始填满书写。</li><li>⑤ 逗号(,)和句号(.)后不空格，问号(?)和感叹号(!)后空一格。</li><li>⑥ 标点符号不写在行首格，而是与上一行末格一起书写。</li><li>⑦ “수 있다/없다”（能/不能）、“것 같다”（好像）、韩文数词与量词（如“세 명”）等要分开书写（空格）。</li></ul>',
+  },
+};
+/* === vi/th UI 번역 주입(빌드 외부 데이터) === */
+I18N.vi = {"result.retrySame": "Làm lại chính đề này", "app.title": "Luyện thi nhập tịch", "app.sync": "Đồng bộ", "home.mock.t": "Thi thử", "home.mock.s": "Làm bài như thi thật", "home.practice.t": "Luyện theo lĩnh vực", "home.practice.s": "Luyện theo 9 lĩnh vực", "home.writing.t": "Luyện viết · vấn đáp", "home.writing.s": "Nói · viết theo chủ đề", "home.typing.t": "Luyện gõ phím", "home.typing.s": "Gõ theo bài văn mẫu", "home.wrong.t": "Sổ câu sai", "home.stats.t": "Thống kê học tập", "home.stats.s": "Xem tỷ lệ đúng · lịch sử", "practice.title": "Luyện theo lĩnh vực", "practice.desc": "Làm từng câu rồi xem ngay đáp án · lời giải.", "practice.all": "Ngẫu nhiên toàn bộ", "exam.org": "Chương trình Hội nhập xã hội (KIIP)", "exam.title": "Đánh giá tổng hợp dùng cho nhập tịch", "exam.subtitle": "Thi thử phần thi viết", "exam.name": "Họ tên", "exam.namePh": "Nhập họ tên", "exam.no": "Số báo danh", "exam.noticeTitle": "Lưu ý", "exam.n1": "Đánh giá tổng hợp dùng cho nhập tịch gồm <b>trắc nghiệm 36 câu (65 điểm) + tự luận viết (10 điểm) + vấn đáp (25 điểm) = 100 điểm</b>, <b>đạt 60 điểm trở lên là đậu</b>.", "exam.n2": "Bài thi thử này làm <b>phần viết (trắc nghiệm + tự luận) trong 60 phút</b>, sau đó luyện tiếp <b>phần vấn đáp</b>.", "exam.n3": "Trắc nghiệm chọn một trong ①②③④, phần tự luận viết <b>trong 200 chữ</b>.", "exam.n4": "Chỉ trắc nghiệm được chấm tự động; phần viết · vấn đáp tự kiểm tra bằng đáp án mẫu · gợi ý.", "exam.n5": "Phần vấn đáp ở kỳ thi thật là một phiên riêng 10 phút. Khi hoàn thành giai đoạn 5 của Chương trình Hội nhập xã hội + thi đậu thì <b>có thể được miễn phỏng vấn nhập tịch</b>.", "common.cancel": "Hủy", "common.home": "Về trang chủ", "exam.start": "Bắt đầu thi", "quiz.prev": "← Câu trước", "quiz.next": "Câu sau →", "quiz.result": "Xem kết quả", "quiz.submit": "Nộp bài và chấm điểm", "writing.title": "Luyện viết · vấn đáp", "seg.writing": "Viết", "seg.oral": "Vấn đáp", "result.title": "Kết quả chấm điểm", "result.unit": " điểm", "result.reviewHead": "Xem lại câu hỏi", "result.retryWrong": "Làm lại chỉ những câu sai", "wrong.title": "Sổ câu sai", "wrong.desc": "Những câu đã làm sai sẽ được gom lại đây. Làm đúng thì câu đó biến khỏi danh sách.", "wrong.start": "Làm câu sai", "wrong.clear": "Xóa sổ câu sai", "stats.title": "Thống kê học tập", "stats.recentHead": "Lịch sử thi thử gần đây", "stats.reset": "Đặt lại thống kê", "writeCount.suffix": " / 200 chữ", "sync.ready": "Đã sẵn sàng · tổng {0} câu (trắc nghiệm {1})", "sync.never": "Nhấn Đồng bộ để tải về câu hỏi mới nhất.", "sync.offline": "Ngoại tuyến — tiếp tục với {0} câu đã đồng bộ lần cuối", "sync.first": "Bạn chưa tải về câu hỏi nào. Hãy kết nối Internet rồi nhấn Đồng bộ.", "sync.synced": "Đã đồng bộ về câu hỏi mới nhất · tổng {0} câu", "toast.syncing": "Đang tải câu hỏi mới nhất…", "toast.syncDone": "Đồng bộ xong! Tổng {0} câu", "toast.offline": "Hãy kiểm tra kết nối Internet. Bạn có thể tiếp tục với câu hỏi đã lưu.", "toast.syncFail": "Không tải được câu hỏi.", "bankInfo": "Phiên bản bộ câu hỏi: {0} · trắc nghiệm {1} câu · đồng bộ lần cuối: {2}", "noSync": "Không có", "wrongCount": "{0} câu sai", "cat.count": "{0} câu", "banner.mc": "【Trắc nghiệm】  {0} / {1}", "banner.writing": "【Tự luận viết】  {0} / {1}  ·  trong 200 chữ", "banner.oral": "【Vấn đáp】  {0} / {1}  ·  nói thành tiếng", "fb.correct": "Chính xác! ✅", "fb.wrong": "Sai rồi ❌  Đáp án: {0}", "write.phWrite": "Viết câu trả lời của bạn ở đây (trong 200 chữ)", "write.phOral": "Hãy trả lời thành tiếng. (Bạn có thể ghi chú ý chính — tùy chọn)", "result.frac": "Đúng {1}/{0} câu trắc nghiệm", "result.fracMore": " · Phần viết · vấn đáp hãy tự kiểm tra ở bên dưới", "sg.head": "Tự chấm viết · vấn đáp", "sg.note": "Phần viết · vấn đáp là tự luận nên khó chấm tự động. Tự chấm khi đối chiếu bài mẫu sẽ được tính vào tổng điểm.", "sg.prompt": "↓ Tự chấm viết · vấn đáp để tính vào điểm", "sg.good": "Tốt", "sg.mid": "Trung bình", "sg.poor": "Chưa đạt", "sg.ungraded": "Chưa chấm", "bd.mc": "Trắc nghiệm", "bd.writing": "Viết", "bd.oral": "Vấn đáp", "bd.total": "Tổng", "result.pass": "Đã vượt mốc đậu (60 điểm) 🎉", "result.fail": "Cố thêm chút nữa để đạt mốc đậu (60 điểm)!", "result.practice": "Đây là kết quả ở chế độ luyện tập.", "result.estLevel": "Giai đoạn xếp lớp dự kiến: {0}", "result.levelDisclaimer": "※ Điểm này không phải điểm xếp lớp thực tế mà là <b>ước tính dựa trên năng lực trắc nghiệm</b>. Đánh giá đầu vào thực tế gồm trắc nghiệm (75 điểm) + viết (2 câu) + vấn đáp (25 điểm) = 100 điểm, phần viết · vấn đáp do người chấm. Ngoài ra, <b>nếu vấn đáp dưới 3 điểm thì xếp giai đoạn 0</b>. Giai đoạn chính xác được quyết định theo điểm trong ngày thi.", "track.nat": "Đánh giá tổng hợp nhập tịch", "track.perm": "Đánh giá tổng hợp định cư", "track.pre": "Đánh giá đầu vào Hội nhập xã hội", "review.unanswered": "Chưa chọn", "review.emptyWrite": "Không có câu trả lời nào được viết.", "review.emptyOral": "Không có nội dung ghi chú nào.", "stats.total": "Tổng số câu đã làm", "stats.acc": "Tỷ lệ đúng tổng thể", "stats.noHistory": "Chưa có lịch sử thi thử nào.", "wrong.empty": "Không có câu sai nào. Bạn đang làm rất tốt! 👏", "writing.empty": "Không có câu hỏi thuộc loại này.", "guide.show": "💡 Xem gợi ý", "guide.hide": "💡 Ẩn gợi ý", "writing.draftPh": "Thử viết câu trả lời ở đây (trong 200 chữ)", "model.show": "📝 Xem đáp án mẫu", "model.hide": "📝 Ẩn đáp án mẫu", "review.model": "Đáp án mẫu", "resume.banner": "📌 Tiếp tục bài thi thử đang dở ({0}/{1})", "exam.resume": "Làm tiếp ({0}/{1})", "confirm.discardMock": "Bản ghi bài thi thử đang dở sẽ bị mất. Bắt đầu lại từ đầu chứ?", "toast.resumed": "Làm tiếp.", "resume.practice": "📌 Làm tiếp — {0} ({1}/{2})", "practice.allLabel": "Toàn bộ", "confirm.submit": "Nộp bài và chấm điểm chứ?", "confirm.clearWrong": "Xóa toàn bộ sổ câu sai chứ?", "confirm.resetStats": "Đặt lại toàn bộ thống kê và lịch sử học tập chứ?", "toast.clearedWrong": "Đã xóa sổ câu sai.", "toast.resetStats": "Đã đặt lại.", "toast.noQ": "Không có câu hỏi nào để làm. Hãy đồng bộ trước.", "toast.timeUp": "Hết giờ! Tự động chấm điểm.", "count.char": "{0} chữ", "wrong.desc2": "Những câu làm sai sẽ gom lại đây. Làm đúng <b>hai lần liên tiếp</b> thì câu đó tốt nghiệp khỏi danh sách.", "wrong.miss": "Sai {0} lần", "wrong.almost": "Đúng thêm một lần nữa là tốt nghiệp", "wrong.desc3": "Những câu làm sai sẽ gom lại đây. Đáp án được che đi; chọn phương án là chấm ngay tại chỗ. Đúng <b>hai lần liên tiếp</b> thì câu đó tốt nghiệp khỏi danh sách.", "wrong.del": "Xóa", "wrong.confirmDel": "Xóa câu này khỏi sổ câu sai chứ?", "wrong.deleted": "Đã xóa khỏi sổ câu sai.", "wrong.grad": "Tốt nghiệp! Câu này sẽ rời khỏi danh sách. 🎓", "wrong.retry": "Làm lại", "listen.head": "🎧 Nghe và nói", "listen.play": "▶ Nghe", "listen.replay": "↻ Nghe lại", "listen.stop": "■ Dừng", "listen.script": "Xem lời thoại", "listen.scriptHide": "Ẩn lời thoại", "listen.hint": "Hãy chỉ nghe âm thanh rồi trả lời trước. Nên xem lời thoại sau khi đã trả lời.", "listen.no": "Trình duyệt này không hỗ trợ phát giọng nói. Hãy xem lời thoại để luyện tập.", "examdate.title": "Đặt ngày thi", "examdate.set": "Đặt", "examdate.clear": "Xóa", "examdate.dday": "Còn {0} ngày", "examdate.today": "Đúng hôm nay", "examdate.pace": "Đề nghị mỗi ngày: {0} câu", "examdate.left": "Còn {0} câu", "examdate.past": "Ngày thi đã qua — hãy đặt ngày thi mới", "examdate.hint": "Đặt ngày thi để biết mỗi ngày nên làm bao nhiêu câu.", "result.mcScore": "Trắc nghiệm", "result.mcOf": "{0} / 65 điểm", "result.estTotal": "Tổng điểm ước tính (gồm tự chấm)", "result.estOf": "{0} / 100", "result.ungradedN": "Còn {0} câu chưa chấm — chấm xong mới ra tổng điểm", "result.mcOnly": "Chỉ trắc nghiệm {0} / 65", "stats.practiceCat": "Chỉ luyện lĩnh vực này", "practice.weak": "Ưu tiên điểm yếu", "practice.weakSub": "Lĩnh vực hay sai sẽ ra nhiều hơn", "oral.recite": "Hãy che đáp án mẫu và trả lời thành tiếng trước.", "oral.reveal": "Xem đáp án mẫu", "oral.hideModel": "Ẩn đáp án mẫu", "oral.selfHead": "Tự đánh giá", "oral.good": "Tốt", "oral.mid": "Trung bình", "oral.poor": "Chưa đạt", "oral.saved": "Đã ghi lại.", "wongoji.title": "Cách viết trên giấy có ô (bài thi thật viết trên giấy có ô)", "wongoji.body": "<ul><li>① Chữ Hàn viết mỗi ô một chữ.</li><li>② Số có từ hai chữ số trở lên và chữ cái thường viết mỗi ô 2 ký tự; số có một chữ số và chữ in hoa viết mỗi ô 1 ký tự.</li><li>③ Đầu bài và đoạn văn mới để trống ô đầu tiên, bắt đầu viết từ ô thứ hai.</li><li>④ Từ dòng thứ hai trở đi, viết kín từ ô đầu dòng, bất kể quy tắc cách chữ.</li><li>⑤ Sau dấu phẩy (,) và dấu chấm (.) không để trống ô, sau dấu chấm hỏi (?) và dấu chấm than (!) để trống một ô.</li><li>⑥ Không viết dấu câu ở ô đầu dòng mà viết cùng ô cuối của dòng trước.</li><li>⑦ Các cách diễn đạt như '수 있다/없다' (có thể/không thể), '것 같다' (hình như), số đếm tiếng Hàn với danh từ đơn vị (ví dụ '세 명')... đều phải cách chữ (để trống ô).</li></ul>", "result.paperScore": "Phần viết (trắc nghiệm + tự luận)", "result.paperOf": "{0} / {1} điểm", "result.wAuto": "Đã tính điểm tự luận chấm tự động", "sg.noteAuto": "Phần viết đã được chấm tự động theo nội dung bài làm. Phần vấn đáp là nói tự do nên hãy tự chấm khi đối chiếu bài mẫu. Nếu không hài lòng với điểm tự động, bạn có thể ghi đè bằng các nút bên dưới.", "sg.headOverride": "Tự chấm lại", "bd.autoTag": "tự động", "auto.ok": "Chính xác ✅", "auto.mid": "Đúng ngữ pháp nhưng cách diễn đạt chưa ổn △", "auto.no": "Sai rồi ❌", "auto.empty": "Không có bài làm ❌", "auto.task": "Thực hiện yêu cầu (①②③④ mỗi ý 2,5 điểm)", "auto.len": "Độ dài", "auto.style": "Văn phong", "result.oralFloor": "Vấn đáp dưới 3 điểm", "auto.checkHead": "Mục kiểm tra (không tính điểm)", "auto.title": "Tiêu đề", "auto.flow": "Liên kết câu", "auto.w.over": "Vượt quá 200 ô", "auto.w.short": "Hơi ngắn", "auto.w.mixed": "Lẫn lộn văn phong", "auto.w.titled": "Không viết tiêu đề", "auto.capped": "Bài quá ngắn nên điểm đã bị giới hạn. Với độ dài này không thể viết đủ bốn ý.", "auto.noteNat": "※ Thang điểm chính thức là <b>tự luận viết 10 điểm = 4 câu × 2,5 điểm</b> (Bộ Tư pháp · Quỹ Di trú Hàn Quốc công bố), còn tiêu chí chấm chi tiết bên trong thì <b>không được công khai theo quy định</b>. Điểm ở đây chỉ xét bạn <b>có đề cập</b> đủ bốn ý hay không, là giá trị gần đúng để luyện tập, <b>không chấm độ chính xác của từ vựng · ngữ pháp và chiều sâu nội dung</b>. Kỳ thi thật do giám thị trực tiếp đọc và chấm.", "auto.notePre": "※ Câu tự luận ngắn của kỳ đánh giá đầu vào thật là 1,5 điểm mỗi câu, và việc có điểm thành phần hay không thì không được công bố. Dấu △ chỉ là ký hiệu dùng khi luyện tập.", "auto.w.choppy": "Quá ít câu", "auto.overNote": "Bạn đã viết quá 200 ô. Bài thi thật chỉ có một tờ giấy ô 200 ô nên phần vượt quá không có chỗ để viết. Ở đây cũng chỉ chấm đến ô thứ 200.", "style.formal": "Thể -seumnida", "style.polite": "Thể -haeyo", "style.plain": "Thể viết", "style.casual": "Thể thân mật", "auto.w.banmal": "Không dùng thể thân mật trong bài thi", "count.sent": "{0} câu", "credit.html": "<span class=\"cred-mission\">Luyện thi Đánh giá tổng hợp · Đánh giá đầu vào (KIIP)</span><span class=\"cred-links\">Đây không phải kỳ thi chính thức của Bộ Tư pháp hay Quỹ Di trú Hàn Quốc, mà là tài liệu luyện tập do cá nhân biên soạn.</span>", "diff.all": "Tất cả", "diff.hard": "Dạng câu dài", "diff.easy": "Dạng từ ngắn", "diff.hint": "Chỉ làm những câu có phương án là câu hoàn chỉnh, giống đề thi thật.", "diff.hintEasy": "Chỉ làm những câu có phương án là từ ngắn.", "member.joinQ": "Bạn chưa phải hội viên?", "member.joinD": "Hãy gửi thư đến địa chỉ dưới đây, tôi sẽ hướng dẫn.", "member.joinCopy": "Sao chép", "member.joinCopied": "Đã sao chép", "intro.title": "Luyện tập được căn theo đề thi thật", "intro.counts": "{0} · Trắc nghiệm {1} · Viết {2} · Vấn đáp {3}", "intro.p1": "Cơ cấu lĩnh vực của đề thi thử được căn theo <b>đề mẫu do Bộ Tư pháp công bố</b>.", "intro.p2": "Đề nhập tịch có <b>10 câu dành riêng cho nhập tịch</b> theo bảng thay thế của giáo trình.", "intro.p3": "Bấm giờ <b>đúng như kỳ thi thật</b>, câu sai được tự động lưu vào sổ câu sai.", "intro.p4": "Mỗi câu đều kèm nghĩa <b>tiếng Trung · tiếng Việt · tiếng Thái</b>.", "trial.try": "Làm thử miễn phí một bộ", "trial.done": "Bạn đã dùng hết lượt thử miễn phí của kỳ thi này", "trial.loading": "Đang tải đề thử…", "trial.endHead": "Bạn đã hoàn thành bài thử miễn phí.", "trial.endScore": "Trắc nghiệm đúng {1} / {2} · {0} điểm", "trial.endWrong": "{0} câu sai đã được lưu vào sổ câu sai.", "trial.b1": "Khi là hội viên, bạn có thêm {0} câu nữa.", "trial.b2": "Thi thử không giới hạn số lần.", "trial.b3": "Sổ câu sai cho phép làm lại đến khi đúng.", "trial.b4": "Có thêm ba bộ đề thi thử lấy từ giáo trình.", "member.trial_done": "Bạn đã dùng hết lượt thử miễn phí của kỳ thi này.\\nHãy trở thành hội viên để tiếp tục.", "member.price": "20.000 won · Dùng vĩnh viễn", "trial.b5": "Có thể chỉ chọn những câu khó có phương án là câu hoàn chỉnh.", "intro.p2perm": "Đề thường trú <b>loại bỏ các câu dành riêng cho nhập tịch</b>, nên bạn không phải học những gì không ra thi.", "member.priceNum": "20,000", "member.priceUnit": "원", "member.priceNote": "Thanh toán một lần · Dùng vĩnh viễn"};
+I18N.th = {"result.retrySame": "ทำชุดข้อสอบเดิมอีกครั้ง", "app.title": "ฝึกสอบแปลงสัญชาติ", "app.sync": "ซิงค์", "home.mock.t": "ทำข้อสอบจำลอง", "home.mock.s": "ทำเหมือนสอบจริง", "home.practice.t": "ฝึกแยกตามหมวด", "home.practice.s": "ฝึกตาม 9 หมวด", "home.writing.t": "ฝึกเขียน·พูด", "home.writing.s": "พูด·เขียนตามหัวข้อ", "home.typing.t": "ฝึกพิมพ์", "home.typing.s": "พิมพ์ตามเรียงความตัวอย่าง", "home.wrong.t": "สมุดข้อผิด", "home.stats.t": "สถิติการเรียน", "home.stats.s": "ดูอัตราถูก·ประวัติ", "practice.title": "ฝึกแยกตามหมวด", "practice.desc": "ทำทีละข้อแล้วดูเฉลย·คำอธิบายได้ทันที", "practice.all": "สุ่มทั้งหมด", "exam.org": "โครงการบูรณาการสังคม (KIIP)", "exam.title": "การประเมินรวมเพื่อแปลงสัญชาติ", "exam.subtitle": "ข้อสอบจำลองภาคข้อเขียน", "exam.name": "ชื่อ", "exam.namePh": "กรอกชื่อ", "exam.no": "เลขที่นั่งสอบ", "exam.noticeTitle": "ข้อควรทราบ", "exam.n1": "การประเมินรวมเพื่อแปลงสัญชาติคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "exam.n2": "ข้อสอบจำลองนี้ให้ทำ <b>ภาคข้อเขียน (ปรนัย+เขียน) ภายใน 60 นาที</b> แล้วฝึก <b>ข้อสอบพูด</b> ต่อ", "exam.n3": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนให้เขียน <b>ไม่เกิน 200 ตัวอักษร</b>", "exam.n4": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัย ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง·คำแนะนำ", "exam.n5": "การพูดในสอบจริงเป็นช่วงแยกต่างหาก 10 นาที เมื่อจบโครงการบูรณาการสังคมระดับ 5 + สอบผ่าน จะ <b>ได้รับการยกเว้นการสัมภาษณ์แปลงสัญชาติ</b>", "common.cancel": "ยกเลิก", "common.home": "กลับหน้าหลัก", "exam.start": "เริ่มสอบ", "quiz.prev": "← ก่อนหน้า", "quiz.next": "ถัดไป →", "quiz.result": "ดูผล", "quiz.submit": "ส่งและตรวจคะแนน", "writing.title": "ฝึกเขียน·พูด", "seg.writing": "เขียน", "seg.oral": "พูด", "result.title": "ผลการตรวจคะแนน", "result.unit": "คะแนน", "result.reviewHead": "ดูข้อสอบอีกครั้ง", "result.retryWrong": "ทำเฉพาะข้อที่ผิดอีกครั้ง", "wrong.title": "สมุดข้อผิด", "wrong.desc": "ข้อที่ตอบผิดจะถูกรวบรวมไว้ที่นี่ เมื่อตอบถูกจะหายไปจากรายการ", "wrong.start": "ทำข้อที่ผิด", "wrong.clear": "ล้างสมุดข้อผิด", "stats.title": "สถิติการเรียน", "stats.recentHead": "ประวัติข้อสอบจำลองล่าสุด", "stats.reset": "รีเซ็ตสถิติ", "writeCount.suffix": " / 200 ตัวอักษร", "sync.ready": "พร้อมแล้ว · ทั้งหมด {0} ข้อ (ปรนัย {1})", "sync.never": "กดซิงค์เพื่อรับข้อสอบล่าสุด", "sync.offline": "ออฟไลน์ — ดำเนินการด้วย {0} ข้อจากการซิงค์ครั้งล่าสุด", "sync.first": "ยังไม่ได้รับข้อสอบ กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วกดซิงค์", "sync.synced": "ซิงค์เป็นข้อสอบล่าสุดแล้ว · ทั้งหมด {0} ข้อ", "toast.syncing": "กำลังรับข้อสอบล่าสุด…", "toast.syncDone": "ซิงค์เสร็จแล้ว! ทั้งหมด {0} ข้อ", "toast.offline": "กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต คุณสามารถทำต่อด้วยข้อสอบที่บันทึกไว้ได้", "toast.syncFail": "ไม่สามารถรับข้อสอบได้", "bankInfo": "เวอร์ชันคลังข้อสอบ: {0} · ปรนัย {1} ข้อ · ซิงค์ล่าสุด: {2}", "noSync": "ไม่มี", "wrongCount": "ข้อที่ผิด {0} ข้อ", "cat.count": "{0} ข้อ", "banner.mc": "【ปรนัย】  {0} / {1}", "banner.writing": "【เขียน】  {0} / {1}  ·  ไม่เกิน 200 ตัวอักษร", "banner.oral": "【พูด】  {0} / {1}  ·  พูดออกเสียง", "fb.correct": "ตอบถูก! ✅", "fb.wrong": "ตอบผิด ❌  คำตอบที่ถูก: {0}", "write.phWrite": "เขียนคำตอบของคุณที่นี่ (ไม่เกิน 200 ตัวอักษร)", "write.phOral": "ลองพูดตอบออกเสียงดู (จะจดประเด็นสำคัญไว้ก็ได้ — ไม่บังคับ)", "result.frac": "ตอบถูก {1} ข้อ จากปรนัย {0} ข้อ", "result.fracMore": " · เขียน·พูดให้ตรวจสอบเองด้านล่าง", "sg.head": "ประเมินตนเอง เขียน·พูด", "sg.note": "เขียน·พูดเป็นการตอบอิสระ จึงให้คะแนนอัตโนมัติได้ยาก ประเมินตนเองโดยเทียบกับคำตอบตัวอย่างแล้วจะรวมในคะแนนรวม", "sg.prompt": "↓ ประเมินเขียน·พูดเองเพื่อรวมในคะแนน", "sg.good": "ดี", "sg.mid": "พอใช้", "sg.poor": "ยังไม่ดี", "sg.ungraded": "ยังไม่ประเมิน", "bd.mc": "ปรนัย", "bd.writing": "เขียน", "bd.oral": "พูด", "bd.total": "รวม", "result.pass": "ผ่านเกณฑ์ (60 คะแนน) 🎉", "result.fail": "อีกนิดเดียวก็ถึงเกณฑ์ (60 คะแนน)!", "result.practice": "นี่คือผลในโหมดฝึก", "result.estLevel": "ระดับที่คาดว่าจะได้รับการจัด: {0}", "result.levelDisclaimer": "※ คะแนนนี้ไม่ใช่คะแนนจัดระดับจริง แต่เป็น <b>ค่าประมาณตามความสามารถปรนัย</b> การประเมินเบื้องต้นจริงคือ ปรนัย (75 คะแนน)+เขียน (2 ข้อ)+พูด (25 คะแนน)=100 คะแนน โดยเขียน·พูดตรวจโดยคน นอกจากนี้ <b>หากพูดได้ต่ำกว่า 3 คะแนนจะถูกจัดเป็นระดับ 0</b> ระดับที่แน่นอนจะกำหนดจากคะแนนในวันสอบ", "track.nat": "การประเมินรวมแปลงสัญชาติ", "track.perm": "การประเมินรวมถิ่นที่อยู่ถาวร", "track.pre": "การประเมินเบื้องต้นบูรณาการสังคม", "review.unanswered": "ไม่ได้เลือก", "review.emptyWrite": "ไม่มีคำตอบที่เขียนไว้", "review.emptyOral": "ไม่มีเนื้อหาที่จดไว้", "stats.total": "ข้อที่ทำทั้งหมด", "stats.acc": "อัตราถูกรวม", "stats.noHistory": "ยังไม่มีประวัติข้อสอบจำลอง", "wrong.empty": "ไม่มีข้อที่ผิด ทำได้ดีมาก! 👏", "writing.empty": "ไม่มีข้อสอบประเภทนี้", "guide.show": "💡 ดูคำแนะนำ", "guide.hide": "💡 ซ่อนคำแนะนำ", "writing.draftPh": "ลองเขียนคำตอบที่นี่ (ไม่เกิน 200 ตัวอักษร)", "model.show": "📝 ดูคำตอบตัวอย่าง", "model.hide": "📝 ซ่อนคำตอบตัวอย่าง", "review.model": "คำตอบตัวอย่าง", "resume.banner": "📌 ทำข้อสอบจำลองที่ค้างไว้ต่อ ({0}/{1})", "exam.resume": "ทำต่อ ({0}/{1})", "confirm.discardMock": "ประวัติข้อสอบจำลองที่ทำค้างไว้จะหายไป จะเริ่มใหม่หรือไม่?", "toast.resumed": "ทำต่อจากเดิม", "resume.practice": "📌 ทำต่อ — {0} ({1}/{2})", "practice.allLabel": "ทั้งหมด", "confirm.submit": "จะส่งและตรวจคะแนนหรือไม่?", "confirm.clearWrong": "จะล้างสมุดข้อผิดทั้งหมดหรือไม่?", "confirm.resetStats": "จะรีเซ็ตสถิติและประวัติการเรียนทั้งหมดหรือไม่?", "toast.clearedWrong": "ล้างสมุดข้อผิดแล้ว", "toast.resetStats": "รีเซ็ตแล้ว", "toast.noQ": "ไม่มีข้อสอบให้ทำ กรุณาซิงค์ก่อน", "toast.timeUp": "หมดเวลา! ตรวจคะแนนอัตโนมัติ", "count.char": "{0} ตัวอักษร", "wrong.desc2": "ข้อที่ตอบผิดจะถูกรวบรวมไว้ที่นี่ ตอบถูก <b>สองครั้งติดต่อกัน</b> ก็จะจบการศึกษาออกจากรายการ", "wrong.miss": "ผิด {0} ครั้ง", "wrong.almost": "ตอบถูกอีกครั้งก็จบการศึกษา", "wrong.desc3": "ข้อที่ตอบผิดจะถูกรวบรวมไว้ที่นี่ คำตอบถูกซ่อนไว้ เลือกตัวเลือกแล้วตรวจคะแนนทันที ตอบถูก <b>สองครั้งติดต่อกัน</b> ก็จะจบการศึกษาออกจากรายการ", "wrong.del": "ลบ", "wrong.confirmDel": "จะลบข้อนี้ออกจากสมุดข้อผิดหรือไม่?", "wrong.deleted": "ลบออกจากสมุดข้อผิดแล้ว", "wrong.grad": "จบการศึกษา! ข้อนี้จะออกจากรายการ 🎓", "wrong.retry": "ทำอีกครั้ง", "listen.head": "🎧 ฟังแล้วพูด", "listen.play": "▶ ฟัง", "listen.replay": "↻ ฟังอีกครั้ง", "listen.stop": "■ หยุด", "listen.script": "ดูบทพูด", "listen.scriptHide": "ซ่อนบทพูด", "listen.hint": "ลองฟังเฉพาะเสียงแล้วตอบก่อน ควรดูบทพูดหลังจากตอบแล้ว", "listen.no": "เบราว์เซอร์นี้ไม่รองรับการเล่นเสียง กรุณาดูบทพูดเพื่อฝึกซ้อม", "examdate.title": "ตั้งวันสอบ", "examdate.set": "ตั้งค่า", "examdate.clear": "ล้าง", "examdate.dday": "เหลือ {0} วัน", "examdate.today": "วันนี้เลย", "examdate.pace": "แนะนำต่อวัน: {0} ข้อ", "examdate.left": "เหลือ {0} ข้อ", "examdate.past": "เลยวันสอบแล้ว — กรุณาตั้งวันสอบใหม่", "examdate.hint": "ตั้งวันสอบแล้วจะบอกว่าแต่ละวันควรทำกี่ข้อ", "result.mcScore": "ปรนัย", "result.mcOf": "{0} / 65 คะแนน", "result.estTotal": "คะแนนรวมโดยประมาณ (รวมประเมินตนเอง)", "result.estOf": "{0} / 100", "result.ungradedN": "ยังไม่ประเมิน {0} ข้อ — ประเมินแล้วจึงจะได้คะแนนรวม", "result.mcOnly": "เฉพาะปรนัย {0} / 65", "stats.practiceCat": "ฝึกเฉพาะหมวดนี้", "practice.weak": "เน้นจุดอ่อน", "practice.weakSub": "หมวดที่ผิดบ่อยจะออกบ่อยขึ้น", "oral.recite": "กรุณาปิดคำตอบตัวอย่างแล้วลองพูดตอบออกเสียงก่อน", "oral.reveal": "ดูคำตอบตัวอย่าง", "oral.hideModel": "ซ่อนคำตอบตัวอย่าง", "oral.selfHead": "ประเมินตนเอง", "oral.good": "ดี", "oral.mid": "พอใช้", "oral.poor": "ยังไม่ดี", "oral.saved": "บันทึกแล้ว", "wongoji.title": "วิธีเขียนบนกระดาษคำตอบแบบช่อง (สอบจริงเขียนบนกระดาษแบบช่อง)", "wongoji.body": "<ul><li>① เขียนอักษรเกาหลี 1 ตัวต่อ 1 ช่อง</li><li>② ตัวเลขตั้งแต่ 2 หลักขึ้นไปและตัวอักษรพิมพ์เล็กเขียน 2 ตัวต่อ 1 ช่อง ส่วนตัวเลข 1 หลักและตัวพิมพ์ใหญ่เขียน 1 ตัวต่อ 1 ช่อง</li><li>③ ต้นเรื่องและย่อหน้าใหม่ให้เว้นช่องแรกไว้ แล้วเริ่มเขียนจากช่องที่สอง</li><li>④ ตั้งแต่บรรทัดที่สองเป็นต้นไป ให้เขียนเต็มตั้งแต่ช่องแรกของบรรทัด โดยไม่ต้องเว้นวรรค</li><li>⑤ หลังเครื่องหมายจุลภาค(,)และมหัพภาค(.)ไม่ต้องเว้นช่อง ส่วนหลังเครื่องหมายคำถาม(?)และอัศเจรีย์(!)ให้เว้น 1 ช่อง</li><li>⑥ ไม่เขียนเครื่องหมายวรรคตอนในช่องแรกของบรรทัด แต่ให้เขียนรวมไว้ในช่องสุดท้ายของบรรทัดก่อนหน้า</li><li>⑦ คำว่า '수 있다/없다' (สามารถ/ไม่สามารถ), '것 같다' (ดูเหมือนว่า), ตัวเลขภาษาเกาหลีกับคำลักษณนาม (เช่น '세 명') ฯลฯ ให้เว้นวรรค</li></ul>", "result.paperScore": "ภาคข้อเขียน (ปรนัย+เขียน)", "result.paperOf": "{0} / {1} คะแนน", "result.wAuto": "รวมคะแนนเขียนที่ตรวจอัตโนมัติแล้ว", "sg.noteAuto": "ส่วนการเขียนตรวจคะแนนอัตโนมัติจากเนื้อหาคำตอบแล้ว ส่วนการพูดเป็นการพูดอิสระ กรุณาประเมินเองโดยเทียบกับคำตอบตัวอย่าง หากไม่พอใจคะแนนอัตโนมัติ สามารถกดปุ่มเพื่อเขียนทับได้", "sg.headOverride": "ประเมินใหม่ด้วยตนเอง", "bd.autoTag": "อัตโนมัติ", "auto.ok": "ตอบถูก ✅", "auto.mid": "ไวยากรณ์ถูกแต่สำนวนยังไม่ดี △", "auto.no": "ตอบผิด ❌", "auto.empty": "ไม่มีคำตอบที่เขียนไว้ ❌", "auto.task": "การทำตามโจทย์ (①②③④ ข้อละ 2.5 คะแนน)", "auto.len": "ความยาว", "auto.style": "ระดับภาษา", "result.oralFloor": "พูดต่ำกว่า 3 คะแนน", "auto.checkHead": "รายการตรวจสอบ (ไม่คิดเป็นคะแนน)", "auto.title": "ชื่อเรื่อง", "auto.flow": "การเชื่อมประโยค", "auto.w.over": "เกิน 200 ช่อง", "auto.w.short": "สั้นไปเล็กน้อย", "auto.w.mixed": "ใช้ระดับภาษาปนกัน", "auto.w.titled": "ไม่ต้องเขียนชื่อเรื่อง", "auto.capped": "ความยาวไม่พอ จึงจำกัดคะแนนไว้ ด้วยความยาวเท่านี้ไม่สามารถเขียนครบทั้งสี่ประเด็นได้", "auto.noteNat": "※ คะแนนอย่างเป็นทางการคือ <b>ข้อเขียน 10 คะแนน = 4 ข้อ × 2.5 คะแนน</b> (กระทรวงยุติธรรม · มูลนิธิการย้ายถิ่นเกาหลีเผยแพร่) ส่วนเกณฑ์การตรวจโดยละเอียดภายในนั้น <b>ไม่เปิดเผยตามกฎหมาย</b> คะแนนตรงนี้ดูเพียงว่า <b>ได้เขียนถึง</b> ทั้งสี่ประเด็นหรือไม่ เป็นค่าประมาณสำหรับฝึกซ้อม <b>ไม่ได้ตรวจความถูกต้องของคำศัพท์·ไวยากรณ์และความลึกของเนื้อหา</b> การสอบจริงกรรมการคุมสอบจะอ่านและตรวจเอง", "auto.notePre": "※ ข้อเขียนตอบสั้นของการประเมินเบื้องต้นจริงคือข้อละ 1.5 คะแนน และไม่มีการเปิดเผยว่ามีคะแนนบางส่วนหรือไม่ เครื่องหมาย △ เป็นเพียงสัญลักษณ์สำหรับการฝึกซ้อม", "auto.w.choppy": "ประโยคน้อยเกินไป", "auto.overNote": "เกิน 200 ช่องแล้ว ข้อสอบจริงมีกระดาษช่อง 200 ช่องเพียงแผ่นเดียว ส่วนที่เกินจึงไม่มีที่ให้เขียน ที่นี่ก็ตรวจเพียงถึงช่องที่ 200 เท่านั้น", "style.formal": "รูป -seumnida", "style.polite": "รูป -haeyo", "style.plain": "ภาษาเขียน", "style.casual": "ภาษาไม่สุภาพ", "auto.w.banmal": "ไม่ใช้ภาษาไม่สุภาพในข้อสอบ", "count.sent": "{0} ประโยค", "credit.html": "<span class=\"cred-mission\">ฝึกทำข้อสอบประเมินรวม·ประเมินเบื้องต้น (KIIP)</span><span class=\"cred-links\">ไม่ใช่ข้อสอบทางการของกระทรวงยุติธรรมหรือมูลนิธิการย้ายถิ่นเกาหลี แต่เป็นเอกสารฝึกซ้อมที่จัดทำโดยบุคคล</span>", "diff.all": "ทั้งหมด", "diff.hard": "แบบประโยคยาว", "diff.easy": "แบบคำสั้น", "diff.hint": "ทำเฉพาะข้อที่ตัวเลือกเป็นประโยคเต็ม เหมือนข้อสอบจริง", "diff.hintEasy": "ทำเฉพาะข้อที่ตัวเลือกเป็นคำสั้น", "member.joinQ": "ยังไม่ได้เป็นสมาชิกใช่ไหม", "member.joinD": "ส่งอีเมลมาที่อยู่ด้านล่าง แล้วจะแนะนำให้", "member.joinCopy": "คัดลอก", "member.joinCopied": "คัดลอกแล้ว", "intro.title": "การฝึกที่ปรับตามข้อสอบจริง", "intro.counts": "{0} · ปรนัย {1} · เขียน {2} · พูด {3}", "intro.p1": "สัดส่วนหมวดของข้อสอบจำลองปรับตาม<b>ข้อสอบตัวอย่างที่กระทรวงยุติธรรมเผยแพร่</b>", "intro.p2": "ชุดแปลงสัญชาติมี<b>ข้อสอบเฉพาะแปลงสัญชาติ 10 ข้อ</b>ตามตารางแทนที่ของตำรา", "intro.p3": "จับเวลา<b>เท่ากับข้อสอบจริง</b> ข้อที่ผิดจะถูกเก็บในสมุดข้อผิดอัตโนมัติ", "intro.p4": "ทุกข้อมีคำแปล <b>จีน · เวียดนาม · ไทย</b> กำกับ", "trial.try": "ทดลองทำฟรีหนึ่งชุด", "trial.done": "ใช้สิทธิ์ทดลองฟรีของการสอบนี้หมดแล้ว", "trial.loading": "กำลังโหลดข้อสอบทดลอง…", "trial.endHead": "จบการทดลองใช้ฟรีแล้ว", "trial.endScore": "ปรนัยถูก {1} / {2} · {0} คะแนน", "trial.endWrong": "ข้อที่ผิด {0} ข้อถูกเก็บไว้ในสมุดข้อผิดแล้ว", "trial.b1": "เมื่อเป็นสมาชิกจะมีข้อสอบอีก {0} ข้อ", "trial.b2": "ทำข้อสอบจำลองได้ไม่จำกัดจำนวนครั้ง", "trial.b3": "สมุดข้อผิดให้ทำซ้ำจนกว่าจะถูก", "trial.b4": "มีชุดข้อสอบจำลองจากตำราอีกสามชุด", "member.trial_done": "ใช้สิทธิ์ทดลองฟรีของการสอบนี้หมดแล้ว\\nเป็นสมาชิกเพื่อทำต่อได้", "member.price": "20,000 วอน · ใช้ได้ตลอดไป", "trial.b5": "เลือกทำเฉพาะข้อยากที่ตัวเลือกเป็นประโยคเต็มได้", "intro.p2perm": "ชุดถิ่นที่อยู่ถาวร<b>ตัดข้อสอบเฉพาะแปลงสัญชาติออก</b> จึงไม่ต้องท่องสิ่งที่ไม่ออกสอบ", "member.priceNum": "20,000", "member.priceUnit": "원", "member.priceNote": "จ่ายครั้งเดียว · ใช้ได้ตลอดไป"};
+CAT_TR.vi = {"한국어": "Tiếng Hàn", "사회": "Xã hội", "문화": "Văn hóa", "정치": "Chính trị", "경제": "Kinh tế", "교육": "Giáo dục", "법": "Pháp luật", "역사": "Lịch sử", "지리": "Địa lý", "작문": "Viết văn", "구술": "Vấn đáp", "어휘": "Từ vựng", "문법": "Ngữ pháp", "읽기·이해": "Đọc · hiểu", "대화": "Hội thoại", "한국문화": "Văn hóa Hàn Quốc", "한국사회": "Xã hội Hàn Quốc"};
+CAT_TR.th = {"한국어": "ภาษาเกาหลี", "사회": "สังคม", "문화": "วัฒนธรรม", "정치": "การเมือง", "경제": "เศรษฐกิจ", "교육": "การศึกษา", "법": "กฎหมาย", "역사": "ประวัติศาสตร์", "지리": "ภูมิศาสตร์", "작문": "การเขียน", "구술": "การพูด", "어휘": "คำศัพท์", "문법": "ไวยากรณ์", "읽기·이해": "การอ่าน·ความเข้าใจ", "대화": "บทสนทนา", "한국문화": "วัฒนธรรมเกาหลี", "한국사회": "สังคมเกาหลี"};
+T2.vi = {"귀화 종합평가": "Đánh giá tổng hợp nhập tịch", "사회통합프로그램 (KIIP)": "Chương trình Hội nhập xã hội (KIIP)", "귀화용 종합평가": "Đánh giá tổng hợp dùng cho nhập tịch", "필기시험 모의고사": "Thi thử phần thi viết", "실제 시험처럼 풀기 (객관식+작문+구술)": "Làm bài như thi thật (trắc nghiệm + viết + vấn đáp)", "9개 영역별로 풀기": "Luyện theo 9 lĩnh vực", "귀화용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "Đánh giá tổng hợp dùng cho nhập tịch gồm <b>trắc nghiệm 36 câu (65 điểm) + tự luận viết (10 điểm) + vấn đáp (25 điểm) = 100 điểm</b>, <b>đạt 60 điểm trở lên là đậu</b>.", "이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.": "Bài thi thử này làm <b>phần viết (trắc nghiệm + tự luận) trong 60 phút</b>, sau đó luyện tiếp <b>phần vấn đáp</b>.", "객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>4문제가 통합된 1문제</b>를 <b>200자 원고지 1장 이내</b>로 작성합니다.": "Trắc nghiệm chọn một trong ①②③④; phần tự luận là <b>1 đề gộp từ 4 câu</b>, viết trong <b>1 tờ giấy ô 200 chữ</b>.", "객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.": "Chỉ trắc nghiệm được chấm tự động; phần viết · vấn đáp tự kiểm tra bằng đáp án mẫu · gợi ý.", "실제 시험의 구술은 별도 10분 세션(<b>5문항×5점</b>)입니다. 사회통합프로그램 <b>5단계 전 과정(기본+심화) 이수</b> + 합격 시 <b>귀화 면접심사가 면제</b>됩니다.": "Phần vấn đáp ở kỳ thi thật là một phiên riêng 10 phút (<b>5 câu × 5 điểm</b>). Khi <b>hoàn thành toàn bộ giai đoạn 5 (cơ bản + chuyên sâu)</b> của Chương trình Hội nhập xã hội và thi đậu, bạn <b>được miễn phỏng vấn nhập tịch</b>.", "귀화허가 신청자는 <b>신청일로부터 1년 이내 재응시 2회</b>(최초 포함 총 3회)까지 가능하며, <b>3회 모두 불합격하면 귀화신청이 불허</b>됩니다.": "Người xin phép nhập tịch có thể <b>thi lại tối đa 2 lần trong vòng 1 năm kể từ ngày nộp đơn</b> (tổng cộng 3 lần kể cả lần đầu); nếu <b>trượt cả 3 lần, đơn xin nhập tịch sẽ không được chấp thuận</b>.", "TOPIK 급수가 있으면 사전평가 없이 단계 배정이 가능합니다(<b>1급→2단계, 2급→3단계, 3급→4단계, 4급 이상→5단계</b>). 배정 단계는 <b>2년간 유효</b>하며, 사전평가에 재응시하면 이전 교육 이수 기록이 무효가 됩니다.": "Nếu có chứng chỉ TOPIK, bạn có thể được xếp giai đoạn mà không cần thi đánh giá đầu vào (<b>cấp 1→giai đoạn 2, cấp 2→giai đoạn 3, cấp 3→giai đoạn 4, cấp 4 trở lên→giai đoạn 5</b>). Giai đoạn được xếp có <b>hiệu lực 2 năm</b>; nếu thi lại đánh giá đầu vào, hồ sơ học tập trước đó sẽ bị hủy.", "영주 종합평가": "Đánh giá tổng hợp định cư", "영주용 종합평가": "Đánh giá tổng hợp dùng cho định cư", "영주용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "Đánh giá tổng hợp dùng cho định cư gồm <b>trắc nghiệm 36 câu (65 điểm) + tự luận viết (10 điểm) + vấn đáp (25 điểm) = 100 điểm</b>, <b>đạt 60 điểm trở lên là đậu</b>.", "응시 자격: 사회통합프로그램 <b>5단계 기본과정 수료</b>, 또는 <b>사전평가 85점 이상 득점 후 2년 이내</b>. 영주용은 <b>지필(PBT)로만</b> 시행됩니다.": "Điều kiện dự thi: <b>hoàn thành khóa cơ bản giai đoạn 5</b> của Chương trình Hội nhập xã hội, hoặc <b>trong vòng 2 năm sau khi đạt từ 85 điểm trở lên ở đánh giá đầu vào</b>. Bài thi định cư <b>chỉ thi trên giấy (PBT)</b>.", "사회통합 사전평가": "Đánh giá đầu vào Hội nhập xã hội", "사회통합프로그램 사전평가": "Đánh giá đầu vào Chương trình Hội nhập xã hội", "단계 배정 모의평가": "Đánh giá thử để xếp giai đoạn", "어휘·문법·읽기·대화·문화·사회": "Từ vựng · ngữ pháp · đọc · hội thoại · văn hóa · xã hội", "사회통합프로그램 <b>사전평가</b>는 합격·불합격 시험이 아니라, 점수에 따라 <b>0~5단계</b>를 배정하는 레벨 평가입니다.": "<b>Đánh giá đầu vào</b> của Chương trình Hội nhập xã hội không phải kỳ thi đậu · rớt, mà là bài đánh giá phân cấp để xếp <b>giai đoạn 0~5</b> theo điểm số.", "실제 시험은 <b>필기 50문항(60분, 75점)</b> + <b>구술 5문항(10분, 25점)</b> = 100점입니다. 이 모의평가는 필기(객관식+작문)를 풀고 이어서 구술을 연습합니다.": "Kỳ thi thật gồm <b>phần viết 50 câu (60 phút, 75 điểm)</b> + <b>vấn đáp 5 câu (10 phút, 25 điểm)</b> = 100 điểm. Bài đánh giá thử này làm phần viết (trắc nghiệm + tự luận) rồi luyện tiếp phần vấn đáp.", "객관식은 ①②③④ 중 하나를 고르고, 작문은 빈칸에 알맞은 표현을 짧게 씁니다.": "Trắc nghiệm chọn một trong ①②③④, phần viết điền ngắn gọn cách diễn đạt thích hợp vào chỗ trống.", "객관식만 자동 채점되어 <b>예상 배정 단계</b>를 알려줍니다. 작문·구술은 모범답안으로 스스로 점검합니다.": "Chỉ trắc nghiệm được chấm tự động và cho biết <b>giai đoạn xếp lớp dự kiến</b>. Phần viết · vấn đáp tự kiểm tra bằng đáp án mẫu.", "실제로는 <b>구술 점수가 3점 미만이면 0단계</b>로 배정됩니다. 정확한 단계는 시험 당일 점수로 정해지며, 표시되는 단계는 <b>연습용 참고치</b>입니다.": "Trên thực tế, <b>nếu điểm vấn đáp dưới 3 điểm thì xếp giai đoạn 0</b>. Giai đoạn chính xác được quyết định theo điểm trong ngày thi, giai đoạn hiển thị chỉ là <b>giá trị tham khảo khi luyện tập</b>.", "5단계 · 한국사회이해": "Giai đoạn 5 · Hiểu biết xã hội Hàn Quốc", "81~100점": "81~100 điểm", "4단계 · 중급2": "Giai đoạn 4 · Trung cấp 2", "61~80점": "61~80 điểm", "3단계 · 중급1": "Giai đoạn 3 · Trung cấp 1", "41~60점": "41~60 điểm", "2단계 · 초급2": "Giai đoạn 2 · Sơ cấp 2", "21~40점": "21~40 điểm", "1단계 · 초급1": "Giai đoạn 1 · Sơ cấp 1", "3~20점": "3~20 điểm", "0단계 · 한국어기초": "Giai đoạn 0 · Tiếng Hàn cơ bản", "구술 3점 미만": "Vấn đáp dưới 3 điểm"};
+T2.th = {"귀화 종합평가": "การประเมินรวมแปลงสัญชาติ", "사회통합프로그램 (KIIP)": "โครงการบูรณาการสังคม (KIIP)", "귀화용 종합평가": "การประเมินรวมเพื่อแปลงสัญชาติ", "필기시험 모의고사": "ข้อสอบจำลองภาคข้อเขียน", "실제 시험처럼 풀기 (객관식+작문+구술)": "ทำเหมือนสอบจริง (ปรนัย+เขียน+พูด)", "9개 영역별로 풀기": "ฝึกตาม 9 หมวด", "귀화용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "การประเมินรวมเพื่อแปลงสัญชาติคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.": "ข้อสอบจำลองนี้ให้ทำ <b>ภาคข้อเขียน (ปรนัย+เขียน) ภายใน 60 นาที</b> แล้วฝึก <b>ข้อสอบพูด</b> ต่อ", "객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>4문제가 통합된 1문제</b>를 <b>200자 원고지 1장 이내</b>로 작성합니다.": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนเป็น<b>ข้อสอบ 1 ข้อที่รวมมาจาก 4 คำถาม</b> เขียนภายใน<b>กระดาษคำตอบแบบช่อง 200 ตัวอักษร 1 แผ่น</b>", "객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัย ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง·คำแนะนำ", "실제 시험의 구술은 별도 10분 세션(<b>5문항×5점</b>)입니다. 사회통합프로그램 <b>5단계 전 과정(기본+심화) 이수</b> + 합격 시 <b>귀화 면접심사가 면제</b>됩니다.": "การพูดในสอบจริงเป็นช่วงแยกต่างหาก 10 นาที (<b>5 ข้อ × 5 คะแนน</b>) เมื่อเรียนจบ<b>หลักสูตรระดับ 5 ทั้งหมด (พื้นฐาน+เชิงลึก)</b>ของโครงการบูรณาการสังคมและสอบผ่าน จะ<b>ได้รับการยกเว้นการสัมภาษณ์แปลงสัญชาติ</b>", "귀화허가 신청자는 <b>신청일로부터 1년 이내 재응시 2회</b>(최초 포함 총 3회)까지 가능하며, <b>3회 모두 불합격하면 귀화신청이 불허</b>됩니다.": "ผู้ยื่นขอแปลงสัญชาติสามารถ<b>สอบใหม่ได้ไม่เกิน 2 ครั้งภายใน 1 ปีนับจากวันยื่นคำขอ</b> (รวมครั้งแรกทั้งหมด 3 ครั้ง) หาก<b>ไม่ผ่านทั้ง 3 ครั้ง คำขอแปลงสัญชาติจะไม่ได้รับอนุมัติ</b>", "TOPIK 급수가 있으면 사전평가 없이 단계 배정이 가능합니다(<b>1급→2단계, 2급→3단계, 3급→4단계, 4급 이상→5단계</b>). 배정 단계는 <b>2년간 유효</b>하며, 사전평가에 재응시하면 이전 교육 이수 기록이 무효가 됩니다.": "หากมีระดับ TOPIK สามารถจัดระดับได้โดยไม่ต้องสอบประเมินเบื้องต้น (<b>ระดับ1→ขั้น2, ระดับ2→ขั้น3, ระดับ3→ขั้น4, ระดับ4ขึ้นไป→ขั้น5</b>) ระดับที่จัดมีผล <b>2 ปี</b> และหากสอบประเมินเบื้องต้นใหม่ ประวัติการเรียนก่อนหน้าจะถือเป็นโมฆะ", "영주 종합평가": "การประเมินรวมถิ่นที่อยู่ถาวร", "영주용 종합평가": "การประเมินรวมเพื่อถิ่นที่อยู่ถาวร", "영주용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "การประเมินรวมเพื่อถิ่นที่อยู่ถาวรคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "응시 자격: 사회통합프로그램 <b>5단계 기본과정 수료</b>, 또는 <b>사전평가 85점 이상 득점 후 2년 이내</b>. 영주용은 <b>지필(PBT)로만</b> 시행됩니다.": "คุณสมบัติผู้สอบ: จบ<b>หลักสูตรพื้นฐานระดับ 5</b> ของโครงการบูรณาการสังคม หรืออยู่ภายใน <b>2 ปีหลังได้คะแนนประเมินเบื้องต้นตั้งแต่ 85 คะแนนขึ้นไป</b> แบบถิ่นที่อยู่ถาวรจัดสอบ <b>ด้วยกระดาษ-ปากกา (PBT) เท่านั้น</b>", "사회통합 사전평가": "การประเมินเบื้องต้นบูรณาการสังคม", "사회통합프로그램 사전평가": "การประเมินเบื้องต้นโครงการบูรณาการสังคม", "단계 배정 모의평가": "การประเมินจำลองเพื่อจัดระดับ", "어휘·문법·읽기·대화·문화·사회": "คำศัพท์·ไวยากรณ์·การอ่าน·บทสนทนา·วัฒนธรรม·สังคม", "사회통합프로그램 <b>사전평가</b>는 합격·불합격 시험이 아니라, 점수에 따라 <b>0~5단계</b>를 배정하는 레벨 평가입니다.": "<b>การประเมินเบื้องต้น</b> ของโครงการบูรณาการสังคมไม่ใช่การสอบผ่าน·ไม่ผ่าน แต่เป็นการประเมินระดับที่จัด <b>ระดับ 0~5</b> ตามคะแนน", "실제 시험은 <b>필기 50문항(60분, 75점)</b> + <b>구술 5문항(10분, 25점)</b> = 100점입니다. 이 모의평가는 필기(객관식+작문)를 풀고 이어서 구술을 연습합니다.": "สอบจริงคือ <b>ข้อเขียน 50 ข้อ (60 นาที, 75 คะแนน)</b> + <b>พูด 5 ข้อ (10 นาที, 25 คะแนน)</b> = 100 คะแนน การประเมินจำลองนี้ให้ทำภาคข้อเขียน (ปรนัย+เขียน) แล้วฝึกพูดต่อ", "객관식은 ①②③④ 중 하나를 고르고, 작문은 빈칸에 알맞은 표현을 짧게 씁니다.": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนให้เติมคำที่เหมาะสมลงในช่องว่างสั้นๆ", "객관식만 자동 채점되어 <b>예상 배정 단계</b>를 알려줍니다. 작문·구술은 모범답안으로 스스로 점검합니다.": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัยแล้วบอก <b>ระดับที่คาดว่าจะได้รับการจัด</b> ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง", "실제로는 <b>구술 점수가 3점 미만이면 0단계</b>로 배정됩니다. 정확한 단계는 시험 당일 점수로 정해지며, 표시되는 단계는 <b>연습용 참고치</b>입니다.": "ในความเป็นจริง <b>หากคะแนนพูดต่ำกว่า 3 คะแนนจะถูกจัดเป็นระดับ 0</b> ระดับที่แน่นอนกำหนดจากคะแนนในวันสอบ ส่วนระดับที่แสดงเป็น <b>ค่าอ้างอิงสำหรับฝึกซ้อม</b>", "5단계 · 한국사회이해": "ระดับ 5 · ความเข้าใจสังคมเกาหลี", "81~100점": "81~100 คะแนน", "4단계 · 중급2": "ระดับ 4 · กลาง 2", "61~80점": "61~80 คะแนน", "3단계 · 중급1": "ระดับ 3 · กลาง 1", "41~60점": "41~60 คะแนน", "2단계 · 초급2": "ระดับ 2 · ต้น 2", "21~40점": "21~40 คะแนน", "1단계 · 초급1": "ระดับ 1 · ต้น 1", "3~20점": "3~20 คะแนน", "0단계 · 한국어기초": "ระดับ 0 · ภาษาเกาหลีพื้นฐาน", "구술 3점 미만": "พูดต่ำกว่า 3 คะแนน"};
+Object.assign(I18N.ko, {
+  'member.loginShort': '회원 로그인',
+  'member.title': '회원 전용 콘텐츠입니다.',
+  'member.desc': '회원 로그인 후 이용할 수 있습니다.',
+  'member.email': '이메일',
+  'member.send': '인증번호 받기',
+  'member.otp': '인증번호',
+  'member.login': '로그인',
+  'member.logout': '로그아웃',
+  'member.sent': '이메일로 인증번호를 보냈습니다.',
+  'member.badOtp': '인증번호가 올바르지 않습니다.',
+  'member.notMember': '등록된 회원이 아닙니다.\n결제 후 이용할 수 있습니다.',
+  "member.joinQ": "아직 회원이 아니신가요?",
+  "member.joinD": "아래 메일로 연락 주시면 안내해 드립니다.",
+  "member.joinCopy": "복사",
+  "member.joinCopied": "복사했습니다",
+  "member.priceNum": "20,000", "member.priceUnit": "원",
+  "member.priceNote": "한 번 결제 · 기간 제한 없음",
+  "intro.title": "실제 시험지를 세어서 맞춘 연습",
+  "intro.counts": "{0} · 객관식 {1} · 작문 {2} · 구술 {3}",
+  "intro.p1": "모의고사 영역 구성을 <b>법무부 공개 견본</b>을 직접 세어 맞췄습니다.",
+  "intro.p2": "귀화용은 교재의 교체표대로 <b>귀화 전용 문항이 10개</b> 들어갑니다.",
+  "intro.p2perm": "영주용은 <b>귀화 전용 문항을 빼고</b> 출제됩니다. 안 나오는 것을 외우지 않아도 됩니다.",
+  "intro.p3": "실제 시험과 <b>같은 시간</b>으로 재고, 틀린 문제는 오답 노트에 담깁니다.",
+  "intro.p4": "문제마다 <b>중국어 · 베트남어 · 태국어</b> 뜻이 함께 나옵니다.",
+  "trial.try": "무료로 한 세트 풀어 보기",
+  "trial.done": "이 시험의 무료 체험은 다 쓰셨습니다",
+  "trial.loading": "체험 문제를 불러오는 중…",
+  "trial.endHead": "무료 체험을 끝내셨습니다.",
+  "trial.endScore": "객관식 {1} / {2} 정답 · {0}점",
+  "trial.endWrong": "틀린 문제 {0}개를 오답 노트에 담아 두었습니다.",
+  "trial.b1": "회원이 되시면 문제 {0}개를 더 푸실 수 있습니다.",
+  "trial.b2": "모의고사를 횟수 제한 없이 보실 수 있습니다.",
+  "trial.b3": "오답 노트에서 틀린 문제를 맞힐 때까지 다시 푸실 수 있습니다.",
+  "trial.b4": "교재에서 뽑은 실전 모의고사 세 세트가 따로 있습니다.",
+  "trial.b5": "선택지가 문장인 어려운 문항만 골라 푸실 수 있습니다.",
+  "member.trial_done": "이 시험의 무료 체험은 다 쓰셨습니다.\\n회원이 되시면 이어서 하실 수 있습니다.",
+  'member.inactive': '현재 이용할 수 없는 계정입니다.\n관리자에게 문의해 주세요.',
+  'member.network': '네트워크 오류가 발생했습니다.\n다시 시도해 주세요.',
+  'questions.missing': 'Supabase questions 테이블이 아직 없습니다.\nSQL Editor 에서 questions 테이블과 RLS SQL을 실행해 주세요.',
+  'questions.empty': 'Supabase questions 테이블에 문항이 없습니다.\n문항 가져오기 스크립트를 실행해 주세요.',
+  'questions.permission': 'Supabase questions 읽기 권한 또는 RLS 설정을 확인해 주세요.',
+  'questions.loadFail': '문항을 불러오지 못했습니다.\nConsole 의 Supabase 오류를 확인해 주세요.',
+  'member.config': '회원 시스템 설정이 필요합니다.',
+  'member.emailReq': '이메일을 입력해 주세요.',
+  'member.otpReq': '인증번호를 입력해 주세요.',
+  'member.loading': '회원 정보를 확인하는 중입니다.',
+  'member.ready': '회원 확인 완료',
+  'sync.publicReady': '공개 목차 준비 완료 · 총 {0}문항',
+  'sync.memberReady': '{0} · {1}문항 준비 완료',
+});
+Object.assign(I18N.zh, {
+  'member.loginShort': '会员登录',
+  'member.title': '会员专用内容。',
+  'member.desc': '会员登录后可以使用。',
+  'member.email': '邮箱',
+  'member.send': '获取验证码',
+  'member.otp': '验证码',
+  'member.login': '登录',
+  'member.logout': '退出登录',
+  'member.sent': '验证码已发送到邮箱。',
+  'member.badOtp': '验证码不正确。',
+  'member.notMember': '不是已登记会员。\n付款后可以使用。',
+  "member.joinQ": "还不是会员？",
+  "member.joinD": "发邮件到下面的地址，我来给你开通。",
+  "member.joinCopy": "复制",
+  "member.joinCopied": "已复制",
+  "member.priceNum": "20,000", "member.priceUnit": "원",
+  "member.priceNote": "一次付费 · 永久有效",
+  "intro.title": "照着真实考卷一题题对出来的练习",
+  "intro.counts": "{0} · 选择题 {1} · 作文 {2} · 口试 {3}",
+  "intro.p1": "模拟考试的领域构成，是<b>数法务部公开样卷</b>一题题对出来的。",
+  "intro.p2": "归化卷按教材的替换表，固定含 <b>10 道归化专用题</b>。",
+  "intro.p2perm": "永驻卷<b>不出归化专用题</b>。不用去背考不到的内容。",
+  "intro.p3": "按真考试的<b>同样时间</b>计时，答错的题自动进错题本。",
+  "intro.p4": "每道题都带 <b>中文 · 越南语 · 泰语</b> 对照。",
+  "trial.try": "免费试做一套",
+  "trial.done": "这个考试的免费试用已用完",
+  "trial.loading": "正在加载试用题…",
+  "trial.endHead": "免费试用结束。",
+  "trial.endScore": "选择题答对 {1} / {2} · {0} 分",
+  "trial.endWrong": "答错的 {0} 道题已经记进错题本。",
+  "trial.b1": "成为会员后还有 {0} 道题可以做。",
+  "trial.b2": "模拟考试不限次数。",
+  "trial.b3": "错题本可以反复练到做对为止。",
+  "trial.b4": "另有从教材挖出的三套实战模拟卷。",
+  "trial.b5": "可以只挑选项是整句的难题来练。",
+  "member.trial_done": "这个考试的免费试用已经用完。\\n成为会员后可以继续。",
+  'member.inactive': '当前账号无法使用。\n请联系管理员。',
+  'member.network': '发生网络错误。\n请重试。',
+  'questions.missing': 'Supabase questions 表还不存在。\n请在 SQL Editor 运行 questions 表和 RLS SQL。',
+  'questions.empty': 'Supabase questions 表里还没有题目。\n请运行题库导入脚本。',
+  'questions.permission': '请检查 Supabase questions 的 SELECT 权限或 RLS 设置。',
+  'questions.loadFail': '题目读取失败。\n请查看 Console 中的 Supabase 错误。',
+  'member.config': '需要设置会员系统。',
+  'member.emailReq': '请输入邮箱。',
+  'member.otpReq': '请输入验证码。',
+  'member.loading': '正在确认会员信息。',
+  'member.ready': '会员确认完成',
+  'sync.publicReady': '公开目录已准备 · 共{0}题',
+  'sync.memberReady': '{0} · 共{1}题 已就绪',
+});
+Object.assign(I18N.vi, {
+  'nav.title': 'Câu hỏi', 'nav.answered': 'Đã trả lời {0}/{1}', 'nav.question': 'Câu {0}',
+  'nav.legendDone': 'Đã trả lời', 'nav.legendFlag': 'Chưa chắc', 'nav.legendTodo': 'Chưa làm',
+  'quiz.flag': 'Đánh dấu chưa chắc', 'quiz.unflag': 'Bỏ đánh dấu',
+  'member.loginShort': 'Đăng nhập hội viên',
+  'member.title': 'Nội dung dành cho hội viên.',
+  'member.desc': 'Vui lòng đăng nhập hội viên để sử dụng.',
+  'member.email': 'Email',
+  'member.send': 'Nhận mã xác thực',
+  'member.otp': 'Mã xác thực',
+  'member.login': 'Đăng nhập',
+  'member.logout': 'Đăng xuất',
+  'member.sent': 'Đã gửi mã xác thực qua email.',
+  'member.badOtp': 'Mã xác thực không đúng.',
+  'member.notMember': 'Bạn chưa phải hội viên đã đăng ký.\nVui lòng thanh toán để sử dụng.',
+  'member.inactive': 'Tài khoản hiện không thể sử dụng.\nVui lòng liên hệ quản trị viên.',
+  'member.network': 'Đã xảy ra lỗi mạng.\nVui lòng thử lại.',
+  'questions.missing': 'Chưa có bảng Supabase questions.\nHãy chạy SQL tạo questions và RLS trong SQL Editor.',
+  'questions.empty': 'Bảng Supabase questions chưa có câu hỏi.\nHãy chạy script nhập câu hỏi.',
+  'questions.permission': 'Hãy kiểm tra quyền SELECT hoặc RLS của Supabase questions.',
+  'questions.loadFail': 'Không tải được câu hỏi.\nHãy xem lỗi Supabase trong Console.',
+  'member.config': 'Cần thiết lập hệ thống hội viên.',
+  'member.emailReq': 'Vui lòng nhập email.',
+  'member.otpReq': 'Vui lòng nhập mã xác thực.',
+  'member.loading': 'Đang kiểm tra hội viên.',
+  'member.ready': 'Đã xác nhận hội viên',
+  'sync.publicReady': 'Mục lục công khai đã sẵn sàng · tổng {0} câu',
+  'sync.memberReady': '{0} · {1} câu đã sẵn sàng',
+});
+Object.assign(I18N.th, {
+  'nav.title': 'ข้อคำถาม', 'nav.answered': 'ตอบแล้ว {0}/{1}', 'nav.question': 'ข้อ {0}',
+  'nav.legendDone': 'ตอบแล้ว', 'nav.legendFlag': 'ไม่แน่ใจ', 'nav.legendTodo': 'ยังไม่ทำ',
+  'quiz.flag': 'ทำเครื่องหมายไม่แน่ใจ', 'quiz.unflag': 'ลบเครื่องหมาย',
+  'member.loginShort': 'เข้าสู่ระบบสมาชิก',
+  'member.title': 'เนื้อหาสำหรับสมาชิกเท่านั้น',
+  'member.desc': 'กรุณาเข้าสู่ระบบสมาชิกก่อนใช้งาน',
+  'member.email': 'อีเมล',
+  'member.send': 'รับรหัสยืนยัน',
+  'member.otp': 'รหัสยืนยัน',
+  'member.login': 'เข้าสู่ระบบ',
+  'member.logout': 'ออกจากระบบ',
+  'member.sent': 'ส่งรหัสยืนยันไปยังอีเมลแล้ว',
+  'member.badOtp': 'รหัสยืนยันไม่ถูกต้อง',
+  'member.notMember': 'ยังไม่ใช่สมาชิกที่ลงทะเบียน\nชำระเงินแล้วจึงใช้งานได้',
+  'member.inactive': 'บัญชีนี้ไม่สามารถใช้งานได้ในขณะนี้\nกรุณาติดต่อผู้ดูแล',
+  'member.network': 'เกิดข้อผิดพลาดเครือข่าย\nกรุณาลองอีกครั้ง',
+  'questions.missing': 'ยังไม่มีตาราง Supabase questions\nกรุณารัน SQL สำหรับ questions และ RLS ใน SQL Editor',
+  'questions.empty': 'ตาราง Supabase questions ยังไม่มีข้อสอบ\nกรุณารันสคริปต์นำเข้าข้อสอบ',
+  'questions.permission': 'กรุณาตรวจสอบสิทธิ์ SELECT หรือ RLS ของ Supabase questions',
+  'questions.loadFail': 'โหลดข้อสอบไม่สำเร็จ\nกรุณาดูข้อผิดพลาด Supabase ใน Console',
+  'member.config': 'ต้องตั้งค่าระบบสมาชิก',
+  'member.emailReq': 'กรุณากรอกอีเมล',
+  'member.otpReq': 'กรุณากรอกรหัสยืนยัน',
+  'member.loading': 'กำลังตรวจสอบสมาชิก',
+  'member.ready': 'ตรวจสอบสมาชิกเสร็จแล้ว',
+  'sync.publicReady': 'สารบัญสาธารณะพร้อมแล้ว · ทั้งหมด {0} ข้อ',
+  'sync.memberReady': '{0} · {1} ข้อ พร้อมแล้ว',
+});
+
+function t(key) {
+  let s = (I18N[LANG] && I18N[LANG][key]) || I18N.ko[key] || key;
+  for (let i = 1; i < arguments.length; i++) s = s.replace('{' + (i - 1) + '}', arguments[i]);
+  return s;
+}
+function catName(c) { return (LANG !== 'ko' && CAT_TR[LANG] && CAT_TR[LANG][c]) || c; }
+/* 한국어 본문 + (주석 언어면) 모국어 주석을 함께 표시 */
+function bi(ko, g) { return (LANG !== 'ko' && g) ? `${ko}<span class="zh">${g}</span>` : (ko || ''); }
+/* 면접심사는 귀화에만 있는 절차다. 같은 문항을 영주용에서도 말하기 연습으로 쓰지만,
+   '[면접]' 이라고 적혀 있으면 영주 준비생이 자기에게도 면접이 있는 줄 알게 된다.
+   데이터는 그대로 두고 화면에 그릴 때만 '[구술]' 로 바꾼다. */
+const IV_TAG = { ko: ['[면접]', '[구술]'], zh: ['[面试]', '[口试]'],
+                 vi: ['[Phỏng vấn]', '[Vấn đáp]'], th: ['[สัมภาษณ์]', '[ปากเปล่า]'] };
+function qLabel(text) {
+  if (activeExam !== 'perm' || !text) return text;
+  let out = String(text);
+  Object.values(IV_TAG).forEach(([from, to]) => { out = out.split(from).join(to); });
+  return out;
+}
+/* 문제의 주석 필드(q_zh / q_vi / q_th …)를 현재 언어로 선택 */
+function gl(q, base) { return (LANG !== 'ko' && q && q[base + '_' + LANG]) || ''; }
+function glc(q, idx) { if (LANG === 'ko' || !q) return ''; const a = q['choices_' + LANG]; return (a && a[idx]) || ''; }
+/* {ko, zh(+vi/th)} 객체에서 언어 선택 — vi/th는 T2 보조사전 폴백 */
+function tx(o) { if (!o) return ''; if (o[LANG]) return o[LANG]; if (LANG !== 'ko' && T2[LANG] && T2[LANG][o.ko]) return T2[LANG][o.ko]; return o.ko || ''; }
+/* 한국어 UI 문자열 → 현재 언어(vi/th는 T2 보조사전, ko/zh는 원문 그대로) */
+function trUI(s) { return (LANG !== 'ko' && LANG !== 'zh' && T2[LANG] && T2[LANG][s]) ? T2[LANG][s] : s; }
+
+/* =====================================================================
+   시험 트랙 (종합평가 / 사전평가)
+   - nat = 귀화용 종합평가(기존). pre = 사회통합 사전평가(레벨 배정).
+   - 문제는 q.exam === 'pre' 이면 사전평가, 아니면 종합평가로 간주.
+   ===================================================================== */
+let activeExam = 'pre';
+function examOf(q) { return q && q.exam === 'pre' ? 'pre' : 'nat'; }
+
+/* 사전평가 단계 배정 기준표 (공식: kiiptest.org·법무부 안내문, 검증 완료)
+   0단계는 점수 구간이 아니라 '구술 3점 미만'(필기 무관) — 객관식만으로는 판정 불가. */
+const PRE_LEVELS = [
+  { stage: 5, min: 81, max: 100, name: { ko: '5단계 · 한국사회이해', zh: '第5阶段 · 韩国社会理解' }, range: { ko: '81~100점', zh: '81~100分' } },
+  { stage: 4, min: 61, max: 80, name: { ko: '4단계 · 중급2', zh: '第4阶段 · 中级2' }, range: { ko: '61~80점', zh: '61~80分' } },
+  { stage: 3, min: 41, max: 60, name: { ko: '3단계 · 중급1', zh: '第3阶段 · 中级1' }, range: { ko: '41~60점', zh: '41~60分' } },
+  { stage: 2, min: 21, max: 40, name: { ko: '2단계 · 초급2', zh: '第2阶段 · 初级2' }, range: { ko: '21~40점', zh: '21~40分' } },
+  { stage: 1, min: 3, max: 20, name: { ko: '1단계 · 초급1', zh: '第1阶段 · 初级1' }, range: { ko: '3~20점', zh: '3~20分' } },
+  { stage: 0, min: 0, max: 2, name: { ko: '0단계 · 한국어기초', zh: '第0阶段 · 韩语基础' }, range: { ko: '구술 3점 미만', zh: '口试不足3分' } },
+];
+function preLevelFor(score) { return PRE_LEVELS.find((l) => score >= l.min) || PRE_LEVELS[PRE_LEVELS.length - 1]; }
+
+const EXAMS = {
+  nat: {
+    badge: { ko: '귀화 종합평가', zh: '归化综合评价' },
+    coverOrg: { ko: '사회통합프로그램 (KIIP)', zh: '社会统合项目 (KIIP)' },
+    coverTitle: { ko: '귀화용 종합평가', zh: '归化用综合评价' },
+    coverSub: { ko: '필기시험 모의고사', zh: '笔试模拟考试' },
+    mockSub: { ko: '실제 시험처럼 풀기 (객관식+작문+구술)', zh: '像真实考试一样作答（选择+写作+口试）' },
+    practiceSub: { ko: '9개 영역별로 풀기', zh: '按9个领域练习' },
+    noPrefix: 'KINAT',
+    mock: { mc: 36, writing: 1, oral: 5, time: 60 * 60, ladder: false },
+    points: { mc: 65, writing: 10, oral: 25 },
+    grading: 'passfail',
+    notices: {
+      ko: [
+        '귀화용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.',
+        '이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.',
+        '객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>4문제가 통합된 1문제</b>를 <b>200자 원고지 1장 이내</b>로 작성합니다.',
+        '객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.',
+        '실제 시험의 구술은 별도 10분 세션(<b>5문항×5점</b>)입니다. 사회통합프로그램 <b>5단계 전 과정(기본+심화) 이수</b> + 합격 시 <b>귀화 면접심사가 면제</b>됩니다.',
+        '귀화허가 신청자는 <b>신청일로부터 1년 이내 재응시 2회</b>(최초 포함 총 3회)까지 가능하며, <b>3회 모두 불합격하면 귀화신청이 불허</b>됩니다.',
+      ],
+      zh: [
+        '归化用综合评价为 <b>选择题36题(65分) + 写作(10分) + 口试(25分) = 100分</b>，<b>60分以上合格</b>。',
+        '本模拟考试 <b>笔试(选择题+写作)在60分钟内</b>完成，随后继续练习<b>口试题</b>。',
+        '选择题从①②③④中选一个；写作为<b>4题合并成的1道题</b>，在<b>200字稿纸1页以内</b>作答。',
+        '仅选择题自动评分；写作·口试以参考答案·提示自我检查。',
+        '真实考试的口试为单独的10分钟环节（<b>5题×5分</b>）。修完社会统合项目<b>第5阶段全部课程（基本+深化）</b>并合格时，<b>免除归化面试审查</b>。',
+        '归化许可申请人自<b>申请日起1年内最多可再应试2次</b>（含首次共3次），<b>3次均不合格时归化申请将不被许可</b>。',
+      ],
     },
-    zh: {
-      'app.title': '韩文打字练习', 'app.toQuiz': '去做题',
-      'home.lead': '在熟悉韩文键盘之前，一步一步慢慢练习。',
-      'home.imeTip': '不需要把电脑输入法切换成韩文。直接按屏幕提示的键即可。',
-      'home.hint': '个人练习工具 · 成绩仅保存在本设备。',
-      'mode.position.t': '指位练习', 'mode.position.s': 'ㅎ ㅁ ㅂ ㅕ — 熟悉键位与手指',
-      'mode.syllable.t': '单字练习', 'mode.syllable.s': '辅音+元音，一个字一个字组合',
-      'mode.short.t': '短句练习', 'mode.short.s': '跟着打短句子',
-      'mode.long.t': '作文练习', 'mode.long.s': '跟着打作文范文（200字）',
-      'common.home': '主页', 'common.list': '列表', 'common.retry': '重来', 'common.next': '下一个 →',
-      'stat.time': '时间', 'stat.speed': '速度', 'stat.acc': '准确率', 'stat.miss': '错字',
-      'next.this': '此键', 'next.char': '下一个', 'next.space': '空格', 'next.enter': '回车',
-      'next.shift': '同时按 Shift', 'done.title': '做得好！完成', 'done.best': '刷新最佳成绩！',
-      'done.speed': '键/分', 'done.acc': '准确率', 'done.time': '用时',
-      'done.nextHint': '按 Enter 继续', 'done.listHint': '按 Enter 回列表',
-      'list.position': '选择一个阶段开始。第一次请从“基本键位”开始。',
-      'list.syllable': '从简单的字开始，一个字一个字完成。',
-      'list.short': '跟着打短句子，活动手指。',
-      'list.long': '这些是综合评价作文考题的范文。看着意思跟着打。',
-      'sec.sec': '秒', 'best.label': '最佳', 'topic.label': '主题', 'echo.label': '我打的',
-      'mode.word.t': '单词练习', 'mode.word.s': '快速辨别相似的词并打出',
-      'list.word': '快速识别外形相似的词并准确打出。',
-      'sound.on': '声音开', 'sound.off': '听发音',
-      'gate.msg': '准确率达到95%以上才会记为成绩。',
-      'delta.label': '与上一局相比', 'delta.speed': '速度', 'delta.acc': '准确率',
-      'mini.week': '本周', 'mini.games': '局', 'mini.avgspeed': '平均速度', 'mini.acc': '准确率',
-      'weak.title': '经常打错的键', 'weak.drill': '薄弱键补充练习',
-      'weak.pracTitle': '薄弱键补充', 'weak.none': '这一局都打得很好！',
-      'ob.eyebrow': '开始之前', 'ob.title': '请花30秒读一下',
-      'ob.s1': '<b>左手是辅音，右手是元音</b>。不用背键位，屏幕会提示你。',
-      'ob.s2': '一个字是字母的组合。比如 ',
-      'ob.s2b': ' 就是按顺序按 ', 'ob.s2c': ' 就能组成。',
-      'ob.s3': '照着<b>屏幕提示的键</b>按就行。慢慢开始吧。',
-      'ob.start': '开始',
-      'badge.best': '最佳', 'badge.empty': '还没练习',
-      'list.freewrite': '实战书写', 'list.follow': '跟着打',
-      'fw.badge': '实战', 'fw.ph': '请在这里自由书写你的答案。',
-      'fw.showModel': '完成 · 查看范文', 'fw.modelLabel': '范文（请自行对照）',
-      'fw.selfQ': '自我评价？', 'fw.good': '很好', 'fw.ok': '一般', 'fw.poor': '不足',
-      'fw.done': '辛苦了！请自行对照。', 'fw.guide': '写作提示', 'fw.chars': '字',
-      'sec.min': '分'
+  },
+  perm: {
+    badge: { ko: '영주 종합평가', zh: '永居综合评价' },
+    coverOrg: { ko: '사회통합프로그램 (KIIP)', zh: '社会统合项目 (KIIP)' },
+    coverTitle: { ko: '영주용 종합평가', zh: '永居用综合评价' },
+    coverSub: { ko: '필기시험 모의고사', zh: '笔试模拟考试' },
+    mockSub: { ko: '실제 시험처럼 풀기 (객관식+작문+구술)', zh: '像真实考试一样作答（选择+写作+口试）' },
+    practiceSub: { ko: '9개 영역별로 풀기', zh: '按9个领域练习' },
+    noPrefix: 'KIPRAT',
+    mock: { mc: 36, writing: 1, oral: 5, time: 60 * 60, ladder: false },
+    points: { mc: 65, writing: 10, oral: 25 },
+    grading: 'passfail',
+    notices: {
+      ko: [
+        '영주용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.',
+        '이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.',
+        '객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>4문제가 통합된 1문제</b>를 <b>200자 원고지 1장 이내</b>로 작성합니다.',
+        '객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.',
+        '응시 자격: 사회통합프로그램 <b>5단계 기본과정 수료</b>, 또는 <b>사전평가 85점 이상 득점 후 2년 이내</b>. 영주용은 <b>지필(PBT)로만</b> 시행됩니다.',
+      ],
+      zh: [
+        '永居用综合评价为 <b>选择题36题(65分) + 写作(10分) + 口试(25分) = 100分</b>，<b>60分以上合格</b>。',
+        '本模拟考试 <b>笔试(选择题+写作)在60分钟内</b>完成，随后继续练习<b>口试题</b>。',
+        '选择题从①②③④中选一个；写作为<b>4题合并成的1道题</b>，在<b>200字稿纸1页以内</b>作答。',
+        '仅选择题自动评分；写作·口试以参考答案·提示自我检查。',
+        '应试资格：修完社会统合项目<b>第5阶段基本课程</b>，或<b>事前评价获得85分以上后2年以内</b>。永居用仅以<b>纸笔(PBT)</b>形式进行。',
+      ],
     },
-    vi: {
-      'app.title': 'Luyện gõ tiếng Hàn', 'app.toQuiz': 'Làm bài',
-      'home.lead': 'Luyện từng bước cho đến khi quen bàn phím tiếng Hàn.',
-      'home.imeTip': 'Không cần chuyển bộ gõ máy tính sang tiếng Hàn. Chỉ cần bấm đúng phím màn hình chỉ.',
-      'home.hint': 'Công cụ luyện tập cá nhân · Điểm chỉ lưu trên thiết bị này.',
-      'mode.position.t': 'Luyện vị trí phím', 'mode.position.s': 'ㅎ ㅁ ㅂ ㅕ — làm quen vị trí phím và ngón tay',
-      'mode.syllable.t': 'Luyện từng chữ', 'mode.syllable.s': 'Ghép phụ âm + nguyên âm thành từng chữ',
-      'mode.short.t': 'Luyện câu ngắn', 'mode.short.s': 'Gõ theo câu ngắn',
-      'mode.long.t': 'Luyện viết bài văn', 'mode.long.s': 'Gõ theo bài văn mẫu (200 chữ)',
-      'common.home': 'Trang chủ', 'common.list': 'Danh sách', 'common.retry': 'Làm lại', 'common.next': 'Tiếp →',
-      'stat.time': 'Thời gian', 'stat.speed': 'Tốc độ', 'stat.acc': 'Chính xác', 'stat.miss': 'Lỗi',
-      'next.this': 'Phím này', 'next.char': 'Tiếp', 'next.space': 'Phím cách', 'next.enter': 'Enter',
-      'next.shift': 'Bấm kèm Shift', 'done.title': 'Giỏi lắm! Hoàn thành', 'done.best': 'Phá kỷ lục!',
-      'done.speed': 'phím/phút', 'done.acc': 'Chính xác', 'done.time': 'Thời gian',
-      'done.nextHint': 'Nhấn Enter để tiếp', 'done.listHint': 'Nhấn Enter về danh sách',
-      'list.position': 'Chọn một bước để bắt đầu. Lần đầu hãy bắt đầu từ “phím cơ bản”.',
-      'list.syllable': 'Bắt đầu từ chữ dễ, hoàn thành từng chữ một.',
-      'list.short': 'Gõ theo câu ngắn để làm nóng tay.',
-      'list.long': 'Đây là bài văn mẫu cho các chủ đề thi viết của kỳ đánh giá tổng hợp. Vừa xem nghĩa vừa gõ theo.',
-      'sec.sec': ' giây', 'best.label': 'Tốt nhất', 'topic.label': 'Chủ đề', 'echo.label': 'Tôi đã gõ',
-      'mode.word.t': 'Luyện từ', 'mode.word.s': 'Phân biệt nhanh các từ giống nhau và gõ',
-      'list.word': 'Nhận diện nhanh các từ trông giống nhau và gõ chính xác.',
-      'sound.on': 'Bật âm', 'sound.off': 'Nghe âm',
-      'gate.msg': 'Chỉ ghi nhận kỷ lục khi độ chính xác từ 95% trở lên.',
-      'delta.label': 'So với lần trước', 'delta.speed': 'Tốc độ', 'delta.acc': 'Chính xác',
-      'mini.week': 'Tuần này', 'mini.games': 'lượt', 'mini.avgspeed': 'Tốc độ TB', 'mini.acc': 'Chính xác',
-      'weak.title': 'Phím hay gõ sai', 'weak.drill': 'Luyện bù phím yếu',
-      'weak.pracTitle': 'Luyện bù phím yếu', 'weak.none': 'Lượt này bạn gõ đúng hết rồi!',
-      'ob.eyebrow': 'Trước khi bắt đầu', 'ob.title': 'Đọc trong 30 giây nhé',
-      'ob.s1': '<b>Tay trái là phụ âm, tay phải là nguyên âm</b>. Không cần thuộc phím, màn hình sẽ chỉ.',
-      'ob.s2': 'Một chữ là sự ghép các chữ cái. Ví dụ ',
-      'ob.s2b': ' là bấm lần lượt ', 'ob.s2c': ' sẽ thành.',
-      'ob.s3': 'Cứ bấm đúng <b>phím màn hình chỉ</b> là được. Bắt đầu từ từ thôi.',
-      'ob.start': 'Bắt đầu',
-      'badge.best': 'Tốt nhất', 'badge.empty': 'Chưa luyện',
-      'list.freewrite': 'Viết thực chiến', 'list.follow': 'Gõ theo',
-      'fw.badge': 'Thực chiến', 'fw.ph': 'Hãy tự do viết bài của bạn ở đây.',
-      'fw.showModel': 'Xong · Xem bài mẫu', 'fw.modelLabel': 'Bài mẫu (hãy tự đối chiếu)',
-      'fw.selfQ': 'Tự đánh giá?', 'fw.good': 'Tốt', 'fw.ok': 'Bình thường', 'fw.poor': 'Chưa đạt',
-      'fw.done': 'Làm tốt lắm! Hãy tự đối chiếu.', 'fw.guide': 'Gợi ý viết', 'fw.chars': 'chữ',
-      'sec.min': ' phút'
+  },
+  pre: {
+    badge: { ko: '사회통합 사전평가', zh: '社会统合事前评价' },
+    coverOrg: { ko: '사회통합프로그램 (KIIP)', zh: '社会统合项目 (KIIP)' },
+    coverTitle: { ko: '사회통합프로그램 사전평가', zh: '社会统合项目 事前评价' },
+    coverSub: { ko: '단계 배정 모의평가', zh: '级别分配模拟评价' },
+    mockSub: { ko: '실제 시험처럼 풀기 (객관식+작문+구술)', zh: '像真实考试一样作答（选择+写作+口试）' },
+    practiceSub: { ko: '어휘·문법·읽기·대화·문화·사회', zh: '词汇·语法·阅读·对话·文化·社会' },
+    noPrefix: 'KIIP',
+    /* 사전평가 필기는 총 60분이다. 객관식과 단답형에 시간이 나뉘어 있지 않고 통으로 준다
+       (사회통합정보망 기본소양평가 안내: "시험시간은 총 60분").
+       중간평가·종합평가는 "총 50분으로 객관식(40분), 작문형(10분)" 처럼 쪼개 적는데
+       사전평가만 그 구분이 없다.
+       법무부 견본 문제지 표지의 "시험시간은 50분입니다" 는 2016년 게시분이라 옛 수치다.
+       같은 견본의 중간평가 40분·종합평가 55분도 지금과 다르다. 견본 표지를 근거로
+       시간을 고치지 말 것. */
+    mock: { mc: 48, writing: 2, oral: 5, time: 60 * 60, ladder: true },
+    points: { mc: 72, writing: 3, oral: 25 },
+    grading: 'level',
+    notices: {
+      ko: [
+        '사회통합프로그램 <b>사전평가</b>는 합격·불합격 시험이 아니라, 점수에 따라 <b>0~5단계</b>를 배정하는 레벨 평가입니다.',
+        '실제 시험은 <b>필기 50문항(60분, 75점)</b> + <b>구술 5문항(10분, 25점)</b> = 100점입니다. 이 모의평가는 필기(객관식+작문)를 풀고 이어서 구술을 연습합니다.',
+        '객관식은 ①②③④ 중 하나를 고르고, 작문은 빈칸에 알맞은 표현을 짧게 씁니다.',
+        '객관식만 자동 채점되어 <b>예상 배정 단계</b>를 알려줍니다. 작문·구술은 모범답안으로 스스로 점검합니다.',
+        '실제로는 <b>구술 점수가 3점 미만이면 0단계</b>로 배정됩니다. 정확한 단계는 시험 당일 점수로 정해지며, 표시되는 단계는 <b>연습용 참고치</b>입니다.',
+        'TOPIK 급수가 있으면 사전평가 없이 단계 배정이 가능합니다(<b>1급→2단계, 2급→3단계, 3급→4단계, 4급 이상→5단계</b>). 배정 단계는 <b>2년간 유효</b>하며, 사전평가에 재응시하면 이전 교육 이수 기록이 무효가 됩니다.',
+      ],
+      zh: [
+        '社会统合项目 <b>事前评价</b>不是合格/不合格考试，而是根据分数分配 <b>0~5阶段</b>的级别测试。',
+        '真实考试为 <b>笔试50题(60分钟, 75分)</b> + <b>口试5题(10分钟, 25分)</b> = 100分。本模拟评价完成笔试(选择题+写作)后继续练习口试。',
+        '选择题从①②③④中选一个，写作在空格处简短填写恰当的表达。',
+        '仅选择题自动评分并给出 <b>预计分配阶段</b>；写作·口试以参考答案自我检查。',
+        '实际上 <b>口试不足3分则分配到0阶段</b>。准确阶段以考试当天分数为准，显示的阶段为 <b>练习参考值</b>。',
+        '持有TOPIK等级者可不经事前评价直接分配阶段（<b>1级→2阶段，2级→3阶段，3级→4阶段，4级以上→5阶段</b>）。分配的阶段自分配日起<b>2年有效</b>；若重新参加事前评价，之前的教育履修记录将失效。',
+      ],
     },
-    th: {
-      'app.title': 'ฝึกพิมพ์ภาษาเกาหลี', 'app.toQuiz': 'ไปทำข้อสอบ',
-      'home.lead': 'ฝึกทีละขั้นจนกว่าจะคุ้นกับแป้นพิมพ์ภาษาเกาหลี',
-      'home.imeTip': 'ไม่ต้องเปลี่ยนตัวพิมพ์ในเครื่องเป็นภาษาเกาหลี แค่กดปุ่มตามที่หน้าจอบอก',
-      'home.hint': 'เครื่องมือฝึกส่วนตัว · คะแนนบันทึกเฉพาะในเครื่องนี้',
-      'mode.position.t': 'ฝึกตำแหน่งแป้น', 'mode.position.s': 'ㅎ ㅁ ㅂ ㅕ — คุ้นเคยกับตำแหน่งแป้นและนิ้ว',
-      'mode.syllable.t': 'ฝึกตัวอักษร', 'mode.syllable.s': 'รวมพยัญชนะ+สระให้เป็นตัวอักษรทีละตัว',
-      'mode.short.t': 'ฝึกประโยคสั้น', 'mode.short.s': 'พิมพ์ตามประโยคสั้น',
-      'mode.long.t': 'ฝึกเขียนเรียงความ', 'mode.long.s': 'พิมพ์ตามเรียงความตัวอย่าง (200 ตัว)',
-      'common.home': 'หน้าหลัก', 'common.list': 'รายการ', 'common.retry': 'เริ่มใหม่', 'common.next': 'ถัดไป →',
-      'stat.time': 'เวลา', 'stat.speed': 'ความเร็ว', 'stat.acc': 'ความแม่นยำ', 'stat.miss': 'พิมพ์ผิด',
-      'next.this': 'ปุ่มนี้', 'next.char': 'ถัดไป', 'next.space': 'เว้นวรรค', 'next.enter': 'Enter',
-      'next.shift': 'กด Shift ด้วย', 'done.title': 'เยี่ยมมาก! เสร็จแล้ว', 'done.best': 'ทำลายสถิติ!',
-      'done.speed': 'ปุ่ม/นาที', 'done.acc': 'ความแม่นยำ', 'done.time': 'เวลาที่ใช้',
-      'done.nextHint': 'กด Enter เพื่อไปต่อ', 'done.listHint': 'กด Enter กลับรายการ',
-      'list.position': 'เลือกขั้นเพื่อเริ่ม ครั้งแรกเริ่มจาก “แป้นพื้นฐาน”',
-      'list.syllable': 'เริ่มจากตัวอักษรง่าย ๆ ทำให้เสร็จทีละตัว',
-      'list.short': 'พิมพ์ตามประโยคสั้นเพื่ออุ่นเครื่องนิ้ว',
-      'list.long': 'นี่คือเรียงความตัวอย่างของหัวข้อสอบเขียนในการประเมินรวม ดูความหมายแล้วพิมพ์ตาม',
-      'sec.sec': ' วิ', 'best.label': 'ดีที่สุด', 'topic.label': 'หัวข้อ', 'echo.label': 'ที่ฉันพิมพ์',
-      'mode.word.t': 'ฝึกคำศัพท์', 'mode.word.s': 'แยกแยะคำที่คล้ายกันอย่างรวดเร็วแล้วพิมพ์',
-      'list.word': 'ฝึกจำคำที่หน้าตาคล้ายกันอย่างรวดเร็วและพิมพ์ให้ถูก',
-      'sound.on': 'เปิดเสียง', 'sound.off': 'ฟังเสียง',
-      'gate.msg': 'จะบันทึกเป็นสถิติเมื่อความแม่นยำ 95% ขึ้นไป',
-      'delta.label': 'เทียบกับรอบก่อน', 'delta.speed': 'ความเร็ว', 'delta.acc': 'ความแม่นยำ',
-      'mini.week': 'สัปดาห์นี้', 'mini.games': 'รอบ', 'mini.avgspeed': 'ความเร็วเฉลี่ย', 'mini.acc': 'ความแม่นยำ',
-      'weak.title': 'ปุ่มที่พิมพ์ผิดบ่อย', 'weak.drill': 'ฝึกเสริมปุ่มที่อ่อน',
-      'weak.pracTitle': 'ฝึกเสริมปุ่มที่อ่อน', 'weak.none': 'รอบนี้พิมพ์ถูกหมดเลย!',
-      'ob.eyebrow': 'ก่อนเริ่ม', 'ob.title': 'อ่านสัก 30 วินาทีนะ',
-      'ob.s1': '<b>มือซ้ายคือพยัญชนะ มือขวาคือสระ</b> ไม่ต้องจำแป้น หน้าจอจะบอกเอง',
-      'ob.s2': 'หนึ่งตัวอักษรคือการผสมพยัญชนะสระ เช่น ',
-      'ob.s2b': ' คือกดตามลำดับ ', 'ob.s2c': ' ก็จะได้',
-      'ob.s3': 'แค่กด<b>ปุ่มที่หน้าจอบอก</b>ก็พอ ค่อย ๆ เริ่มนะ',
-      'ob.start': 'เริ่มเลย',
-      'badge.best': 'ดีที่สุด', 'badge.empty': 'ยังไม่ฝึก',
-      'list.freewrite': 'เขียนจริง', 'list.follow': 'พิมพ์ตาม',
-      'fw.badge': 'เขียนจริง', 'fw.ph': 'เขียนคำตอบของคุณได้อย่างอิสระที่นี่',
-      'fw.showModel': 'เสร็จ · ดูตัวอย่าง', 'fw.modelLabel': 'เรียงความตัวอย่าง (ลองเทียบด้วยตัวเอง)',
-      'fw.selfQ': 'ประเมินตัวเอง?', 'fw.good': 'ดี', 'fw.ok': 'พอใช้', 'fw.poor': 'ยังไม่พอ',
-      'fw.done': 'เก่งมาก! ลองเทียบด้วยตัวเองนะ', 'fw.guide': 'คำแนะนำการเขียน', 'fw.chars': 'ตัว',
-      'sec.min': ' นาที'
-    }
-  };
-  function readInheritedLang() {
-    var own = localStorage.getItem('typing_lang');
-    if (own && LANG_NAME[own]) return own;
-    try { var p = JSON.parse(localStorage.getItem('nq_lang') || 'null'); if (p && LANG_NAME[p]) return p; } catch (e) {}
-    return 'ko';
-  }
-  var lang = readInheritedLang();
-  function t(k) { return (I18N[lang] && I18N[lang][k]) || I18N.ko[k] || k; }
-  function L(o) { return (o && (o[lang] || o.ko)) || ''; }
+  },
+};
+function exam() { return EXAMS[activeExam]; }
+/* 시험별로 분리 저장할 키(종합평가=기존 키 그대로, 사전평가=__pre 접미사) */
+function ekey(base) { return activeExam === 'nat' ? base : base + '__' + activeExam; }
 
-  // ===== 콘텐츠 =====
-  var POSITION_STEPS = [
-    { title: { ko: '기본 자리 (가운뎃줄)', zh: '基本键位（中排）', vi: 'Phím cơ bản (hàng giữa)', th: 'แป้นพื้นฐาน (แถวกลาง)' }, set: ['ㅁ', 'ㄴ', 'ㅇ', 'ㄹ', 'ㅎ', 'ㅗ', 'ㅓ', 'ㅏ', 'ㅣ'] },
-    { title: { ko: '윗줄', zh: '上排', vi: 'Hàng trên', th: 'แถวบน' }, set: ['ㅂ', 'ㅈ', 'ㄷ', 'ㄱ', 'ㅅ', 'ㅛ', 'ㅕ', 'ㅑ', 'ㅐ', 'ㅔ'] },
-    { title: { ko: '아랫줄', zh: '下排', vi: 'Hàng dưới', th: 'แถวล่าง' }, set: ['ㅋ', 'ㅌ', 'ㅊ', 'ㅍ', 'ㅠ', 'ㅜ', 'ㅡ'] },
-    { title: { ko: '쌍자음·이중모음 (Shift)', zh: '双辅音·复元音（Shift）', vi: 'Phụ âm đôi · nguyên âm đôi (Shift)', th: 'พยัญชนะคู่·สระประสม (Shift)' }, set: ['ㅃ', 'ㅉ', 'ㄸ', 'ㄲ', 'ㅆ', 'ㅒ', 'ㅖ'] },
-    { title: { ko: '전체 섞어서', zh: '全部混合', vi: 'Trộn tất cả', th: 'รวมทั้งหมด' }, set: null }
-  ];
-  // '전체 섞어서'는 가운뎃줄·윗줄·아랫줄을 합친 것이다. 손으로 따로 적어 두었더니
-  // ㅛ·ㅑ·ㅔ·ㅠ 네 개가 빠져 있었다(특히 ㅔ 는 가장 자주 쓰는 모음 가운데 하나다).
-  // 세 줄에서 곧바로 만들어 두면 줄을 고쳐도 어긋나지 않는다.
-  POSITION_STEPS[4].set = POSITION_STEPS[0].set.concat(POSITION_STEPS[1].set, POSITION_STEPS[2].set);
-  var SYLLABLE_STEPS = [
-    { title: { ko: '기본 글자 (자음·모음 조합)', zh: '基本字（辅音·元音组合）', vi: 'Chữ cơ bản (ghép phụ âm·nguyên âm)', th: 'ตัวอักษรพื้นฐาน (ผสมพยัญชนะ·สระ)' }, gen: 'cv', text: '가 요 누 툐 머 디 보 챠 르 케 새 데 …' },
-    { title: { ko: '받침이 있는 글자', zh: '带收音的字', vi: 'Chữ có patchim', th: 'ตัวอักษรที่มีตัวสะกด' }, text: '강 산 물 밤 곰 집 발 손 눈 별 꽃 옷' },
-    { title: { ko: '쉬운 낱말', zh: '简单词语', vi: 'Từ đơn giản', th: 'คำง่าย ๆ' }, text: '한국 사랑 가족 친구 학교 감사 행복 우리 사람 음식 한글 나라' }
-  ];
-  // 비슷하게 생긴 낱말 변별 — 전부 실재 한국어 낱말
-  var WORD_STEPS = [
-    { title: { ko: '비슷한 모음 (머·마·미)', zh: '相似元音（머·마·미）', vi: 'Nguyên âm giống nhau (머·마·미)', th: 'สระคล้ายกัน (머·마·미)' }, text: '마리 머리 미리 모래 무리 아마 어머니 이미 머루 마루 미로' },
-    { title: { ko: '받침 ㄹ 낱말', zh: '收音ㄹ的词', vi: 'Từ có patchim ㄹ', th: 'คำที่มีตัวสะกด ㄹ' }, text: '물 불 풀 굴 술 줄 글 길 김 들 달 별' },
-    { title: { ko: '된소리 변별', zh: '紧音辨别', vi: 'Phân biệt âm căng', th: 'แยกเสียงหนัก' }, text: '자다 짜다 차다 사다 싸다 타다 따다 가다 까다 하다 파다' },
-    { title: { ko: '비슷한 두 글자', zh: '相似的两字词', vi: 'Từ hai chữ giống nhau', th: 'คำสองพยางค์ที่คล้ายกัน' }, text: '나무 너무 노래 누나 나비 너비 모자 모기 바다 바지 가방 가족' },
-    { title: { ko: '받침 변별 (ㄴ·ㅇ·ㅁ)', zh: '收音辨别（ㄴ·ㅇ·ㅁ）', vi: 'Phân biệt patchim (ㄴ·ㅇ·ㅁ)', th: 'แยกตัวสะกด (ㄴ·ㅇ·ㅁ)' }, text: '간 강 감 산 상 삼 반 방 밤 손 솔 솜' },
-    { title: { ko: '헷갈리는 낱말', zh: '容易混淆的词', vi: 'Từ dễ nhầm lẫn', th: 'คำที่สับสนง่าย' }, text: '의사 이사 시계 세계 사람 사랑 친구 친척 학교 학생 가게 가계' }
-  ];
-  var CURATED_SHORT = [
-    { text: '안녕하세요.', trans: { zh: '你好。', vi: 'Xin chào.', th: 'สวัสดีค่ะ' } },
-    { text: '만나서 반갑습니다.', trans: { zh: '很高兴见到你。', vi: 'Rất vui được gặp bạn.', th: 'ยินดีที่ได้รู้จัก' } },
-    { text: '저는 외국에서 왔어요.', trans: { zh: '我来自外国。', vi: 'Tôi đến từ nước ngoài.', th: 'ฉันมาจากต่างประเทศ' } },
-    { text: '한국 생활이 즐거워요.', trans: { zh: '韩国生活很愉快。', vi: 'Cuộc sống ở Hàn Quốc rất vui.', th: 'ชีวิตในเกาหลีสนุกดี' } },
-    { text: '한국어를 열심히 배워요.', trans: { zh: '我努力学习韩语。', vi: 'Tôi chăm chỉ học tiếng Hàn.', th: 'ฉันตั้งใจเรียนภาษาเกาหลี' } },
-    { text: '오늘도 좋은 하루 보내세요.', trans: { zh: '今天也祝你过得愉快。', vi: 'Chúc bạn một ngày tốt lành.', th: 'ขอให้วันนี้เป็นวันที่ดี' } }
-  ];
+/* ---------- 상태 ---------- */
+let BANK = [];
+let CATALOG = null;
+let META = { version: '-', syncedAt: null };
+let quiz = null;
+let writingType = 'writing';
+let currentView = 'home';
+let lastResult = null;
+let mockSelfGrade = {}; // 모의고사 작문·구술 자가채점(qid → 0/0.5/1)
+let swReg = null;
+let pendingMemberAction = null;
+let memberReady = false;
+let bankFullyLoaded = false;
+let writingViewList = [];
+let writingViewKey = '';
 
-  function topicOf(q) {
-    if (!q) return '';
-    var s = q.replace(/^다음 주제로[^:：]*[:：]\s*/, '').trim();
-    s = s.replace(/<br\s*\/?>/gi, ' ').replace(/^["“”']|["“”'.]$/g, '').trim();
-    return s;
+/* ---------- 유틸 ---------- */
+const $ = (id) => document.getElementById(id);
+/* 가입 문의용 메일. index.html 의 member-join 블록과 같은 값을 쓴다. */
+const TRIAL_MAIL = 'ningning6146@gmail.com';
+const NUM = ['①', '②', '③', '④', '⑤'];
+/* 해설이 "③은 잘못된 설명이다" 처럼 보기 번호로 가리키는 문항이 있다.
+   그런데 문제를 풀 때 보기는 섞어서 보여 주므로(orderFor), 해설의 ③ 과
+   화면의 ③ 이 서로 다른 보기가 된다. 원본 번호를 화면 번호로 바꿔 준다.
+   채점 결과 화면(review)은 보기를 원래 순서로 보여 주므로 손대지 않는다. */
+const NUM_OF = { '①': 0, '②': 1, '③': 2, '④': 3, '⑤': 4 };
+function renumber(text, order) {
+  if (!text || !order || !order.length) return text;
+  return String(text).replace(/[①②③④⑤]/g, (ch) => {
+    const pos = order.indexOf(NUM_OF[ch]);
+    return pos < 0 ? ch : NUM[pos];
+  });
+}
+function ls(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; } }
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+function escHtml(s) { return String(s || '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function toast(msg, ms = 2200) { const t0 = $('toast'); t0.textContent = msg; t0.classList.remove('hidden'); clearTimeout(toast._t); toast._t = setTimeout(() => t0.classList.add('hidden'), ms); }
+function fmtDate(iso) { if (!iso) return t('noSync'); const d = new Date(iso); const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function memberStatus() { return window.GwiwhaMembership ? window.GwiwhaMembership.getStatus() : { configured: false, active: false, signedIn: false, reason: 'not_configured' }; }
+function isActiveMember() { return !!memberStatus().active; }
+function clearSensitiveLocalData() {
+  const marker = 'nq_sensitive_migrated_v1';
+  try { if (localStorage.getItem(marker) === '1') return; } catch {}
+  [K.bank, K.meta, K.mockSave, K.practiceSave].forEach((key) => {
+    try { localStorage.removeItem(key); } catch {}
+    ['__pre', '__perm'].forEach((suffix) => { try { localStorage.removeItem(key + suffix); } catch {} });
+  });
+  try { localStorage.setItem(marker, '1'); } catch {}
+}
+function clearMemberCaches() {
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    try { navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_MEMBER_CACHE' }); } catch {}
   }
-  function cleanPrompt(q) { return (q || '').replace(/<br\s*\/?>/gi, ' / '); }
-  function transOf(d) { return { zh: d.model_zh || '', vi: d.model_vi || '', th: d.model_th || '' }; }
-  function guideOf(d) { return { ko: d.guide || '', zh: d.guide_zh || '', vi: d.guide_vi || '', th: d.guide_th || '' }; }
+}
+function catalogExam(key = activeExam) {
+  return CATALOG && CATALOG.exams && CATALOG.exams[key] ? CATALOG.exams[key] : { total: 0, mc: 0, writing: 0, oral: 0, categories: [] };
+}
+function catalogMcCount() { return bankFullyLoaded && BANK.length ? mcOnly().length : catalogExam().mc; }
+function catalogTotalCount() { return bankFullyLoaded && BANK.length ? examBank().length : catalogExam().total; }
+function qById(id) { return BANK.find((q) => q.id === id); }
+/* 트랙별 문제 풀: 영주용(perm)도 귀화용(nat)과 같은 종합평가 풀을 쓰되,
+   심화(tier:advanced) 문항은 귀화용에만 포함(영주=기본과정, 귀화=기본+심화). */
+const poolOf = (ex) => (ex === 'pre' ? 'pre' : 'nat');
+function inExam(q) { return examOf(q) === poolOf(activeExam) && !(activeExam === 'perm' && q.tier === 'advanced'); }
 
-  var DATA = [];
-  var NAT = [];
-  var PRE = [];
-  var SHORT_ITEMS = [];
-  var LONG_ITEMS = [];
-  var typingDataLoaded = false;
-  var pendingMemberAction = null;
+/* 지금 고른 시험에 실제로 나오는 문항 수.
+   BANK 에는 세 트랙이 다 들어 있다. 총합을 보여 주면 영주용을 골라 놓고도
+   사전평가 문항까지 센 숫자를 보게 되어 학습자가 오해한다. */
+function bankExamCount() { return BANK.filter(inExam).length; }
+const examBank = () => BANK.filter(inExam);
+const mcOnly = () => examBank().filter((q) => q.type === 'mc');
+const byType = (ty) => examBank().filter((q) => q.type === ty);
+function currentQuestionFilters(extra = {}) {
+  const filters = Object.assign({ exam: poolOf(activeExam) }, extra);
+  if (activeExam === 'perm') filters.excludeAdvanced = true;
+  return filters;
+}
+async function fetchMemberQuestions(extra = {}) {
+  if (!window.GwiwhaMembership) throw new Error('not_configured');
+  const list = await window.GwiwhaMembership.fetchQuestions(currentQuestionFilters(extra));
+  return list.filter(inExam);
+}
+function handleQuestionLoadFailure(error, silent = false) {
+  console.error('[Gwiwha] Failed to load Supabase questions', error);
+  const msg = questionLoadErrorMessage(error);
+  setSyncStatus(msg, true);
+  if (!silent) toast(msg, 4200);
+}
+async function loadExerciseQuestions(filters, { silent = false } = {}) {
+  try {
+    return await fetchMemberQuestions(filters);
+  } catch (e) {
+    handleQuestionLoadFailure(e, silent);
+    return [];
+  }
+}
 
-  function rebuildWritingData(data) {
-    DATA = Array.isArray(data) ? data : [];
-    NAT = DATA.filter(function (d) { return (d.exam || 'nat') === 'nat'; });
-    PRE = DATA.filter(function (d) { return d.exam === 'pre'; });
-    SHORT_ITEMS = CURATED_SHORT.map(function (c) { return { text: c.text, trans: c.trans, kind: 'text' }; })
-      .concat(PRE.map(function (d) {
-        return { text: (d.model || '').trim(), trans: transOf(d), topic: cleanPrompt(d.q), kind: 'text' };
-      }).filter(function (x) { return x.text; }));
-    LONG_ITEMS = NAT.map(function (d) {
-      return { text: (d.model || '').trim(), trans: transOf(d), topic: topicOf(d.q), guide: guideOf(d), kind: 'text', id: d.id };
-    }).filter(function (x) { return x.text; });
-    if (MODES && MODES.short) MODES.short.items = SHORT_ITEMS;
-    if (MODES && MODES.long) MODES.long.items = LONG_ITEMS;
-  }
+/* 공유 비밀번호 잠금은 없앴다(2026-09-30, 소유자 지시).
+   원래도 유료 콘텐츠를 지키는 장치가 아니었다 — 브라우저 안에서만 확인하는 값이라
+   개발자도구를 열면 그냥 지나갈 수 있었고, question-catalog.json 은 잠금과 무관하게
+   공개되어 있었다. 실제 인가 경계는 Supabase Auth + members + RLS 다.
+   반면 이 잠금 때문에 처음 온 사람은 이 사이트가 무엇인지조차 볼 수 없었다.
+   다시 넣지 말 것. */
 
-  var MODES = {
-    position: { kind: 'position', title: { ko: '자리 연습', zh: '指位练习', vi: 'Luyện vị trí phím', th: 'ฝึกตำแหน่งแป้น' }, desc: 'list.position', items: POSITION_STEPS },
-    syllable: { kind: 'text', title: { ko: '낱글자 연습', zh: '单字练习', vi: 'Luyện từng chữ', th: 'ฝึกตัวอักษร' }, desc: 'list.syllable', items: SYLLABLE_STEPS },
-    word: { kind: 'text', title: { ko: '낱말 연습', zh: '单词练习', vi: 'Luyện từ', th: 'ฝึกคำศัพท์' }, desc: 'list.word', items: WORD_STEPS },
-    short: { kind: 'text', title: { ko: '단문 연습', zh: '短句练习', vi: 'Luyện câu ngắn', th: 'ฝึกประโยคสั้น' }, desc: 'list.short', items: SHORT_ITEMS },
-    long: { kind: 'text', title: { ko: '작문 연습', zh: '作文练习', vi: 'Luyện viết bài văn', th: 'ฝึกเขียนเรียงความ' }, desc: 'list.long', items: LONG_ITEMS }
-  };
-  rebuildWritingData([]);
-
-  // ===== 가상 키보드 레이아웃 =====
-  var PUNCT = {
-    Backquote: ['`', '~'], Digit1: ['1', '!'], Digit2: ['2', '@'], Digit3: ['3', '#'], Digit4: ['4', '$'],
-    Digit5: ['5', '%'], Digit6: ['6', '^'], Digit7: ['7', '&'], Digit8: ['8', '*'], Digit9: ['9', '('],
-    Digit0: ['0', ')'], Minus: ['-', '_'], Equal: ['=', '+'], BracketLeft: ['[', '{'], BracketRight: [']', '}'],
-    Backslash: ['\\', '|'], Semicolon: [';', ':'], Quote: ["'", '"'], Comma: [',', '<'], Period: ['.', '>'], Slash: ['/', '?']
-  };
-  var KB_ROWS = [
-    ['Backquote', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus', 'Equal', { code: 'Backspace', label: '⌫', cls: 'special wide' }],
-    [{ code: 'Tab', label: 'Tab', cls: 'special wide' }, 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'BracketLeft', 'BracketRight', 'Backslash'],
-    [{ code: 'CapsLock', label: 'Caps', cls: 'special wider' }, 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon', 'Quote', { code: 'Enter', label: '↵', cls: 'special wider' }],
-    [{ code: 'ShiftLeft', label: 'Shift', cls: 'special widest' }, 'KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN', 'KeyM', 'Comma', 'Period', 'Slash', { code: 'ShiftRight', label: 'Shift', cls: 'special widest' }],
-    [{ code: 'Space', label: '', cls: 'spacekey' }]
-  ];
-  var keyEls = {};
-
-  function buildKeyboard() {
-    var kb = $('#keyboard');
-    kb.innerHTML = '';
-    keyEls = {};
-    KB_ROWS.forEach(function (row) {
-      var r = document.createElement('div');
-      r.className = 'kbd-row';
-      row.forEach(function (cell) {
-        var code = typeof cell === 'string' ? cell : cell.code;
-        var el = document.createElement('button');
-        el.type = 'button';
-        el.className = 'key';
-        el.dataset.code = code;
-        if (typeof cell === 'object') {
-          el.className += ' ' + (cell.cls || '');
-          var m = document.createElement('span'); m.className = 'key__main'; m.textContent = cell.label; el.appendChild(m);
-        } else if (HG.DUBEOL[code]) {
-          var f = HG.FINGER[code]; if (f) el.className += ' f-' + f.finger;
-          if (code === 'KeyF' || code === 'KeyJ') el.className += ' homedot';
-          var main = document.createElement('span'); main.className = 'key__main'; main.textContent = HG.DUBEOL[code].base; el.appendChild(main);
-          if (HG.DUBEOL[code].shift) { var sh = document.createElement('span'); sh.className = 'key__shift'; sh.textContent = HG.DUBEOL[code].shift; el.appendChild(sh); }
-          var lat = document.createElement('span'); lat.className = 'key__lat'; lat.textContent = code.replace('Key', '').toLowerCase(); el.appendChild(lat);
-        } else if (PUNCT[code]) {
-          var f2 = HG.FINGER[code]; if (f2) el.className += ' f-' + f2.finger;
-          var m2 = document.createElement('span'); m2.className = 'key__main'; m2.textContent = PUNCT[code][0]; el.appendChild(m2);
-          var s2 = document.createElement('span'); s2.className = 'key__shift'; s2.textContent = PUNCT[code][1]; el.appendChild(s2);
-        }
-        el.addEventListener('click', function () { onVirtualKey(code); });
-        keyEls[code] = el;
-        r.appendChild(el);
-      });
-      kb.appendChild(r);
-    });
+/* =====================================================================
+   초기화
+   ===================================================================== */
+async function init() {
+  clearSensitiveLocalData();
+  wireMemberJoin();
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    // 새 버전 적용은 서비스워커(activate 시 창 자동 새로고침)가 담당
+    navigator.serviceWorker.register('sw.js').then((reg) => { swReg = reg; }).catch(() => {});
   }
-
-  // ===== 상태 =====
-  var state = null;
-  var timerId = null;
-  var soundOn = (localStorage.getItem('typing_sound') !== '0'); // 기본 켜짐 — 사용자가 끈 적 있을 때만 꺼짐
-
-  // ===== 발음(소리) — 자음은 +ㅡ(므·느), 모음은 ㅇ+(아·어). 검증된 조합 오토마타 재사용 =====
-  function jamoToSyllable(j) {
-    if (HG.isCons(j)) return HG.compose([{ type: 'jamo', jamo: j }, { type: 'jamo', jamo: 'ㅡ' }]);
-    if (HG.isVowel(j)) return HG.compose([{ type: 'jamo', jamo: 'ㅇ' }, { type: 'jamo', jamo: j }]);
-    return '';
-  }
-  // 가장 또렷한 한국어 음성 고르기 — 신경망/네트워크 음성(특히 Chrome의 Google 음성) 우선
-  var koVoice = null;
-  function pickKoVoice() {
-    if (!('speechSynthesis' in window)) return;
-    var vs = window.speechSynthesis.getVoices() || [];
-    var ko = vs.filter(function (v) { return /^ko/i.test(v.lang || ''); });
-    if (!ko.length) { koVoice = null; return; }
-    // 애플 기기의 Eddy·Flo·Grandma·Rocko 등은 일부러 만화처럼 만든 캐릭터 음성이다. 학습용으로 못 쓴다.
-    var NOVELTY = /^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|bells|boing|bubbles|cellos|jester|organ|superstar|trinoids|whisper|wobble|zarvox|albert|bad news|good news|bahh|deranged|hysterical|junior|kathy|princess|ralph)\b/i;
-    var plain = ko.filter(function (v) { return !NOVELTY.test((v.name || '').replace(/\s*\(.*\)$/, '')); });
-    if (plain.length) ko = plain;
-    var PREF = ['google', 'sunhi', 'sun-hi', 'seoyeon', 'yuna', 'injoon', 'jimin', 'heami', 'natural', 'neural', 'wavenet'];
-    function score(v) {
-      var n = (v.name || '').toLowerCase(), s = 0;
-      // 사용자가 시스템 설정에서 내려받은 고품질 판 — 압축판보다 훨씬 자연스럽다
-      if (/premium|siri/.test(n)) s += 200; else if (/enhanced/.test(n)) s += 160;
-      if (n.indexOf('google') > -1) s += 100;       // Chrome의 Google 한국어(신경망) = 가장 또렷
-      for (var i = 0; i < PREF.length; i++) { if (n.indexOf(PREF[i]) > -1) { s += 50; break; } }
-      if (!v.localService) s += 40;                  // 네트워크 음성이 대체로 더 명확
-      if (v.default) s += 5;
-      return s;
-    }
-    ko.sort(function (a, b) { return score(b) - score(a); });
-    koVoice = ko[0];
-  }
-  if ('speechSynthesis' in window) {
-    pickKoVoice();
-    try { window.speechSynthesis.addEventListener('voiceschanged', pickKoVoice); } catch (e) {}
-  }
-  function speakJamo(j) {
-    if (!soundOn || !j) return;
-    if (!('speechSynthesis' in window)) return;
-    var syl = jamoToSyllable(j); if (!syl) return;
-    try {
-      window.speechSynthesis.cancel();
-      if (!koVoice) pickKoVoice();
-      var u = new SpeechSynthesisUtterance(syl);
-      u.lang = 'ko-KR'; u.rate = 0.72; u.pitch = 1.0;
-      if (koVoice) u.voice = koVoice;
-      window.speechSynthesis.speak(u);
-    } catch (e) {}
-  }
-  function updateSoundToggle() {
-    var b = $('#soundToggle'); if (!b) return;
-    b.innerHTML = iconSvg(soundOn ? 'sound' : 'mute', 'sound-toggle__ico') + '<span>' + esc(soundOn ? t('sound.on') : t('sound.off')) + '</span>';
-    b.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
-  }
-  function toggleSound() {
-    soundOn = !soundOn;
-    try { localStorage.setItem('typing_sound', soundOn ? '1' : '0'); } catch (e) {}
-    updateSoundToggle();
-    if (soundOn) { var exp = currentExpected(); if (exp && exp.jamo) speakJamo(exp.jamo); }
-  }
-
-  function newState(mode, idx) {
-    var cfg = MODES[mode];
-    var item = cfg.items[idx];
-    var s = { mode: mode, kind: cfg.kind, idx: idx, item: item, correct: 0, errors: 0, startTime: 0, running: false, finished: false, weakSession: {} };
-    if (cfg.kind === 'position') {
-      s.seq = buildDrill(item.set);
-      s.posIdx = 0;
-      s.total = s.seq.length;
-    } else {
-      var txt;
-      if (item.gen === 'cv') {
-        // 매 세션 무작위 음절 생성(고정 목록 반복 대신)
-        txt = genSyllables(MIN_SYL.syllable || 140);
-      } else if (mode === 'short') {
-        // 같은 문장 반복 대신 연속된 4문장을 이어붙여 분량을 늘림(끝에서는 앞으로 순환)
-        var items = cfg.items, n = items.length, parts = [];
-        for (var k = 0; k < 4 && k < n; k++) parts.push(items[(idx + k) % n].text);
-        txt = parts.join(' ');
-      } else {
-        txt = expandText(item.text, mode);
-      }
-      s.target = txt;
-      s.tokens = HG.textToKeystrokes(txt);
-      s.chars = HG.sanitize(txt).split('');
-      s.lines = wrapLines(s.chars);
-      s.pos = 0;
-      s.typed = [];   // 실제로 친 자모/문자 토큰(오답 포함) — 백스페이스로 되돌림
-      s.total = s.tokens.length;
-    }
-    return s;
-  }
-
-  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
-  // 자리연습: 한 세션을 충분히 길게(~180회) — 세트 단위로 섞어 이어붙임
-  function buildDrill(set) { var out = set.slice(); while (out.length < 175) out = out.concat(shuffle(set)); return out; }
-  // 텍스트 모드: 음절 최소치까지 통째로 반복 (낱글자·낱말). 단문은 newState에서 여러 문장 이어붙임. 귀화작문(long)은 제외.
-  var MIN_SYL = { syllable: 330, word: 300 };
-  function sylCount(text) { return (String(text).match(/[가-힣ㄱ-ㅎㅏ-ㅣ]/g) || []).length; }
-  function expandText(text, mode) {
-    var min = MIN_SYL[mode] || 0; if (!min) return text;
-    var base = String(text).trim(), out = base, g = 0;
-    while (sylCount(out) < min && g++ < 80) out += ' ' + base;
-    return out;
-  }
-  // 무작위 음절 생성(자음+모음, 받침 없음) — '가 요 누 툐'처럼 매번 다르게 섞이도록
-  var GEN_CONS = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-  var GEN_VOW = ['ㅏ', 'ㅑ', 'ㅓ', 'ㅕ', 'ㅗ', 'ㅛ', 'ㅜ', 'ㅠ', 'ㅡ', 'ㅣ', 'ㅐ', 'ㅔ'];
-  function randSyllable() {
-    var cho = HG.CHO.indexOf(GEN_CONS[Math.floor(Math.random() * GEN_CONS.length)]);
-    var jung = HG.JUNG.indexOf(GEN_VOW[Math.floor(Math.random() * GEN_VOW.length)]);
-    return String.fromCharCode(0xAC00 + (cho * 21 + jung) * 28);
-  }
-  function genSyllables(n) { var out = []; for (var i = 0; i < n; i++) out.push(randSyllable()); return out.join(' '); }
-
-  // 단어(공백) 단위로 줄 분할 → 각 줄 = [start,end) 글자 인덱스(끝의 공백 제외)
-  function wrapLines(chars) {
-    var lines = [], n = chars.length, i = 0;
-    var lineStart = -1, lineEnd = -1, lineLen = 0;
-    while (i < n) {
-      var j = i; while (j < n && chars[j] !== ' ') j++; // [i,j) = 한 단어
-      var wlen = j - i;
-      if (lineStart < 0) { lineStart = i; lineEnd = j; lineLen = wlen; }
-      else if (lineLen + 1 + wlen <= LINE_BUDGET) { lineEnd = j; lineLen += 1 + wlen; }
-      else { lines.push({ start: lineStart, end: lineEnd }); lineStart = i; lineEnd = j; lineLen = wlen; }
-      i = (j < n) ? j + 1 : j; // 공백 건너뜀(줄바꿈)
-    }
-    if (lineStart >= 0) lines.push({ start: lineStart, end: lineEnd });
-    return lines.length ? lines : [{ start: 0, end: n }];
-  }
-
-  // ===== 화면 전환 =====
-  function show(view) { $$('.view').forEach(function (v) { v.classList.add('hidden'); }); $('#view-' + view).classList.remove('hidden'); window.scrollTo(0, 0); }
-
-  function goHome() { stopTimer(); renderHome(); show('home'); }
-
-  function memberStatus() {
-    return window.GwiwhaMembership ? window.GwiwhaMembership.getStatus() : { configured: false, signedIn: false, active: false, reason: 'not_configured' };
-  }
-  function clearMemberCaches() {
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      try { navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_MEMBER_CACHE' }); } catch (e) {}
-    }
-  }
-  function memberMsg(reason) {
-    if (reason === 'not_configured') return '회원 시스템 설정이 필요합니다.';
-    if (reason === 'invalid_otp') return '인증번호가 올바르지 않습니다.';
-    if (reason === 'not_member') return '등록된 회원이 아닙니다.\n결제 후 이용할 수 있습니다.';
-    if (reason === 'inactive') return '현재 이용할 수 없는 계정입니다.\n관리자에게 문의해 주세요.';
-    if (reason === 'email_required') return '이메일을 입력해 주세요.';
-    if (reason === 'otp_required') return '인증번호를 입력해 주세요.';
-    if (reason === 'network') return '네트워크 오류가 발생했습니다.\n다시 시도해 주세요.';
-    return '회원 로그인 후 이용할 수 있습니다.';
-  }
-  function setMemberMessage(msg, kind) {
-    var el = $('#memberMessage');
-    if (!el) return;
-    el.textContent = msg || '';
-    el.classList.toggle('is-error', kind === 'error');
-    el.classList.toggle('is-ok', kind === 'ok');
-  }
-  function openMemberModal(reason) {
-    var modal = $('#memberModal');
-    if (!modal) return;
-    var st = memberStatus();
-    if (st.email) $('#memberEmail').value = st.email;
-    $('#memberLogoutBtn').classList.toggle('hidden', !st.signedIn);
-    setMemberMessage(reason ? memberMsg(reason) : '', reason ? 'error' : '');
-    modal.classList.remove('hidden');
-    setTimeout(function () { (st.signedIn ? $('#memberOtp') : $('#memberEmail')).focus(); }, 60);
-  }
-  function closeMemberModal() {
-    $('#memberModal').classList.add('hidden');
-    setMemberMessage('', '');
-  }
-  async function ensureTypingData() {
-    if (typingDataLoaded) return true;
-    if (!window.GwiwhaMembership) return false;
-    try {
-      var data = await window.GwiwhaMembership.fetchQuestions({ type: 'writing' });
-      rebuildWritingData(data);
-      typingDataLoaded = true;
+  const savedLang = ls(K.lang, null);
+  LANG = savedLang || 'ko';
+  activeExam = ls(K.exam, 'pre');
+  loadCatalogFromStorage();
+  applyStaticI18n();
+  applyExamUi();
+  repairInflatedMiss();   // 되풀이 채점 버그로 부풀려진 '틀린 횟수'를 한 번만 되돌린다
+  wireEvents();
+  wireMemberUi();
+  renderMemberStatus();
+  showView('home');
+  renderHome();
+  if (savedLang === null) openLangPicker();   // 첫 실행: 국가/언어(주석) 선택
+  await loadCatalog({ silent: true });
+  if (window.GwiwhaMembership) {
+    window.GwiwhaMembership.onChange(onMembershipChange);
+    window.GwiwhaMembership.init().then(async () => {
+      memberReady = true;
+      renderMemberStatus();
       renderHome();
-      return true;
-    } catch (e) {
-      setMemberMessage(memberMsg('network'), 'error');
-      return false;
-    }
+    });
+  } else {
+    memberReady = true;
+    renderMemberStatus();
   }
-  async function requireMembership(action) {
-    var st = window.GwiwhaMembership ? await window.GwiwhaMembership.refreshStatus() : memberStatus();
-    if (st.active) {
-      var ok = await ensureTypingData();
-      if (ok && typeof action === 'function') action();
-      return ok;
+}
+
+function loadCatalogFromStorage() {
+  const cached = ls(K.catalog, null);
+  if (cached && cached.exams) CATALOG = cached;
+  META = { version: (CATALOG && CATALOG.version) || '-', syncedAt: null };
+}
+
+/* ---------- 다국어 적용 ---------- */
+function applyStaticI18n() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  // 언어 버튼: 현재 언어 표식(국기)만 — 영어 단어 하드코딩 제거
+  $('langBtn').textContent = LANG_LABEL[LANG] || '🌐';
+}
+function setLang(lang) {
+  if (!LANG_LABEL[lang]) return;
+  LANG = lang; save(K.lang, lang);
+  applyStaticI18n();
+  applyExamUi();
+  refreshView();
+}
+/* 국가/언어 선택 화면(splash) — 첫 실행 시, 또는 상단 언어 버튼으로 다시 열기 */
+function openLangPicker() { const el = $('langSplash'); if (el) el.classList.remove('hidden'); }
+function chooseLang(lang) { const el = $('langSplash'); if (el) el.classList.add('hidden'); setLang(lang); }
+
+/* ---------- 시험 트랙 UI 반영 / 전환 ---------- */
+function applyExamUi() {
+  document.querySelectorAll('#trackSeg .seg__btn').forEach((b) => b.classList.toggle('seg__btn--active', b.dataset.exam === activeExam));
+  const titleEl = document.querySelector('.appbar__title');
+  if (titleEl) titleEl.textContent = tx(exam().badge);
+  const mockSub = document.querySelector('[data-go="mock"] .menu-card__sub');
+  if (mockSub) mockSub.textContent = tx(exam().mockSub);
+  const prSub = document.querySelector('[data-go="practice"] .menu-card__sub');
+  if (prSub) prSub.textContent = tx(exam().practiceSub);
+}
+function setExam(key) {
+  if (key === activeExam || !EXAMS[key]) return;
+  showView('home');        // 진행 중인 모의고사가 있으면 현재 트랙 키로 저장 후 타이머 정지
+  quiz = null; lastResult = null;
+  activeExam = key; save(K.exam, key);
+  applyExamUi();
+  renderHome();
+  toast(tx(exam().badge));
+}
+function refreshView() {
+  if (currentView === 'home') renderHome();
+  else if (currentView === 'examintro') { renderExamIntro(); const s = getMockSaveRaw(); const btn = $('examResumeBtn'); if (s) btn.textContent = t('exam.resume', s.i + 1, s.ids.length); }
+  else if (currentView === 'practice') renderCategories();
+  else if (currentView === 'quiz' && quiz) renderQuestion();
+  else if (currentView === 'writing') renderWriting();
+  else if (currentView === 'wrong') renderWrong();
+  else if (currentView === 'stats') renderStats();
+  else if (currentView === 'result' && lastResult) renderResult(lastResult.list, lastResult.answers, lastResult.correct, lastResult.opts);
+}
+
+/* =====================================================================
+   동기화
+   ===================================================================== */
+async function loadCatalog({ silent = false } = {}) {
+  try {
+    const res = await fetch('question-catalog.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data || !data.exams) throw new Error('catalog format');
+    CATALOG = data;
+    save(K.catalog, CATALOG);
+    META = { version: CATALOG.version || '?', syncedAt: null };
+    setSyncStatus(t('sync.publicReady', catalogTotalCount()), false);
+    renderHome();
+    return CATALOG;
+  } catch (e) {
+    if (CATALOG) {
+      setSyncStatus(t('sync.publicReady', catalogTotalCount()), false);
+      return CATALOG;
     }
-    pendingMemberAction = action || null;
-    openMemberModal(st.reason);
+    CATALOG = {
+      version: FALLBACK.version,
+      exams: { pre: { total: 0, mc: 0, writing: 0, oral: 0, categories: [] }, perm: { total: 0, mc: 0, writing: 0, oral: 0, categories: [] }, nat: { total: 0, mc: 0, writing: 0, oral: 0, categories: [] } },
+    };
+    if (!silent) toast(t('toast.syncFail'));
+    setSyncStatus(t('sync.first'), true);
+    return CATALOG;
+  }
+}
+
+async function ensureMemberBank({ silent = false, force = false } = {}) {
+  const st = window.GwiwhaMembership ? await window.GwiwhaMembership.refreshStatus() : memberStatus();
+  if (!st.active) {
+    BANK = [];
+    bankFullyLoaded = false;
+    if (!silent) showMemberRequired(st.reason);
     return false;
   }
-  async function runPendingMemberAction() {
-    var action = pendingMemberAction;
-    pendingMemberAction = null;
-    if (typeof action === 'function') await requireMembership(action);
-  }
-  function bindMemberUi() {
-    var cancel = $('#memberCancelBtn');
-    if (cancel) cancel.addEventListener('click', function () { pendingMemberAction = null; closeMemberModal(); });
-    var modal = $('#memberModal');
-    if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) { pendingMemberAction = null; closeMemberModal(); } });
-    var send = $('#memberSendOtpBtn');
-    if (send) send.addEventListener('click', async function () {
-      if (!window.GwiwhaMembership) { setMemberMessage(memberMsg('not_configured'), 'error'); return; }
-      send.disabled = true;
-      setMemberMessage('회원 정보를 확인하는 중입니다.', '');
-      var res = await window.GwiwhaMembership.sendOtp($('#memberEmail').value);
-      send.disabled = false;
-      if (res.ok) {
-        $('#memberEmail').value = res.email;
-        setMemberMessage('이메일로 인증번호를 보냈습니다.', 'ok');
-        $('#memberOtp').focus();
-      } else setMemberMessage(memberMsg(res.reason), 'error');
-    });
-    var form = $('#memberOtpForm');
-    if (form) form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-      if (!window.GwiwhaMembership) { setMemberMessage(memberMsg('not_configured'), 'error'); return; }
-      $('#memberVerifyBtn').disabled = true;
-      setMemberMessage('회원 정보를 확인하는 중입니다.', '');
-      var res = await window.GwiwhaMembership.verifyOtp($('#memberEmail').value, $('#memberOtp').value);
-      $('#memberVerifyBtn').disabled = false;
-      if (!res.ok) {
-        var reason = res.status ? res.status.reason : res.reason;
-        setMemberMessage(memberMsg(reason), 'error');
-        return;
-      }
-      var ok = await ensureTypingData();
-      if (!ok) return;
-      closeMemberModal();
-      await runPendingMemberAction();
-    });
-    var logout = $('#memberLogoutBtn');
-    if (logout) logout.addEventListener('click', async function () {
-      if (window.GwiwhaMembership) await window.GwiwhaMembership.signOut();
-      clearMemberCaches();
-      typingDataLoaded = false;
-      rebuildWritingData([]);
-      pendingMemberAction = null;
-      closeMemberModal();
-      goHome();
-    });
-  }
-
-  // A5: 홈 mode-card에 최고 기록 배지 / 미연습 표시
-  // A2: 홈 상단 미니 요약 스트립
-  function renderHome() {
-    // 각 mode의 대표 최고기록(그 mode에서 가장 높은 속도의 rec)
-    Object.keys(MODES).forEach(function (mode) {
-      var el = $('.mode-card[data-mode="' + mode + '"] [data-badge="' + mode + '"]');
-      if (!el) return;
-      var n = MODES[mode].items.length, bestSpeed = 0, bestAcc = null;
-      for (var i = 0; i < n; i++) {
-        var r = getBestRec(mode, i);
-        if (r && r.speed > bestSpeed) { bestSpeed = r.speed; bestAcc = r.acc; }
-      }
-      if (bestSpeed > 0) {
-        el.className = 'mode-card__badge';
-        el.textContent = t('badge.best') + ' ' + bestSpeed + (bestAcc != null ? ' · ' + bestAcc + '%' : '');
-      } else {
-        el.className = 'mode-card__badge mode-card__badge--empty';
-        el.textContent = t('badge.empty');
-      }
-      el.classList.remove('hidden');
-    });
-    // 미니 스트립
-    var strip = $('#miniStrip');
-    var wk = weekSummary();
-    if (wk) {
-      strip.innerHTML =
-        '<div class="mini-strip__item"><span class="mini-strip__label">' + t('mini.week') + '</span><span class="mini-strip__num">' + wk.games + '<span>' + t('mini.games') + '</span></span></div>' +
-        '<div class="mini-strip__item"><span class="mini-strip__label">' + t('mini.avgspeed') + '</span><span class="mini-strip__num">' + wk.avgSpeed + '</span></div>' +
-        (wk.avgAcc != null ? '<div class="mini-strip__item"><span class="mini-strip__label">' + t('mini.acc') + '</span><span class="mini-strip__num">' + wk.avgAcc + '<span>%</span></span></div>' : '');
-      strip.classList.remove('hidden');
-    } else {
-      strip.classList.add('hidden');
+  if (bankFullyLoaded && BANK.length && !force) return true;
+  try {
+    if (!silent) toast(t('toast.syncing'));
+    const list = await window.GwiwhaMembership.fetchQuestions();
+    if (!Array.isArray(list) || !list.length) {
+      const err = new Error('empty question bank');
+      err.code = 'EMPTY_QUESTION_BANK';
+      throw err;
     }
-  }
-
-  function goList(mode) {
-    var cfg = MODES[mode];
-    $('#listTitle').textContent = L(cfg.title);
-    $('#listDesc').textContent = t(cfg.desc);
-    var box = $('#listItems'); box.innerHTML = '';
-    cfg.items.forEach(function (item, i) {
-      var title, sub = '';
-      if (cfg.kind === 'position') { title = L(item.title); sub = item.set.join(' '); }
-      else if (mode === 'syllable' || mode === 'word') { title = L(item.title); sub = item.text; }
-      else if (mode === 'long') { title = item.topic; sub = (lang === 'ko') ? item.text : ((item.trans && item.trans[lang]) || item.text); }
-      else { title = item.text; sub = (lang === 'ko') ? '' : ((item.trans && item.trans[lang]) || ''); }
-      var best = getBest(mode, i);
-
-      if (mode === 'long') {
-        // A6: 장문은 '따라 치기' + '실전 쓰기' 두 진입
-        var wrap = document.createElement('div');
-        wrap.className = 'long-item';
-        wrap.innerHTML =
-          '<div class="long-item__head"><span class="select-item__title">' + esc(title) + '</span>' +
-          (best ? '<span class="select-item__best">' + t('best.label') + ' ' + best + '</span>' : '') + '</div>' +
-          (sub ? '<div class="select-item__sub long-item__sub">' + esc(clip(sub, 90)) + '</div>' : '') +
-          '<div class="long-item__acts">' +
-          '<button class="btn btn--ghost btn--sm long-item__btn" data-act="follow">' + esc(t('list.follow')) + '</button>' +
-          '<button class="btn btn--primary btn--sm long-item__btn" data-act="freewrite">' + esc(t('list.freewrite')) + '</button>' +
-          '</div>';
-        wrap.querySelector('[data-act="follow"]').addEventListener('click', function () { startPractice(mode, i); });
-        wrap.querySelector('[data-act="freewrite"]').addEventListener('click', function () { startFreewrite(i); });
-        box.appendChild(wrap);
-        return;
-      }
-
-      var b = document.createElement('button');
-      b.className = 'select-item';
-      b.innerHTML = '<span class="select-item__main"><span class="select-item__title">' + esc(title) + '</span>' +
-        (sub ? '<span class="select-item__sub">' + esc(clip(sub, 70)) + '</span>' : '') + '</span>' +
-        (best ? '<span class="select-item__best">' + t('best.label') + ' ' + best + '</span>' : '');
-      b.addEventListener('click', function () { startPractice(mode, i); });
-      box.appendChild(b);
-    });
-    state = { mode: mode };
-    show('list');
-  }
-
-  // ===== 연습 시작 =====
-  function startPractice(mode, idx) {
-    state = newState(mode, idx);
-    var cfg = MODES[mode];
-    var perItemTitle = (mode === 'position' || mode === 'syllable' || mode === 'word');
-    $('#pracTitle').textContent = (perItemTitle && state.item.title) ? L(state.item.title) : L(cfg.title);
-    // 발음 듣기 토글: 글자 단위 연습(자리·낱글자) + 낱말·단문·장문(음절 완성 시 읽기, A7)
-    var soundModes = (state.kind === 'text' || mode === 'position');
-    var stog = $('#soundToggle');
-    if (stog) { stog.classList.toggle('hidden', !soundModes); updateSoundToggle(); }
-    // 화면 요소 복구(실전 쓰기에서 돌아온 경우)
-    $('#targetBox').classList.remove('hidden');
-    $('#nextKey').classList.remove('hidden');
-    $('#fwBox').classList.add('hidden');
-    $('.kbd-wrap').classList.remove('hidden');
-    // 장문 따라치기 뷰포트 핏 클래스
-    $('#view-practice').classList.toggle('is-long', mode === 'long');
-    var meta = $('#pracMeta');
-    var tr = state.item.trans && state.item.trans[lang];
-    if (state.kind === 'text' && (state.item.topic || (tr && lang !== 'ko'))) {
-      if (mode === 'long') {
-        // 장문 뷰포트 픽스: 주제 1줄 요약 + 펼치기(details)로 압축
-        var body = '';
-        if (tr && lang !== 'ko') body += '<div class="prac-meta__trans">' + esc(tr) + '</div>';
-        meta.className = 'prac-meta prac-meta--fold';
-        meta.innerHTML =
-          '<details' + (body ? '' : ' open') + '><summary>' +
-          '<span class="prac-meta__sumtopic">' + esc((t('topic.label') + ': ') + (state.item.topic || '')) + '</span>' +
-          '<svg class="prac-meta__chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' +
-          '</summary>' + (body ? '<div class="prac-meta__body">' + body + '</div>' : '') + '</details>';
-        meta.classList.remove('hidden');
-      } else {
-        meta.className = 'prac-meta';
-        var html = '';
-        if (state.item.topic) html += '<div class="prac-meta__topic">' + esc(state.item.topic) + '</div>';
-        if (tr && lang !== 'ko') html += '<div class="prac-meta__trans">' + esc(tr) + '</div>';
-        meta.innerHTML = html; meta.classList.remove('hidden');
-      }
-    } else { meta.className = 'prac-meta'; meta.classList.add('hidden'); }
-    $('#pracDone').classList.add('hidden');
-    show('practice');
-    render();
-    updateStats();
-  }
-
-  // ===== A6: 실전 쓰기(자유 타이핑) =====
-  function startFreewrite(idx) {
-    var item = LONG_ITEMS[idx];
-    if (!item) return;
-    state = {
-      mode: 'long', kind: 'free', idx: idx, item: item,
-      free: [], // 입력 토큰 배열(오토마타)
-      correct: 0, errors: 0, startTime: 0, running: false, finished: false,
-      weakSession: {}
-    };
-    $('#pracTitle').textContent = item.topic || t('mode.long.t');
-    var stog = $('#soundToggle'); if (stog) stog.classList.add('hidden');
-    // 주제 + 작성 도움말(가이드)을 prac-meta에 표시(펼침 없이 전부 보임 — 실전은 안내가 화면의 목적)
-    var meta = $('#pracMeta');
-    var guide = item.guide && (item.guide[lang] || item.guide.ko);
-    var trans = item.trans && item.trans[lang];
-    var html = '<div class="prac-meta__topic">' + t('topic.label') + ': ' + esc(item.topic || '') + '</div>';
-    if (guide) html += '<div class="prac-meta__trans"><b>' + esc(t('fw.guide')) + ':</b> ' + esc(guide) + '</div>';
-    else if (trans && lang !== 'ko') html += '<div class="prac-meta__trans">' + esc(trans) + '</div>';
-    meta.className = 'prac-meta';
-    meta.innerHTML = html; meta.classList.remove('hidden');
-    // 화면 요소 토글: target-box 숨김 · fwBox 보임 · nextkey 숨김
-    $('#targetBox').classList.add('hidden');
-    $('#nextKey').classList.add('hidden');
-    $('#fwBox').classList.remove('hidden');
-    $('.kbd-wrap').classList.remove('hidden');
-    $('#pracDone').classList.add('hidden');
-    // 장문 뷰포트 핏 클래스는 실전에선 불필요(키보드+입력창만) — 유지해도 무방하나 제거
-    $('#view-practice').classList.remove('is-long');
-    show('practice');
-    renderFree();
-    updateFreeStats();
-  }
-
-  function renderFree() {
-    var echo = $('#fwEcho');
-    var str = HG.compose(state.free || []);
-    echo.innerHTML = esc(str) + '<span class="caret"></span>';
-    echo.setAttribute('data-ph', t('fw.ph'));
-    if (!str) echo.innerHTML = '<span class="caret"></span>';
-    // 게이지: 완성 글자수 / 200
-    var count = HG.sanitize(str).replace(/\s/g, '').length;
-    $('#fwCount').textContent = count;
-    var pct = Math.min(100, Math.round(count / 200 * 100));
-    var fill = $('#fwGauge');
-    fill.style.width = pct + '%';
-    fill.classList.toggle('is-full', count >= 200);
-  }
-
-  function handleFreeInput(code, shift) {
-    if (!state || state.finished) return false;
-    startTimerIfNeeded();
-    var produced = producedToken(code, shift);
-    if (!produced) return false;
-    state.free.push(produced);
-    state.correct++; // 자유 입력: 타수 측정만(오답 판정 없음)
-    flashKey(code, 'pressed');
-    if (soundOn) { /* 실전 쓰기는 조용히 — 토글 숨김 */ }
-    renderFree(); updateFreeStats();
+    BANK = list;
+    bankFullyLoaded = true;
+    META = { version: (CATALOG && CATALOG.version) || 'Supabase', syncedAt: new Date().toISOString() };
+    setSyncStatus(t('sync.memberReady', t('track.' + activeExam), bankExamCount()), false);
+    if (!silent) toast(t('toast.syncDone', BANK.length));
+    renderHome();
     return true;
+  } catch (e) {
+    console.error('[Gwiwha] Failed to load Supabase questions', e);
+    BANK = [];
+    bankFullyLoaded = false;
+    const msg = questionLoadErrorMessage(e);
+    setSyncStatus(msg, true);
+    if (!silent) toast(msg, 4200);
+    return false;
   }
+}
 
-  function freeBackspace() {
-    if (!state || state.finished) return;
-    if (state.free && state.free.length) { state.free.pop(); state.correct = Math.max(0, state.correct - 1); }
-    renderFree(); updateFreeStats();
-  }
+function questionLoadErrorMessage(error) {
+  const code = String((error && error.code) || '');
+  const message = String((error && error.message) || '').toLowerCase();
+  if (code === 'PGRST205' || message.includes("could not find the table 'public.questions'")) return t('questions.missing');
+  if (code === 'EMPTY_QUESTION_BANK') return t('questions.empty');
+  if (code === '42501' || message.includes('permission denied') || message.includes('row-level security')) return t('questions.permission');
+  return t('questions.loadFail');
+}
 
-  function updateFreeStats() {
-    var elapsed = state.startTime ? (Date.now() - state.startTime) / 1000 : 0;
-    var str = HG.compose(state.free || []);
-    var count = HG.sanitize(str).replace(/\s/g, '').length;
-    $('#statTime').textContent = Math.floor(elapsed) + t('sec.sec');
-    $('#statSpeed').textContent = elapsed >= 0.5 ? Math.round(state.correct / (elapsed / 60)) : 0;
-    $('#statAcc').textContent = count; // 정확도 칸은 글자수로 대체 표기
-    $('#statMiss').textContent = '–';
-    var pf = $('#pracProgress'); if (pf) pf.style.width = Math.min(100, Math.round(count / 200 * 100)) + '%';
-  }
-
-  function finishFreewrite(selfRating) {
-    stopTimer();
-    state.finished = true;
-    var elapsed = (Date.now() - state.startTime) / 1000;
-    var str = HG.compose(state.free || []);
-    var count = HG.sanitize(str).replace(/\s/g, '').length;
-    var speed = elapsed >= 0.5 ? Math.round(state.correct / (elapsed / 60)) : 0;
-    // A6: 로그에 mode:'freewrite'로 기록(오타 판정 없음 → a 생략, e 없음)
-    pushLog({ m: 'freewrite', i: state.idx, s: speed, a: null, e: 0, d: new Date().toISOString(), c: count, self: selfRating || null });
-    var item = state.item;
-    var model = item.text;
-    var d = $('#pracDone');
-    d.innerHTML =
-      '<div class="prac-done__title">' + t('fw.done') + '</div>' +
-      '<div class="prac-done__stats">' +
-      '<div class="prac-done__stat"><b>' + count + '</b><span>' + t('fw.badge') + ' · ' + t('fw.chars') + '</span></div>' +
-      '<div class="prac-done__stat"><b>' + speed + '</b><span>' + t('done.speed') + '</span></div>' +
-      '<div class="prac-done__stat"><b>' + Math.floor(elapsed) + t('sec.sec') + '</b><span>' + t('done.time') + '</span></div>' +
-      '</div>' +
-      '<div class="fw-model"><span class="fw-model__label">' + t('fw.modelLabel') + '</span>' +
-      '<div class="fw-model__text">' + esc(model) + '</div></div>' +
-      '<div class="fw-self"><div class="fw-self__q">' + t('fw.selfQ') + '</div>' +
-      '<div class="fw-self__opts">' +
-      '<button class="fw-self__opt" data-self="good">' + t('fw.good') + '</button>' +
-      '<button class="fw-self__opt" data-self="ok">' + t('fw.ok') + '</button>' +
-      '<button class="fw-self__opt" data-self="poor">' + t('fw.poor') + '</button>' +
-      '</div></div>' +
-      '<div class="prac-done__actions">' +
-      '<button class="btn btn--ghost" id="doneRetry">↻ ' + t('common.retry') + '</button>' +
-      '<button class="btn btn--primary" id="doneNext">' + t('common.list') + '</button>' +
-      '</div>';
-    d.classList.remove('hidden');
-    $$('.fw-self__opt', d).forEach(function (opt) {
-      opt.addEventListener('click', function () {
-        $$('.fw-self__opt', d).forEach(function (o) { o.classList.remove('is-sel'); });
-        opt.classList.add('is-sel');
-        // 자가확인 값을 방금 로그의 마지막 freewrite 항목에 반영
-        updateLastSelf(opt.getAttribute('data-self'));
-      });
-    });
-    $('#doneRetry').addEventListener('click', function () { startFreewrite(state.idx); });
-    $('#doneNext').addEventListener('click', function () { goList('long'); });
-    d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  function updateLastSelf(val) {
-    var arr = logStore();
-    for (var i = arr.length - 1; i >= 0; i--) { if (arr[i].m === 'freewrite') { arr[i].self = val; break; } }
-    try { localStorage.setItem('typing_log_v1', JSON.stringify(arr)); } catch (e) {}
-  }
-
-  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } if (state) state.running = false; }
-  function startTimerIfNeeded() {
-    if (state.running || state.finished) return;
-    state.running = true; state.startTime = Date.now();
-    timerId = setInterval(function () { if (state && state.kind === 'free') updateFreeStats(); else updateStats(); }, 200);
-  }
-
-  // ===== 입력 처리 =====
-  function currentExpected() {
-    if (!state) return null;
-    if (state.kind === 'position') {
-      if (state.posIdx >= state.seq.length) return null;
-      var jamo = state.seq[state.posIdx];
-      return { type: 'jamo', jamo: jamo, key: HG.JAMO_TO_KEY[jamo] };
-    } else {
-      if (state.pos >= state.tokens.length) return null;
-      var tok = state.tokens[state.pos];
-      return { type: tok.type, jamo: tok.jamo, ch: tok.ch, key: HG.tokenKey(tok), tok: tok };
-    }
-  }
-
-  // (code, shift) -> 실제로 나오는 입력 토큰
-  function producedToken(code, shift) {
-    if (code === 'Space') return { type: 'space' };
-    if (code === 'Enter') return { type: 'enter' };
-    var j = HG.producedJamo(code, shift); if (j) return { type: 'jamo', jamo: j };
-    var ch = HG.producedLiteral(code, shift); if (ch != null) return { type: 'literal', ch: ch };
-    return null;
-  }
-  function tokenMatch(exp, p) {
-    if (!exp || !p || exp.type !== p.type) return false;
-    if (p.type === 'jamo') return exp.jamo === p.jamo;
-    if (p.type === 'literal') return exp.ch === p.ch;
-    return true; // space/enter
-  }
-
-  function handleInput(code, shift) {
-    if (!state || state.finished || ($('#view-practice').classList.contains('hidden'))) return false;
-    var exp = currentExpected();
-    if (!exp) return false;
-    startTimerIfNeeded();
-
-    if (state.kind === 'position') {
-      // 자리 연습: 키 위치 찾기 드릴 — 맞아야 다음으로
-      var okP = HG.producedJamo(code, shift) === exp.jamo;
-      if (okP) {
-        state.posIdx++; state.correct++;
-        if (soundOn) speakJamo(exp.jamo);
-        flashKey(code, 'pressed'); render(); updateStats();
-        if (progressCount() >= state.total) finish();
-      } else {
-        state.errors++; flashKey(code, 'miss');
-        recordWeak(exp.jamo);
-        var ek = exp.key; if (ek && keyEls[ek.code]) { keyEls[ek.code].classList.add('miss'); setTimeout(function (e) { e.classList.remove('miss'); }, 300, keyEls[ek.code]); }
-        updateStats();
-      }
-      return true;
-    }
-
-    // 텍스트 모드: 실제 타자 연습 — 오답도 입력되어 보이고(빨강), 백스페이스로 고침
-    var produced = producedToken(code, shift);
-    if (!produced) return false;
-    var matched = tokenMatch(exp, produced);
-    state.typed.push(produced);
-    state.pos++;
-    if (matched) { state.correct++; flashKey(code, 'pressed'); }
-    else { state.errors++; flashKey(code, 'miss'); if (exp.type === 'jamo') recordWeak(exp.jamo); }
-    // A7: 텍스트 모드 전반에서 음절 완성 시 TTS(자모 발음 재사용). 단, syllable은 자모 단위 발음 유지.
-    if (soundOn) {
-      if (state.mode === 'syllable') { if (produced.type === 'jamo') speakJamo(produced.jamo); }
-      else if (produced.type !== 'jamo' && matched) speakOnWordComplete();
-    }
-    render(); updateStats();
-    if (state.pos >= state.total) {
-      if (soundOn && state.mode !== 'syllable') speakFinalWord();
-      finish();
-    }
-    return true;
-  }
-
-  // 오타 시 '정답이었어야 할 자모'를 세션+전역에 누적 (A3)
-  function recordWeak(jamo) {
-    if (!jamo || !HG.isCons(jamo) && !HG.isVowel(jamo)) return;
-    if (state && state.weakSession) state.weakSession[jamo] = (state.weakSession[jamo] || 0) + 1;
-    addWeak(jamo);
-  }
-
-  function sayKo(text, rate) {
-    if (!text || !('speechSynthesis' in window) || !soundOn) return;
-    try {
-      window.speechSynthesis.cancel();
-      if (!koVoice) pickKoVoice();
-      var u = new SpeechSynthesisUtterance(text);
-      u.lang = 'ko-KR'; u.rate = rate || 0.85; u.pitch = 1.0;
-      if (koVoice) u.voice = koVoice;
-      window.speechSynthesis.speak(u);
-    } catch (e) {}
-  }
-  /* 낱말·단문·장문: 한 낱말을 다 치고 공백이나 문장부호를 누르는 순간 그 낱말을 통째로 읽는다.
-     전에는 음절 하나씩('머' '리') 읽었는데, 음절은 다음 자모가 들어와야 확정되므로
-     늘 한 박자 늦었고 마지막 음절은 아예 읽히지 않아 낱자를 읽는 것처럼 들렸다.
-     친 것이 아니라 정답에서 가져온다 — 오타가 섞이면 틀린 말을 들려주게 된다. */
-  function speakOnWordComplete() {
-    var exp = state.tokens[state.pos - 1];
-    if (!exp || exp.type === 'jamo') return;          // 경계 자리에서 경계를 제대로 쳤을 때만
-    var before = HG.compose(state.tokens.slice(0, state.pos - 1));
-    var m = before.match(/[가-힣]+$/);
-    if (m) sayKo(m[0]);                               // '머리. ' 의 마침표 뒤 공백은 여기서 걸러진다
-  }
-  function speakFinalWord() {
-    var m = HG.compose(state.tokens).match(/[가-힣]+$/);
-    if (m) sayKo(m[0]);                               // 문장부호로 끝났으면 이미 읽었으므로 없다
-  }
-
-  // A7: 새로 '완성된' 음절 하나가 늘어나는 순간에만 그 직전 음절을 읽어 줌 (낱말·단문·장문)
-  // 판정: 조합 결과에서 '완성형 음절(가-힣) 중 마지막이 아닌 것'의 개수(=확정된 음절 수)가 늘면,
-  // 방금 확정된 음절을 재생. (마지막 음절은 아직 자모가 더 붙을 수 있으므로 제외)
-  function speakOnSyllableComplete() {
-    if (!('speechSynthesis' in window) || !soundOn) return;
-    var composed = HG.compose(state.typed || []);
-    // 확정 음절 = 마지막 글자를 제외한 부분에서 완성형 음절만 셈
-    var head = composed.slice(0, -1);
-    var settled = (head.match(/[가-힣]/g) || []);
-    var prevN = state._settledN || 0;
-    if (settled.length > prevN) {
-      var syl = settled[settled.length - 1];
-      state._settledN = settled.length;
-      try {
-        window.speechSynthesis.cancel();
-        if (!koVoice) pickKoVoice();
-        var u = new SpeechSynthesisUtterance(syl);
-        u.lang = 'ko-KR'; u.rate = 0.85; u.pitch = 1.0;
-        if (koVoice) u.voice = koVoice;
-        window.speechSynthesis.speak(u);
-      } catch (e) {}
-    } else {
-      state._settledN = settled.length;
-    }
-  }
-
-  function progressCount() { return state.kind === 'position' ? state.posIdx : state.pos; }
-
-  function backspace() {
-    if (!state || state.finished) return;
-    if (state.kind === 'position') { if (state.posIdx > 0) state.posIdx--; }
+async function sync({ silent = false } = {}) {
+  const btn = $('syncBtn');
+  btn.classList.add('is-syncing');
+  if (swReg) { try { swReg.update(); } catch (e) {} } // 동기화 시 앱(서비스워커) 업데이트도 점검
+  try {
+    await loadCatalog({ silent: true });
+    if (isActiveMember()) await ensureMemberBank({ silent, force: true });
     else {
-      if (state.pos > 0) { state.pos--; state.typed.pop(); }
-      // TTS 확정 음절 카운트 재동기화(백스페이스로 되돌린 만큼)
-      var head = HG.compose(state.typed || []).slice(0, -1);
-      state._settledN = (head.match(/[가-힣]/g) || []).length;
+      BANK = [];
+      bankFullyLoaded = false;
+      setSyncStatus(t('sync.publicReady', catalogTotalCount()), false);
+      if (!silent) toast(t('sync.publicReady', catalogTotalCount()));
+      renderHome();
     }
-    render(); updateStats();
-  }
+  } catch (e) {
+    setSyncStatus(t('sync.first'), true);
+    if (!silent) toast(t('toast.syncFail'));
+  } finally { btn.classList.remove('is-syncing'); }
+}
+function setSyncStatus(text, isError) { const el = $('syncStatus'); el.textContent = text; el.classList.toggle('is-error', !!isError); }
 
-  function flashKey(code, cls) {
-    var el = keyEls[code]; if (!el) return;
-    el.classList.add(cls); setTimeout(function () { el.classList.remove(cls); }, 120);
+/* =====================================================================
+   화면 전환
+   ===================================================================== */
+const VIEWS = ['home', 'practice', 'examintro', 'quiz', 'writing', 'result', 'wrong', 'stats'];
+function showView(name) {
+  // 같은 화면을 다시 그리는 경우(언어 변경 등)에는 스크롤을 건드리지 않는다.
+  // 결과 화면에서 refreshView() 가 renderResult 를 다시 부르면 여기로 들어오는데,
+  // 화면이 바뀐 것이 아닌데도 맨 위로 튀어 올라 읽던 자리를 잃는다.
+  const viewChanged = currentView !== name;
+  currentView = name;
+  stopSpeak(); // G: 화면을 옮기면 읽어 주던 음성을 멈춘다
+  VIEWS.forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  if (name !== 'quiz') {
+    document.body.classList.remove('exam-mode');
+    // 퀴즈를 벗어나면(예: 홈으로) 진행 상황 저장 후 타이머 정지(중복 방지)
+    saveMockProgress();
+    savePracticeProgress();
+    if (quiz && quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }
   }
+  if (viewChanged) window.scrollTo(0, 0);
+}
 
-  function onVirtualKey(code) {
-    if (state && state.finished) { if (code === 'Enter' && state.kind !== 'free') goNext(); return; }
-    // 실전 쓰기: 자유 입력(오토마타). 가상 키보드는 shift 상태를 알 수 없으므로 base 자모.
-    if (state && state.kind === 'free') {
-      if (code === 'Backspace') { freeBackspace(); return; }
-      if (code === 'ShiftLeft' || code === 'ShiftRight' || code === 'CapsLock' || code === 'Tab') return;
-      if (code === 'Enter') { handleFreeInput('Enter', false); return; }
-      handleFreeInput(code, false);
-      return;
+/* =====================================================================
+   회원 로그인 / 권한
+   ===================================================================== */
+function memberReasonMessage(reason) {
+  if (reason === 'not_configured') return t('member.config');
+  if (reason === 'invalid_otp') return t('member.badOtp');
+  if (reason === 'trial_done') return t('member.trial_done');
+  if (reason === 'not_member') return t('member.notMember');
+  if (reason === 'inactive') return t('member.inactive');
+  if (reason === 'email_required') return t('member.emailReq');
+  if (reason === 'otp_required') return t('member.otpReq');
+  if (reason === 'network') return t('member.network');
+  return t('member.desc');
+}
+function setMemberMessage(msg, kind) {
+  const el = $('memberMessage');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('is-error', kind === 'error');
+  el.classList.toggle('is-ok', kind === 'ok');
+}
+function openMemberModal(reason) {
+  const st = memberStatus();
+  const modal = $('memberModal');
+  if (!modal) return;
+  const emailInput = $('memberEmail');
+  if (emailInput && st.email) emailInput.value = st.email;
+  modal.classList.remove('hidden');
+  $('memberLogoutBtn').classList.toggle('hidden', !st.signedIn);
+  setMemberMessage(reason ? memberReasonMessage(reason) : '', reason ? 'error' : '');
+  setTimeout(() => {
+    const target = st.signedIn ? $('memberOtp') : $('memberEmail');
+    if (target) target.focus();
+  }, 60);
+}
+/* 메일 주소 복사 — 휴대폰에서 길게 눌러 고르는 것보다 확실하다.
+   clipboard API 가 없거나 막힌 브라우저에서는 조용히 넘어간다(주소는 화면에 그대로 보인다). */
+function wireMemberJoin() {
+  const btn = $('memberJoinCopy');
+  const mail = $('memberJoinMail');
+  if (!btn || !mail) return;
+  btn.addEventListener('click', async () => {
+    const addr = mail.textContent.trim();
+    try {
+      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(addr);
+      else {
+        const ta = document.createElement('textarea');
+        ta.value = addr; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      toast(t('member.joinCopied'));
+    } catch { /* 복사가 막힌 환경 — 주소가 화면에 보이므로 그대로 둔다 */ }
+  });
+}
+function closeMemberModal() {
+  const modal = $('memberModal');
+  if (modal) modal.classList.add('hidden');
+  setMemberMessage('', '');
+}
+function showMemberRequired(reason) {
+  openMemberModal(reason || memberStatus().reason || 'not_signed_in');
+}
+async function requireMembership(action, options = {}) {
+  const st = window.GwiwhaMembership ? await window.GwiwhaMembership.refreshStatus() : memberStatus();
+  renderMemberStatus();
+  const runAction = async () => {
+    if (options.loadBank) {
+      const ok = await ensureMemberBank({ silent: true });
+      if (!ok) return false;
     }
-    var exp = currentExpected();
-    var shift = (exp && exp.key && exp.key.code === code) ? !!exp.key.shift : false;
-    if (code === 'Backspace') { backspace(); return; }
-    if (code === 'ShiftLeft' || code === 'ShiftRight' || code === 'CapsLock' || code === 'Tab') return;
-    handleInput(code, shift);
+    if (typeof action === 'function') await action();
+    return true;
+  };
+  if (st.active) {
+    return runAction();
   }
-
-  // 물리 키보드
-  document.addEventListener('keydown', function (e) {
-    if ($('#view-practice').classList.contains('hidden')) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    var code = e.code;
-    // 완료 후 Enter = 다음(실전 쓰기 완료 화면은 Enter 라우팅 제외 — 자가확인 버튼 사용)
-    if (state && state.finished) {
-      if (code === 'Enter' && state.kind !== 'free') { e.preventDefault(); goNext(); }
-      return;
+  pendingMemberAction = action ? runAction : null;
+  showMemberRequired(st.reason);
+  return false;
+}
+async function runPendingMemberAction() {
+  const action = pendingMemberAction;
+  pendingMemberAction = null;
+  if (typeof action === 'function') await action();
+}
+function onMembershipChange(st) {
+  renderMemberStatus();
+  if (!st.active) {
+    BANK = [];
+    bankFullyLoaded = false;
+    writingViewList = [];
+    writingViewKey = '';
+    clearMemberCaches();
+    META = { version: (CATALOG && CATALOG.version) || '-', syncedAt: null };
+    if (['quiz', 'writing', 'wrong', 'result'].includes(currentView)) {
+      quiz = null;
+      showView('home');
+      renderHome();
     }
-    // 실전 쓰기: 자유 입력
-    if (state && state.kind === 'free') {
-      if (code === 'Backspace') { e.preventDefault(); freeBackspace(); return; }
-      if (code === 'Enter') { e.preventDefault(); handleFreeInput('Enter', e.shiftKey); return; }
-      var freeKey = HG.DUBEOL[code] || PUNCT[code] || code === 'Space';
-      if (!freeKey) return;
-      e.preventDefault();
-      handleFreeInput(code, e.shiftKey);
-      return;
-    }
-    if (code === 'Backspace') { e.preventDefault(); backspace(); return; }
-    if (code === 'Enter') {
-      var exp = currentExpected();
-      e.preventDefault();
-      if (exp && exp.type === 'enter') handleInput(code, e.shiftKey);
-      // 그 외 잘못 누른 Enter는 무시(오타 아님)
-      return;
-    }
-    var typingKey = HG.DUBEOL[code] || PUNCT[code] || code === 'Space';
-    if (!typingKey) return;
+  }
+}
+function memberIconSvg() {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>';
+}
+function closeMemberAccountMenu() {
+  const menu = $('memberAccountMenu');
+  const btn = $('memberTopBtn');
+  if (menu) menu.classList.add('hidden');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+async function signOutMemberUi() {
+  if (window.GwiwhaMembership) await window.GwiwhaMembership.signOut();
+  BANK = [];
+  bankFullyLoaded = false;
+  writingViewList = [];
+  writingViewKey = '';
+  clearMemberCaches();
+  pendingMemberAction = null;
+  closeMemberModal();
+  closeMemberAccountMenu();
+  renderMemberStatus();
+  renderHome();
+}
+function renderMemberStatus() {
+  const box = $('memberStatus');
+  if (!box) return;
+  const st = memberStatus();
+  const icon = `<span class="member-chip__avatar">${memberIconSvg()}</span>`;
+  if (st.signedIn) {
+    const email = escHtml(st.email || '');
+    const state = escHtml(st.active ? t('member.ready') : memberReasonMessage(st.reason));
+    box.innerHTML =
+      `<button type="button" class="member-chip member-chip--signed" id="memberTopBtn" aria-haspopup="menu" aria-expanded="false" title="${email}">${icon}<span class="member-chip__email">${email}</span></button>` +
+      `<div class="member-menu hidden" id="memberAccountMenu" role="menu">` +
+      `<div class="member-menu__email">${email}</div>` +
+      `<div class="member-menu__state">${state}</div>` +
+      `<button type="button" class="btn btn--ghost member-menu__logout" id="memberMenuLogoutBtn" role="menuitem">${t('member.logout')}</button>` +
+      `</div>`;
+  } else {
+    const label = escHtml(t('member.loginShort'));
+    box.innerHTML = `<button type="button" class="member-chip member-chip--icon" id="memberTopBtn" aria-label="${label}" title="${label}">${icon}</button>`;
+  }
+  const btn = $('memberTopBtn');
+  if (btn) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cur = memberStatus();
+      if (cur.signedIn) {
+        const menu = $('memberAccountMenu');
+        const open = menu && menu.classList.contains('hidden');
+        if (menu) menu.classList.toggle('hidden', !open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      } else openMemberModal(cur.configured ? '' : 'not_configured');
+    });
+  }
+  const logout = $('memberMenuLogoutBtn');
+  if (logout) logout.addEventListener('click', (e) => { e.stopPropagation(); signOutMemberUi(); });
+}
+function wireMemberUi() {
+  const cancel = $('memberCancelBtn');
+  if (cancel) cancel.addEventListener('click', () => { pendingMemberAction = null; closeMemberModal(); });
+  const modal = $('memberModal');
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) { pendingMemberAction = null; closeMemberModal(); } });
+  document.addEventListener('click', (e) => {
+    const box = $('memberStatus');
+    if (box && !box.contains(e.target)) closeMemberAccountMenu();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMemberAccountMenu(); });
+  const send = $('memberSendOtpBtn');
+  if (send) send.addEventListener('click', async () => {
+    if (!window.GwiwhaMembership) { setMemberMessage(t('member.config'), 'error'); return; }
+    send.disabled = true;
+    setMemberMessage(t('member.loading'), '');
+    const res = await window.GwiwhaMembership.sendOtp($('memberEmail').value);
+    send.disabled = false;
+    if (res.ok) {
+      $('memberEmail').value = res.email;
+      setMemberMessage(t('member.sent'), 'ok');
+      $('memberOtp').focus();
+    } else setMemberMessage(memberReasonMessage(res.reason), 'error');
+  });
+  const form = $('memberOtpForm');
+  if (form) form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    handleInput(code, e.shiftKey);
+    if (!window.GwiwhaMembership) { setMemberMessage(t('member.config'), 'error'); return; }
+    $('memberVerifyBtn').disabled = true;
+    setMemberMessage(t('member.loading'), '');
+    const res = await window.GwiwhaMembership.verifyOtp($('memberEmail').value, $('memberOtp').value);
+    $('memberVerifyBtn').disabled = false;
+    renderMemberStatus();
+    if (!res.ok) {
+      const reason = res.status ? res.status.reason : res.reason;
+      setMemberMessage(memberReasonMessage(reason), 'error');
+      return;
+    }
+    setMemberMessage(t('member.ready'), 'ok');
+    closeMemberModal();
+    await runPendingMemberAction();
+  });
+  const logout = $('memberLogoutBtn');
+  if (logout) logout.addEventListener('click', signOutMemberUi);
+}
+
+/* =====================================================================
+   홈
+   ===================================================================== */
+/* 처음 온 사람에게 이 앱이 무엇인지 먼저 알려 준다.
+   회원이면 숨긴다 — 이미 쓰고 있는 사람에게는 자리만 차지한다.
+   문항 수는 목차(question-catalog.json)에서 읽으므로 로그인 전에도 보인다. */
+function renderIntroCard() {
+  const card = $('introCard');
+  if (!card) return;
+  if (isActiveMember()) { card.classList.add('hidden'); return; }
+  const c = catalogExam();
+  $('introTitle').textContent = t('intro.title');
+  $('introCounts').textContent = t('intro.counts', t('track.' + activeExam),
+    c.mc || 0, c.writing || 0, c.oral || 0);
+  // 트랙마다 해당되는 것만 보여 준다. 귀화 전용 문항 이야기는 귀화용에만 해당한다.
+  const second = activeExam === 'nat' ? 'intro.p2'
+               : activeExam === 'perm' ? 'intro.p2perm' : null;
+  const keys = ['intro.p1'].concat(second ? [second] : []).concat(['intro.p3', 'intro.p4']);
+  $('introList').innerHTML = keys.map((k) => `<li>${t(k)}</li>`).join('');
+  // 체험 버튼 — 이 트랙을 아직 안 써 봤으면 권하고, 다 썼으면 그렇다고 알린다
+  const btn = $('trialBtn');
+  if (btn) {
+    const done = trialUsed(activeExam);
+    btn.textContent = done ? t('trial.done') : t('trial.try');
+    btn.disabled = done;
+    btn.classList.remove('hidden');
+  }
+  card.classList.remove('hidden');
+}
+function renderHome() {
+  $('wrongCount').textContent = t('wrongCount', wrongCount());
+  const mc = catalogMcCount();
+  $('bankInfo').textContent = t('bankInfo', META.version, mc, fmtDate(META.syncedAt));
+  if (isActiveMember() && bankFullyLoaded && BANK.length) setSyncStatus(t('sync.memberReady', t('track.' + activeExam), bankExamCount()), false);
+  else setSyncStatus(t('sync.publicReady', catalogTotalCount()), false);
+
+  renderIntroCard();
+  renderExamDate();
+
+  // 진행 중인 모의고사 이어풀기 배너
+  const s = getMockSaveRaw();
+  const rb = $('resumeBanner');
+  if (s) { rb.textContent = t('resume.banner', s.i + 1, s.ids.length); rb.classList.remove('hidden'); }
+  else rb.classList.add('hidden');
+}
+
+/* =====================================================================
+   A3. 시험일 카운트다운·페이싱 (트랙별 저장키 nq_examdate + ekey)
+   ===================================================================== */
+function daysUntil(iso) {
+  if (!iso) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const target = new Date(iso + 'T00:00:00'); target.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86400000);
+}
+/* 하루 권장 문항수 = ceil((미풀이 MC + 오답노트 수) / 남은 일수), 최소 10 */
+function pacePerDay(daysLeft) {
+  const s = ls(ekey(K.stats), { total: 0, correct: 0, cat: {} });
+  const donePer = s.cat ? Object.values(s.cat).reduce((a, c) => a + (c.t || 0), 0) : 0;
+  const totalMc = catalogMcCount();
+  const remaining = Math.max(0, totalMc - donePer) + wrongCount();
+  const per = Math.ceil(remaining / Math.max(1, daysLeft));
+  return { per: Math.max(10, per), remaining };
+}
+function renderExamDate() {
+  const card = $('examDateCard'); if (!card) return;
+  const iso = ls(ekey(K.examdate), '') || '';
+  const input = $('examDateInput'); if (input) input.value = iso;
+  const info = $('examDateInfo');
+  const clearBtn = $('examDateClear');
+  if (clearBtn) clearBtn.classList.toggle('hidden', !iso);
+  if (!iso) { if (info) info.innerHTML = `<span class="examdate-hint">${t('examdate.hint')}</span>`; return; }
+  const d = daysUntil(iso);
+  if (d < 0) { if (info) info.innerHTML = `<span class="examdate-past">${t('examdate.past')}</span>`; return; }
+  const dLabel = d === 0 ? t('examdate.today') : t('examdate.dday', d);
+  const { per } = pacePerDay(Math.max(1, d));
+  if (info) info.innerHTML =
+    `<span class="examdate-dday">${dLabel}</span>` +
+    `<span class="examdate-pace">${t('examdate.pace', per)}</span>`;
+}
+function setExamDate(iso) { save(ekey(K.examdate), iso || ''); renderExamDate(); }
+function clearExamDate() { try { localStorage.removeItem(ekey(K.examdate)); } catch {} renderExamDate(); }
+
+/* =====================================================================
+   영역별 연습
+   ===================================================================== */
+function renderCategories() {
+  // 진행 중인 연습 이어풀기 배너
+  const s = getPracticeSaveRaw();
+  const rb = $('practiceResume');
+  if (s) { const lab = s.label ? catName(s.label) : t('practice.allLabel'); rb.textContent = t('resume.practice', lab, s.i + 1, s.ids.length); rb.classList.remove('hidden'); }
+  else rb.classList.add('hidden');
+
+  renderDiffSeg();
+  const diff = diffMode();
+  const cats = {};
+  const haveBank = bankFullyLoaded && BANK.length;
+  if (haveBank) byDiff(mcOnly()).forEach((q) => { cats[q.category] = (cats[q.category] || 0) + 1; });
+  else (catalogExam().categories || []).forEach((c) => { if (c.mc) cats[c.category] = diff === 'all' ? c.mc : null; });
+  // 난이도를 건 채로 은행이 아직 없으면 목차의 개수는 사실과 다르다. 세는 척하지 않는다.
+  const total = diff === 'all' ? catalogMcCount()
+    : haveBank ? byDiff(mcOnly()).length : null;
+  const wrap = $('categoryList');
+  wrap.innerHTML = '';
+  // A5: 약점 우선 모드 — 영역별 오답률 가중 무작위 출제
+  const weakCard = catItem(t('practice.weak'), total, () => startPracticeAll(true), t('practice.weakSub'));
+  weakCard.classList.add('cat-item--weak');
+  wrap.appendChild(weakCard);
+  wrap.appendChild(catItem(t('practice.all'), total, () => startPracticeAll(false)));
+  sortCats(Object.keys(cats)).forEach((c) => {
+    wrap.appendChild(catItem(catName(c), cats[c], () => startPracticeCategory(c)));
+  });
+}
+/* ---------- 난이도 고르기 ----------
+   이용자가 "웹에서 풀던 문제보다 책 문제가 훨씬 어렵다"고 했다. 실제로 재어 보니
+   갈리는 지점은 주제가 아니라 선택지의 생김새였다. 기출·기본 문제는 선택지가
+   '청산리 대첩' 같은 낱말(평균 6자)인데, 교재 실전 문제는 '국민들의 의사를 반영해
+   국가 예산안을 심의하고 확정하는 역할을 한다' 같은 완결된 문장(평균 16자)이다.
+   그래서 선택지 평균 길이로 가른다. 문제마다 표시를 달아 3천 행을 다시 올리는 대신
+   화면에서 그때그때 재는 쪽을 택했다(표시가 빠진 문제가 생기지 않는다). */
+const HARD_CHOICE_LEN = 9;      // 선택지 평균 이 길이 이상이면 '문장형'
+/* 조합형(`ㄱ, ㄴ` / `(가), (다)`)은 선택지가 짧아도 어려운 축이다.
+   보기 네 개의 참·거짓을 전부 가려야 답이 나오기 때문에, 길이로만 재면
+   가장 어려운 유형이 '단어형'으로 빠져 버린다. */
+const COMBO_CHOICE = /^[\sㄱ-ㅎ(),·가나다라]+$/;
+function isHardQ(q) {
+  if (!q || !q.choices || !q.choices.length) return false;
+  const texts = q.choices.map((c) => String(c).replace(/<[^>]+>/g, ''));
+  const avg = texts.reduce((sum, c) => sum + c.length, 0) / texts.length;
+  if (avg >= HARD_CHOICE_LEN) return true;
+  return texts.filter((c) => c.length <= 12 && COMBO_CHOICE.test(c)).length >= 3;
+}
+function diffMode() { const v = ls(ekey(K.diff), 'all'); return v === 'hard' || v === 'easy' ? v : 'all'; }
+function setDiffMode(v) { save(ekey(K.diff), v); }
+function byDiff(list) {
+  const m = diffMode();
+  if (m === 'all') return list;
+  return list.filter((q) => (m === 'hard' ? isHardQ(q) : !isHardQ(q)));
+}
+/* 난이도를 걸면 개수를 세는 데 문제 본문이 필요하다. 목차만으로는 셀 수 없으니
+   은행을 받아 온 뒤 다시 그린다. */
+function renderDiffSeg() {
+  const seg = $('diffSeg');
+  if (!seg) return;
+  const cur = diffMode();
+  seg.innerHTML = ['all', 'hard', 'easy'].map((m) =>
+    `<button class="seg__btn${m === cur ? ' seg__btn--active' : ''}" data-diff="${m}">${t('diff.' + m)}</button>`).join('');
+  seg.querySelectorAll('[data-diff]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const m = b.dataset.diff;
+      if (m === diffMode()) return;
+      setDiffMode(m);
+      if (m === 'all') { renderCategories(); return; }
+      // 은행이 아직 없으면 받아 온 뒤에 다시 그린다(개수를 세야 하므로).
+      requireMembership(() => { renderCategories(); }, { loadBank: true });
+      renderCategories();
+    });
+  });
+  const hint = $('diffHint');
+  if (hint) {
+    hint.textContent = cur === 'hard' ? t('diff.hint') : cur === 'easy' ? t('diff.hintEasy') : '';
+    hint.classList.toggle('hidden', cur === 'all');
+  }
+}
+
+/* 영역 카드 순서 — 문제은행에 처음 나온 순서가 아니라 교재 영역 순서로 보여 준다 */
+const CAT_ORDER = ['한국어', '어휘', '문법', '읽기·이해', '대화',
+  '사회', '한국사회', '교육', '문화', '한국문화', '정치', '경제', '법', '역사', '지리'];
+function sortCats(list) {
+  const rank = (c) => { const i = CAT_ORDER.indexOf(c); return i < 0 ? CAT_ORDER.length : i; };
+  return list.slice().sort((a, b) => rank(a) - rank(b));
+}
+/* A5: 영역별 오답률(가중치 = 1 + 오답률×3, 기록 없으면 1)로 가중 무작위 정렬 */
+function weakPriorityOrder(list) {
+  const s = ls(ekey(K.stats), { total: 0, correct: 0, cat: {} });
+  const wrongRate = (cat) => {
+    const c = s.cat && s.cat[cat];
+    if (!c || !c.t) return 0;
+    return 1 - (c.c || 0) / c.t;
+  };
+  // 각 문항에 (가중치 × 난수) 키를 부여해 내림차순 정렬 → 가중 셔플
+  return list.map((q) => {
+    const w = 1 + wrongRate(q.category) * 3;
+    return { q, key: Math.pow(Math.random(), 1 / w) };
+  }).sort((a, b) => b.key - a.key).map((x) => x.q);
+}
+/* 통계 화면에서 "이 영역만 연습" 진입 */
+function practiceCategory(cat) {
+  startPracticeCategory(cat);
+}
+function startPracticeAll(weak) {
+  requireMembership(async () => {
+    const pool = byDiff(await loadExerciseQuestions({ type: 'mc' }));
+    const list = weak ? weakPriorityOrder(pool) : shuffle(pool);
+    if (!list.length) { toast(t('toast.noQ')); return; }
+    startQuiz(list, 'practice');
+  });
+}
+function startPracticeCategory(cat) {
+  requireMembership(async () => {
+    const pool = byDiff(await loadExerciseQuestions({ type: 'mc', category: cat }));
+    const list = shuffle(pool);
+    if (!list.length) { toast(t('toast.noQ')); return; }
+    startQuiz(list, 'practice');
+  });
+}
+function catItem(name, count, onClick, sub) {
+  const el = document.createElement('button');
+  el.className = 'cat-item';
+  const nameHtml = sub
+    ? `<span class="cat-item__name"><span class="cat-item__label">${name}</span><span class="cat-item__sub">${sub}</span></span>`
+    : `<span>${name}</span>`;
+  // count 가 null 이면 아직 셀 수 없다는 뜻이다(은행을 받기 전). 0개라고 속이지 않는다.
+  const countHtml = count === null || count === undefined ? '…' : t('cat.count', count);
+  el.innerHTML = `${nameHtml}<span class="cat-item__count">${countHtml}</span>`;
+  el.addEventListener('click', onClick);
+  return el;
+}
+
+/* =====================================================================
+   퀴즈 엔진
+   ===================================================================== */
+function startQuiz(questions, mode, resume) {
+  if (!questions.length) { toast(t('toast.noQ')); return; }
+  // quiz 를 갈아 끼우기 전에 돌던 타이머를 반드시 끈다.
+  // 여기서 놓치면 핸들을 잃은 채로 계속 돌면서 새 시험의 남은 시간을 깎고,
+  // 0 이하가 된 뒤에는 매초 gradeMock 을 불러 기록이 수십 개씩 쌓인다.
+  if (quiz && quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }
+  quiz = {
+    mode, list: questions,
+    i: resume ? Math.min(Math.max(0, resume.i || 0), questions.length - 1) : 0,
+    answers: resume ? resume.answers : new Array(questions.length).fill(null),
+    text: resume ? (resume.text || {}) : {},
+    graded: mode === 'practice' || mode === 'wrong',
+    order: resume ? (resume.order || {}) : {}, // A1: 보기 표시 순서(표시위치→원본인덱스), 문항별 지연 생성
+    /* 헷갈리는 문항에 표시해 두고 나중에 돌아오게 한다. 실제 시험에서도 다들 하는 일이고,
+       답을 골라 놓았는지(초록)와 자신이 없는지(분홍)는 다른 정보다. 번호별 참/거짓. */
+    flags: resume ? (resume.flags || {}) : {},
+    timer: null,
+    timeLeft: resume ? resume.timeLeft : exam().mock.time,
+  };
+  showView('quiz');
+  const isMock = mode === 'mock';
+  document.body.classList.toggle('exam-mode', isMock);
+  $('examBanner').classList.toggle('hidden', !isMock);
+  $('quizTimer').classList.toggle('hidden', !isMock);
+  $('quizCat').classList.toggle('hidden', isMock);
+  if (isMock) startTimer();
+  setNavCollapsed(navIsNarrow());
+  renderQuestion();
+}
+
+/* ---------- 모의고사 중간 저장 / 이어풀기 ---------- */
+function hydrateSavedQuiz(s) {
+  if (!s || !Array.isArray(s.ids) || !s.ids.length || !BANK.length) return null;
+  const list = s.ids.map(qById).filter(Boolean);
+  return list.length === s.ids.length ? Object.assign({}, s, { list }) : null;
+}
+function getSavedQuizRaw(key) {
+  const s = ls(ekey(key), null);
+  return s && Array.isArray(s.ids) && s.ids.length ? s : null;
+}
+function getMockSaveRaw() { return getSavedQuizRaw(K.mockSave); }
+function getMockSave() { return hydrateSavedQuiz(getMockSaveRaw()); }
+function clearMockSave() { try { localStorage.removeItem(ekey(K.mockSave)); } catch {} }
+function saveMockProgress() {
+  /* 채점이 끝난 시험은 다시 저장하지 않는다. gradeMock 이 clearMockSave 로 지워도
+     곧바로 renderResult → showView('result') 가 이리로 들어와 되살려 놓고 있었다.
+     그러면 다 푼 시험이 '이어서 풀기' 로 남아 다시 열리고, 표시와 남은 시간까지 돌아온다. */
+  if (!quiz || quiz.mode !== 'mock' || quiz.scored) return;
+  save(ekey(K.mockSave), { ids: quiz.list.map((q) => q.id), i: quiz.i, answers: quiz.answers, text: quiz.text, order: quiz.order, flags: quiz.flags, timeLeft: quiz.timeLeft, savedAt: new Date().toISOString() });
+}
+
+/* ---------- 영역별 연습 중간 저장 / 이어풀기 ---------- */
+function getPracticeSaveRaw() { return getSavedQuizRaw(K.practiceSave); }
+function getPracticeSave() { return hydrateSavedQuiz(getPracticeSaveRaw()); }
+function clearPracticeSave() { try { localStorage.removeItem(ekey(K.practiceSave)); } catch {} }
+function savePracticeProgress() {
+  if (!quiz || quiz.mode !== 'practice') return;
+  const cats = new Set(quiz.list.map((q) => q.category));
+  save(ekey(K.practiceSave), { ids: quiz.list.map((q) => q.id), i: quiz.i, answers: quiz.answers, order: quiz.order, label: cats.size === 1 ? [...cats][0] : null, savedAt: new Date().toISOString() });
+}
+function resumePractice() {
+  const s = getPracticeSave();
+  if (!s) { clearPracticeSave(); renderCategories(); return; }
+  startQuiz(s.list, 'practice', { i: s.i, answers: s.answers, order: s.order });
+  toast(t('toast.resumed'));
+}
+
+function renderExamIntro() {
+  const e = exam();
+  const org = document.querySelector('.exam-cover__org');
+  const title = document.querySelector('.exam-cover__title');
+  const sub = document.querySelector('.exam-cover__subtitle');
+  if (org) org.textContent = tx(e.coverOrg);
+  if (title) title.textContent = tx(e.coverTitle);
+  if (sub) sub.textContent = tx(e.coverSub);
+  const ol = $('examNoticeList');
+  if (ol) { const ns = (LANG === 'zh' && e.notices.zh) ? e.notices.zh : e.notices.ko.map(trUI); ol.innerHTML = ns.map((n) => `<li>${n}</li>`).join(''); }
+}
+function showExamIntro() {
+  renderExamIntro();
+  $('examNo').value = exam().noPrefix + '-' + String(Math.floor(1000 + Math.random() * 9000));
+  const s = getMockSaveRaw();
+  const btn = $('examResumeBtn');
+  if (s) { btn.textContent = t('exam.resume', s.i + 1, s.ids.length); btn.classList.remove('hidden'); }
+  else btn.classList.add('hidden');
+  showView('examintro');
+}
+/* 지문 길이를 실제 시험에 맞춘다.
+   법무부 종합평가 견본을 문항별로 세어 보면 문항+지문 길이가
+   100~199자인 것이 21%, 200자 넘는 것이 3% 다. 36문항으로 치면
+   중간 길이 7문항, 긴 지문 1~2문항이다. 사용자도 교재 모의고사를 풀고
+   "아주 긴 건 두 개쯤, 중간 길이는 많다" 고 했다.
+   그런데 은행에서 그냥 뽑으면 중간 2.3문항·긴 것 0.6문항밖에 안 들어온다.
+   긴 지문은 전체 1,372문항 중 24개뿐이라 확률로는 거의 안 나온다.
+   읽는 부담이야말로 이 시험에서 갈리는 지점이라, 연습에서 빠지면 안 된다. */
+const LONG_Q = 200;          // 이 길이를 넘으면 '긴 지문'
+const MID_Q = 100;           // 여기부터 '중간 길이'
+const WANT_LONG = 2;
+const WANT_MID = 7;
+function qLen(q) { return String(q && q.q || '').replace(/<[^>]+>/g, '').length; }
+function matchPassageLength(picked, pool, wantLong, wantMid) {
+  const band = (q) => (qLen(q) >= LONG_Q ? 'long' : qLen(q) >= MID_Q ? 'mid' : 'short');
+  let out = picked.slice();
+  /* 어떤 문항을 빼고 그 자리에 넣을지. 긴 지문을 채울 때 짧은 문항이 남아 있지 않은
+     영역이 있다(사전평가 읽기·이해는 180문항 중 짧은 것이 19개뿐이다). 그때는
+     중간 길이 문항을 내준다. 내주지 않으면 긴 지문이 한 개도 안 들어간다. */
+  const donorsFor = (kind) => (kind === 'long' ? ['short', 'mid'] : ['short']);
+  const fill = (kind, want) => {
+    const have = out.filter((q) => band(q) === kind).length;
+    let need = want - have;
+    if (need <= 0) return;
+    const used = new Set(out.map((q) => q.id));
+    // 같은 영역 안에서만 바꿔 끼운다. 영역별 개수는 그대로 둔다.
+    // 넣는 쪽이 심화면 귀화 회차의 심화가 10개를 넘는다(교재 430쪽 교체표가 10개로 정한다)
+    const cand = shuffle(pool.filter((q) => band(q) === kind && q.tier !== 'advanced' && !used.has(q.id)));
+    for (const fresh of cand) {
+      if (need <= 0) break;
+      let i = -1;
+      for (const donor of donorsFor(kind)) {
+        i = out.findIndex((q) => band(q) === donor && q.category === fresh.category
+          && q.tier !== 'advanced');   // 심화는 회차마다 개수가 정해져 있으니 건드리지 않는다
+        if (i >= 0) break;
+      }
+      if (i < 0) continue;
+      used.delete(out[i].id); used.add(fresh.id);
+      out[i] = fresh; need -= 1;
+    }
+  };
+  /* 모자랄 때만 채우면 반대쪽으로 넘어간다. 읽기 문항을 보강한 뒤로는 한국어 영역에
+     긴 지문이 많아져서, 그냥 뽑으면 36문항에 4~5개가 들어왔다. 실제 시험은 2개쯤이다.
+     연습이 실제보다 어려우면 점수가 실력보다 낮게 나와 학습자가 잘못 판단한다.
+     그래서 남을 때는 같은 영역의 짧은 문항으로 되돌린다. */
+  const trim = (kind, want) => {
+    let extra = out.filter((q) => band(q) === kind).length - want;
+    if (extra <= 0) return;
+    const used = new Set(out.map((q) => q.id));
+    for (let i = 0; i < out.length && extra > 0; i++) {
+      const q = out[i];
+      if (band(q) !== kind || q.tier === 'advanced') continue;
+      // 넣는 쪽도 심화면 안 된다. 귀화 회차의 심화는 교재 교체표대로 10개로 정해져 있다.
+      const cand = shuffle(pool.filter((p) => p.category === q.category
+        && band(p) !== kind && p.tier !== 'advanced' && !used.has(p.id)));
+      if (!cand.length) continue;
+      used.delete(q.id); used.add(cand[0].id);
+      out[i] = cand[0]; extra -= 1;
+    }
+  };
+  const wantL = wantLong == null ? WANT_LONG : wantLong;
+  trim('long', wantL);
+  fill('long', wantL);
+  fill('mid', wantMid == null ? WANT_MID : wantMid);
+  return out;
+}
+
+/* 한국사회 이해 구역의 문항 생김새를 실제 시험에 맞춘다.
+   법무부 종합평가 견본의 19~38번 20문항을 세어 보면 선택지가 낱말인 문항은
+   5개(25%)뿐이고 나머지 15개는 완결된 서술문이다. 그런데 우리 은행의 종합평가
+   사회 계열 1,067문항은 단어형이 54%다. 그대로 뽑으면 모의고사가 실제보다
+   쉬운 쪽으로 기울어, 점수가 실력보다 높게 나온다 — 하필 학습자가 가장
+   힘들어하는 '선택지가 문장인 문항'에서 덜 나온다.
+   그래서 뽑아 놓은 사회 계열 문항 가운데 단어형 비율을 25%에 맞춰 바꿔 끼운다.
+   영역별 개수는 건드리지 않는다(같은 영역 안에서만 맞바꾼다). */
+const SOCIAL_EASY_RATIO = 0.25;
+function matchSocialLevel(picked, pool) {
+  const social = picked.filter((q) => q.category !== '한국어');
+  if (!social.length) return picked;
+  const target = Math.round(social.length * SOCIAL_EASY_RATIO);
+  const easy = social.filter((q) => !isHardQ(q));
+  const want = easy.length - target;          // 양수면 단어형이 너무 많다
+  if (!want) return picked;
+  const usedIds = new Set(picked.map((q) => q.id));
+  // 귀화 전용(심화) 문항은 회차마다 개수가 정해져 있으니(교재 430쪽 교체표) 빼지 않는다.
+  const swappable = (q) => q.tier !== 'advanced';
+  const from = shuffle((want > 0 ? easy : social.filter(isHardQ)).filter(swappable))
+    .slice(0, Math.abs(want));
+  const out = picked.slice();
+  from.forEach((old) => {
+    // 같은 영역에서, 반대 성격이면서 아직 안 쓴 문항을 찾아 바꿔 끼운다
+    // 빼는 쪽만 심화를 지키고 넣는 쪽을 안 보면 심화가 10개를 넘는다
+    const cand = pool.filter((q) => q.category === old.category && !usedIds.has(q.id)
+      && q.tier !== 'advanced' && (want > 0 ? isHardQ(q) : !isHardQ(q)));
+    if (!cand.length) return;
+    const fresh = shuffle(cand)[0];
+    out[out.indexOf(old)] = fresh;
+    usedIds.delete(old.id);
+    usedIds.add(fresh.id);
+  });
+  return out;
+}
+
+/* =====================================================================
+   무료 체험 — 트랙마다 한 번씩 모의고사를 끝까지 풀어 볼 수 있다.
+   문항은 public.trial_questions 에서 읽는다(로그인 불필요).
+   "한 번"은 브라우저가 기억하는 것이라 지우면 다시 할 수 있다. 그래도 상관없다 —
+   진짜 경계는 횟수가 아니라 그 표에 들어 있는 139문항이 전부라는 점이고,
+   그건 Postgres 가 지킨다. 횟수는 예의상의 장치다.
+   ===================================================================== */
+function trialUsed(track) { return ls(K.trial + '__' + (track || activeExam), false) === true; }
+function markTrialUsed(track) { save(K.trial + '__' + (track || activeExam), true); }
+
+async function startTrialExam() {
+  if (isActiveMember()) { startMockExam(); return; }
+  const track = activeExam;
+  if (trialUsed(track)) { openMemberModal('trial_done'); return; }
+  let list = [];
+  try {
+    toast(t('trial.loading'));
+    list = await window.GwiwhaMembership.fetchTrialQuestions(track);
+  } catch (e) {
+    toast(t('toast.syncFail'));
+    return;
+  }
+  if (!list.length) { toast(t('toast.noQ')); return; }
+  // 실제 모의고사와 같은 순서 감각: 한국어(언어)를 앞에, 나머지를 뒤에
+  const KOR = ['한국어', '어휘', '문법', '읽기·이해', '대화'];
+  const mc = list.filter((q) => q.type === 'mc');
+  const rest = list.filter((q) => q.type !== 'mc');
+  const ordered = mc.filter((q) => KOR.includes(q.category))
+    .concat(mc.filter((q) => !KOR.includes(q.category)))
+    .concat(rest.filter((q) => q.type === 'writing'), rest.filter((q) => q.type === 'oral'));
+  markTrialUsed(track);
+  isTrialRun = true;
+  startQuiz(ordered, 'mock');
+}
+
+/* 체험으로 푼 시험인지 — 채점 화면에서 안내를 바꾸기 위해 본다 */
+let isTrialRun = false;
+
+/* 체험이 끝났을 때, 그 사람이 방금 만든 자기 기록으로 이야기한다.
+   "회원이 되세요" 보다 "당신은 47점이고 합격선까지 13점 남았다" 가 힘이 세다. */
+/* 체험 종료 화면에 적는 것은 "이 사람이 회원이 되면 실제로 받는 것"이어야 한다.
+   교재에서 뽑은 실전 모의고사 세 세트(mk 156문항)는 전부 종합평가 문항이다.
+   사전평가 응시자에게는 그 세트가 없으므로 그 줄을 보여 주지 않는다. */
+function trialBullets(left) {
+  const list = [t('trial.b1', left), t('trial.b2'), t('trial.b3'), t('trial.b5')];
+  if (activeExam !== 'pre') list.push(t('trial.b4'));
+  return list;
+}
+
+function renderTrialEnd(pct, correct, totalMc) {
+  const box = $('trialEnd');
+  if (!box) return;
+  if (!isTrialRun) { box.classList.add('hidden'); return; }
+  const c = catalogExam();
+  const left = Math.max(0, (c.total || 0) - totalMc);
+  const wrong = wrongCount();
+  box.innerHTML =
+    `<p class="trial-end__head">${t('trial.endHead')}</p>` +
+    `<p class="trial-end__score">${t('trial.endScore', pct, correct, totalMc)}</p>` +
+    (wrong ? `<p class="trial-end__wrong">${t('trial.endWrong', wrong)}</p>` : '') +
+    `<ul class="trial-end__list">${trialBullets(left).map((x) => `<li>${x}</li>`).join('')}</ul>` +
+    `<div class="price-box"><span class="price-box__num">${t('member.priceNum')}<span class="price-box__unit">${t('member.priceUnit')}</span></span><span class="price-box__note">${t('member.priceNote')}</span></div>` +
+    `<div class="member-join__row">` +
+      `<a class="member-join__mail" href="mailto:${TRIAL_MAIL}">${TRIAL_MAIL}</a>` +
+      `<button class="member-join__copy" type="button" id="trialCopy">${t('member.joinCopy')}</button>` +
+    `</div>`;
+  box.classList.remove('hidden');
+  const btn = $('trialCopy');
+  if (btn) btn.addEventListener('click', () => {
+    try { navigator.clipboard.writeText(TRIAL_MAIL); toast(t('member.joinCopied')); } catch {}
+  });
+}
+
+async function startMockExam() {
+  if (getMockSaveRaw() && !confirm(t('confirm.discardMock'))) return;
+  clearMockSave();
+  const cfg = exam().mock;
+  let mcPool = [];
+  let writingPool = [];
+  let oralPool = [];
+  try {
+    [mcPool, writingPool, oralPool] = await Promise.all([
+      fetchMemberQuestions({ type: 'mc' }),
+      fetchMemberQuestions({ type: 'writing' }),
+      fetchMemberQuestions({ type: 'oral' }),
+    ]);
+  } catch (e) {
+    handleQuestionLoadFailure(e);
+    return;
+  }
+  if (!mcPool.length) { toast(t('toast.noQ')); return; }
+  let mc;
+  if (cfg.ladder) {
+    /* 사전평가: 번호↑=난이도↑(level 오름차순)에 한국어 영역이 앞, 문화·사회가 뒤.
+       비율은 법무부 사전평가 견본(48문항)을 직접 세어 맞췄다 — 1~40번이 한국어,
+       41~48번이 한국문화·한국사회로 8문항(1/6)이다. 옛 값 20%(약 10문항)보다 적다. */
+    const korCats = ['어휘', '문법', '읽기·이해', '대화'];
+    const all = mcPool;
+    /* 사전평가 48문항의 영역 구성. 교재 제2편 실전 모의고사 다섯 회분의 번호표를
+       한 회씩 세어 맞췄다. 다섯 회차가 1~48번까지 똑같았다.
+         1번·3~14번  어휘 13   (반대말·비슷한 말·빈칸 낱말)
+         2번·15~28번 문법 15   (조사·활용형 고르기, 틀린 곳 고르기)
+         29~38번·47~48번 읽기·이해 12
+         39~46번  한국문화 4 + 한국사회 4
+       47~48번은 내용이 금융·선거라 사회처럼 보이지만, 다섯 회차 모두 노란 상자에
+       설명문 한 편을 놓고 "다음 글의 내용과 다른 것은?" 을 묻는 읽기 문항이다.
+       내용이 아니라 묻는 방식으로 갈라야 한다.
+
+       교재에는 '대화' 영역이 따로 없다. 대화는 어휘·문법을 묻는 틀로 쓰일 뿐이다.
+       그런데 우리 은행에는 대화 문항이 138개 있고(처음 뵙겠습니다 → 만나서 반갑습니다
+       처럼 상황에 맞는 말 고르기), 138개 중 활용형 고르기는 6개뿐이라 내용은 어휘 쪽이다.
+       그래서 어휘 몫 13을 은행 비율대로 어휘 10 · 대화 3으로 나눠 준다.
+
+       이 쿼터를 넣기 전에는 네 영역을 한 통에 넣고 무작위로 뽑고 있었다. 그러면
+       은행 비율대로 나와서 어휘가 21문항, 문법이 3문항인 회차가 생겼다. */
+    const quota = { '어휘': 10, '대화': 3, '문법': 15, '읽기·이해': 12, '한국문화': 4, '한국사회': 4 };
+    const byCat = {};
+    all.forEach((q) => { (byCat[q.category] = byCat[q.category] || []).push(q); });
+    let picked = [];
+    Object.keys(quota).forEach((cat) => {
+      const want = Math.round(quota[cat] * cfg.mc / 48);
+      picked = picked.concat(shuffle(byCat[cat] || []).slice(0, want));
+    });
+    // cfg.mc 하드코딩 금지: 쿼터 합이나 특정 영역 풀이 cfg.mc 와 어긋나도 무작위 가감으로 맞춘다
+    if (picked.length < cfg.mc) {
+      const got = new Set(picked.map((q) => q.id));
+      picked = picked.concat(shuffle(all.filter((q) => !got.has(q.id))).slice(0, cfg.mc - picked.length));
+    } else if (picked.length > cfg.mc) {
+      picked = shuffle(picked).slice(0, cfg.mc);
+    }
+    /* 긴 지문도 실제 시험만큼 넣는다. 33~34번이 200자쯤 되는 지문 하나에 달린 두 문항이다. */
+    mc = matchPassageLength(picked, all, 2, 6);
+    // 길이를 맞추며 문항이 바뀌었으므로 한국어 영역을 다시 난이도순으로 세운다
+    const isKor = (q) => korCats.includes(q.category);
+    mc = mc.filter(isKor).sort((a, b) => (a.level || 2) - (b.level || 2))
+      .concat(mc.filter((q) => !isKor(q)));   // 문화·사회를 뒤쪽(실제 39~46번처럼)
+  } else {
+    /* 종합평가 객관식 36문항의 영역 구성. 근거 둘을 맞춰 정했다.
+       ① 법무부가 공개한 종합평가 견본(KINAT, 38문항)은 1~18번이 한국어,
+          19~38번이 한국사회 이해다. 19~38번을 영역별로 세면
+          문화 4 · 법 3 · 사회 3 · 역사 3 · 정치 2 · 경제 2 · 지리 2 · 교육 1.
+       ② 교재 제3편 실전 모의고사 3회분의 공통 36문항을 직접 세어 평균한 값은
+          한국어 15.7 · 문화 4.3 · 법 3.0 · 사회 3.0 · 역사 3.3 · 정치 2.0 ·
+          경제 2.0 · 교육 1.3 · 지리 1.3.
+       둘이 거의 같아서 평균해 36에 맞췄다. 옛 쿼터는 한국어를 12로 잡고 있었는데
+       두 근거 모두 16~17이라, 실제보다 언어 문항이 한참 적게 나오고 있었다. */
+    const quota = { '한국어': 16, '문화': 4, '법': 3, '사회': 3, '역사': 3, '정치': 2, '경제': 2, '지리': 2, '교육': 1 };
+    const all = mcPool;
+    /* 귀화용은 같은 36문항 중 10문항이 귀화 전용(심화)이다. 교재 430쪽의 교체표가
+       회차마다 "영주용 18번 → 귀화용 01번" 식으로 10문항을 바꾸라고 지시하고,
+       바뀌는 자리는 세 회차 모두 18번 이후 — 한국사회 이해 구역이다.
+       한국어 문항은 한 번도 교체되지 않는다.
+       심화는 은행의 9%뿐이라 그냥 무작위로 36개를 뽑으면 3개쯤밖에 들어오지 않는다. */
+    const advCount = activeExam === 'nat' ? 10 : 0;
+    const isAdv = (q) => q.tier === 'advanced';
+    const left = Object.assign({}, quota);
+    let picked = [];
+    if (advCount) {
+      picked = shuffle(all.filter(isAdv)).slice(0, advCount);
+      // 심화로 채운 만큼 그 영역의 기본 문항 몫을 줄인다(한국어는 심화가 없어 그대로다)
+      picked.forEach((q) => { if (left[q.category] > 0) left[q.category] -= 1; });
+    }
+    const byCat = {};
+    all.forEach((q) => { if (!advCount || !isAdv(q)) (byCat[q.category] = byCat[q.category] || []).push(q); });
+    Object.keys(left).forEach((cat) => { picked = picked.concat(shuffle(byCat[cat] || []).slice(0, left[cat])); });
+    // cfg.mc 하드코딩 금지: quota 합이나 특정 카테고리 풀이 cfg.mc와 어긋나도 비례조정 없이 무작위 가감으로 총수를 맞춘다.
+    if (picked.length < cfg.mc) {
+      const pickedIds = new Set(picked.map((q) => q.id));
+      picked = picked.concat(shuffle(all.filter((q) => !pickedIds.has(q.id))).slice(0, cfg.mc - picked.length));
+    } else if (picked.length > cfg.mc) {
+      /* 그냥 잘라 내면 심화도 같이 빠져 회차마다 정해진 10개가 깨진다(교재 430쪽 교체표).
+         심화는 남기고 기본 문항부터 덜어 낸다. */
+      picked = shuffle(picked.filter(isAdv)).concat(shuffle(picked.filter((q) => !isAdv(q)))).slice(0, cfg.mc);
+    }
+    picked = matchSocialLevel(picked, all);
+    picked = matchPassageLength(picked, all);
+    // 출제 순서: 한국어 먼저(내부 셔플) → 나머지 영역(영역 간 섞어 셔플) — 사전평가 ladder(한국어 앞배치)와 일관
+    const korMc = picked.filter((q) => q.category === '한국어');
+    const restMc = picked.filter((q) => q.category !== '한국어');
+    mc = shuffle(korMc).concat(shuffle(restMc));
+  }
+  const wr = shuffle(writingPool).slice(0, cfg.writing);
+  const or = pickOral(cfg.oral, oralPool);
+  startQuiz(mc.concat(wr).concat(or), 'mock');
+}
+/* G: 구술 출제 — 사전평가는 공식 유형 구성(읽기1·이해1·대화1·듣고말하기2)을 재현한다.
+   지문 읽기(read)와 그 내용 확인(comp)은 짝이라 읽기를 먼저 뽑고 이해는 같은 지문 세트에서 고른다.
+   종합평가는 유형 구분이 없으므로 무작위. */
+function pickOral(n, source) {
+  const pool = source || byType('oral');
+  if (activeExam !== 'pre' || !pool.some((q) => q.otype)) return shuffle(pool).slice(0, n);
+  const of = (t) => shuffle(pool.filter((q) => q.otype === t));
+  const quota = { read: 1, comp: 1, talk: 1, listen: 2 };
+  const picked = [];
+  // 읽기 지문과 그 내용 확인은 같은 set 이어야 한다. 읽기를 먼저 뽑고, 같은 set 의 이해 문항을 짝으로 고른다.
+  const readPick = of('read')[0];
+  if (readPick) picked.push(readPick);
+  const comps = of('comp');
+  const compPick = (readPick && readPick.set && comps.find((q) => q.set === readPick.set)) || comps[0];
+  if (compPick) picked.push(compPick);
+  ['talk', 'listen'].forEach((t) => picked.push(...of(t).slice(0, quota[t])));
+  // 쿼터를 못 채웠으면(유형별 문항 부족) 남은 것으로 총수를 맞춘다
+  if (picked.length < n) {
+    const got = new Set(picked.map((q) => q.id));
+    picked.push(...shuffle(pool.filter((q) => !got.has(q.id))).slice(0, n - picked.length));
+  }
+  // 실제 시험 순서: 읽기 → 이해 → 대화 → 듣고 말하기
+  const rank = { read: 0, comp: 1, talk: 2, listen: 3 };
+  return picked.slice(0, n).sort((a, b) => (rank[a.otype] ?? 9) - (rank[b.otype] ?? 9));
+}
+
+function resumeMock() {
+  const s = getMockSave();
+  if (!s) { clearMockSave(); showView('home'); renderHome(); return; }
+  startQuiz(s.list, 'mock', { i: s.i, answers: s.answers, text: s.text, order: s.order, flags: s.flags, timeLeft: s.timeLeft });
+  toast(t('toast.resumed'));
+}
+function onWriteInput() {
+  const q = quiz.list[quiz.i];
+  const val = $('writeInput').value;
+  quiz.text[q.id] = val;
+  $('writeCount').textContent = t('count.char', val.length);
+  $('writeArea').querySelector('.write-area__meta').classList.toggle('over', val.length > 200);
+  renderQuestionNavigator();
+  if (quiz.mode === 'mock') saveMockProgress();
+}
+
+function startTimer() {
+  if (quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }   // 두 번 켜지지 않게
+  updateTimerLabel();
+  quiz.timer = setInterval(() => {
+    quiz.timeLeft--;
+    updateTimerLabel();
+    if (quiz.timeLeft % 15 === 0) saveMockProgress(); // 남은 시간 주기적 저장
+    if (quiz.timeLeft <= 0) { clearInterval(quiz.timer); toast(t('toast.timeUp')); gradeMock(); }
+  }, 1000);
+}
+function updateTimerLabel() { const m = Math.floor(quiz.timeLeft / 60), s = quiz.timeLeft % 60; $('quizTimer').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
+
+/* 보기가 ㉠㉡㉢㉣ 이나 (가)(나)(다)(라) 처럼 순서가 있는 기호일 때가 있다.
+   읽기 문항에서 지문 안의 자리를 가리키는 보기다. 이런 보기를 섞으면
+   화면에 ㉢ ㉠ ㉣ ㉡ 처럼 나와서 지문과 맞춰 보기가 어려워진다. 섞지 않는다. */
+const LABEL_SETS = [
+  ['㉠', '㉡', '㉢', '㉣', '㉤'],
+  ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ'],
+  ['(가)', '(나)', '(다)', '(라)', '(마)'],
+  ['가', '나', '다', '라', '마'],
+  ['①', '②', '③', '④', '⑤'],
+];
+function isLabelChoices(choices) {
+  if (!choices || choices.length < 3) return false;
+  const plain = choices.map((c) => String(c).replace(/<[^>]+>/g, '').replace(/\s+/g, ''));
+  if (new Set(plain).size !== plain.length) return false;
+  return LABEL_SETS.some((set) => plain.every((c) => set.indexOf(c) >= 0));
+}
+
+/* A1: 문항 i의 보기 표시 순서(표시위치→원본인덱스). 한 번 정하면 quiz 안에서 고정. */
+function orderFor(i, q) {
+  if (!quiz.order) quiz.order = {};
+  if (!quiz.order[i]) {
+    const n = (q && q.choices) ? q.choices.length : 0;
+    const seq = Array.from({ length: n }, (_, k) => k);
+    quiz.order[i] = isLabelChoices(q && q.choices) ? seq : shuffle(seq);
+  }
+  return quiz.order[i];
+}
+
+/* 좁은 화면에서 이동표를 접어 둔다. 55문항을 펼치면 문제가 화면 절반 아래로 밀린다.
+   넓은 화면은 문제 왼쪽에 따로 서 있으므로 접지 않는다. */
+const NAV_NARROW = 640;
+function navIsNarrow() { return window.innerWidth <= NAV_NARROW; }
+function setNavCollapsed(on) {
+  const nav = $('questionNavigator'); const head = $('navToggle');
+  if (!nav) return;
+  nav.classList.toggle('is-collapsed', !!on);
+  if (!head) return;
+  /* 넓은 화면에서 이 머리는 누를 수 없는 그냥 제목이다. 그런데도 button 이라
+     탭 차례에 끼어들고 낭독기가 '접었다 폈다 하는 것' 으로 읽어 준다.
+     접을 수 있을 때만 그렇게 알린다. */
+  if (navIsNarrow()) {
+    head.setAttribute('aria-expanded', on ? 'false' : 'true');
+    head.removeAttribute('tabindex');
+    head.removeAttribute('aria-disabled');
+  } else {
+    head.removeAttribute('aria-expanded');
+    head.setAttribute('tabindex', '-1');
+    head.setAttribute('aria-disabled', 'true');
+  }
+}
+function toggleNav() {
+  if (!navIsNarrow()) return;   // 넓은 화면에서는 머리가 그냥 제목이다
+  setNavCollapsed(!$('questionNavigator').classList.contains('is-collapsed'));
+}
+
+/* 헷갈림 표시는 모의고사에서만 쓴다. 연습 모드는 바로 정답을 보여 주므로 표시할 일이 없다. */
+function updateFlagBtn() {
+  const btn = $('flagBtn');
+  if (!btn) return;
+  const on = !!(quiz && quiz.mode === 'mock');
+  btn.classList.toggle('hidden', !on);
+  if (!on) return;
+  const marked = !!(quiz.flags && quiz.flags[quiz.i]);
+  btn.classList.toggle('is-on', marked);
+  /* 이름이 '헷갈림 표시' ↔ '표시 해제' 로 바뀐다. 거기에 aria-pressed 까지 붙이면
+     낭독기가 "표시 해제, 선택됨" 처럼 어긋나는 둘을 읽는다. 이름만으로 충분하다. */
+  btn.textContent = t(marked ? 'quiz.unflag' : 'quiz.flag');
+}
+function toggleFlag() {
+  if (!quiz || quiz.mode !== 'mock') return;
+  if (!quiz.flags) quiz.flags = {};
+  if (quiz.flags[quiz.i]) delete quiz.flags[quiz.i];
+  else quiz.flags[quiz.i] = true;
+  updateFlagBtn();
+  renderQuestionNavigator();
+  saveMockProgress();
+}
+
+function isQuestionAnswered(i) {
+  const q = quiz && quiz.list[i];
+  if (!q) return false;
+  if (q.type === 'mc') return quiz.answers[i] !== null && quiz.answers[i] !== undefined;
+  return !!String(quiz.text[q.id] || '').trim();
+}
+
+function renderQuestionNavigator() {
+  const nav = $('questionNavigator');
+  if (!nav) return;
+  const visible = !!quiz && quiz.mode === 'mock';
+  nav.classList.toggle('hidden', !visible);
+  if (!visible) return;
+  nav.setAttribute('aria-label', t('nav.title'));   // index.html 의 영어 이름을 언어에 맞춘다
+  const answered = quiz.list.reduce((n, q, i) => n + (isQuestionAnswered(i) ? 1 : 0), 0);
+  $('questionNavCount').textContent = t('nav.answered', answered, quiz.list.length);
+  const grid = $('questionNavGrid');
+  grid.innerHTML = '';
+  quiz.list.forEach((q, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'question-nav__item';
+    if (isQuestionAnswered(i)) btn.classList.add('is-answered');
+    if (quiz.flags && quiz.flags[i]) btn.classList.add('is-flagged');
+    if (i === quiz.i) btn.classList.add('is-current');
+    btn.textContent = String(i + 1);
+    /* 눈으로는 색으로 알지만 화면 낭독기에는 색이 안 들린다. 이름에 상태를 붙인다. */
+    const tags = [];
+    if (isQuestionAnswered(i)) tags.push(t('nav.legendDone'));
+    if (quiz.flags && quiz.flags[i]) tags.push(t('nav.legendFlag'));
+    btn.setAttribute('aria-label', t('nav.question', i + 1) + (tags.length ? ', ' + tags.join(', ') : ''));
+    if (i === quiz.i) btn.setAttribute('aria-current', 'true');
+    btn.addEventListener('click', () => {
+      quiz.i = i; renderQuestion();
+      if (navIsNarrow()) setNavCollapsed(true);   // 옮겼으면 문제가 바로 보여야 한다
+      /* renderQuestion 안에서 이동표를 통째로 다시 그리므로 방금 누른 버튼이 사라진다.
+         키보드만 쓰는 사람은 초점을 잃고 페이지 맨 위부터 다시 탭을 눌러야 한다.
+         새로 그려진 같은 번호 칸으로 초점을 옮겨 준다. */
+      const fresh = $('questionNavGrid').children[i];
+      if (fresh) fresh.focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    grid.appendChild(btn);
+  });
+}
+
+/* 시험지처럼 보이게 한다. 교재의 시험지는 지시문 한 줄을 위에 두고 지문은 옅은 색
+   상자에 담는데, 우리는 둘을 한 덩어리로 붙여 내보내고 있었다. 200자가 넘는 지문이
+   줄글로 이어지면 어디까지가 묻는 말이고 어디부터가 읽을 글인지 한눈에 안 들어온다.
+   문항 데이터는 지시문과 지문을 <br><br> 로 갈라 두었다(지문이 있는 739문항 전부,
+   네 언어 모두 갈라져 있다). 갈라져 있지 않으면 예전처럼 한 덩어리로 그린다. */
+const STEM_SEP = '<br><br>';
+/* 문항은 토막이 하나에서 넷까지 있다(객관식 2,725문항 기준 1토막 1,986 · 2토막 678 ·
+   3토막 60 · 4토막 1). 세 토막짜리는 '읽어라 / 지문 / 무엇을 묻는가' 순서다.
+   묻는 말까지 노란 상자에 넣으면 지문의 일부처럼 보이므로 상자 밖 아래에 따로 둔다. */
+function plainLen(html) { return String(html || '').replace(/<[^>]+>/g, '').trim().length; }
+function splitStem(text) {
+  const parts = String(text || '').split(STEM_SEP);
+  if (parts.length < 2) return null;
+  /* 거의 모든 문항이 '지시문 / 지문' 순서지만(2토막 678문항 중 669), 안내문을 먼저 놓고
+     "위 안내에 따라 …는?" 으로 나중에 묻는 문항이 있다. 그대로 가르면 묻는 말이
+     노란 상자 안으로 들어간다. 앞이 훨씬 길고 뒤가 물음표로 끝나면 순서를 뒤집어 읽는다. */
+  if (parts.length === 2 && plainLen(parts[0]) > plainLen(parts[1]) * 2
+      && String(parts[1]).replace(/<[^>]+>/g, '').trim().endsWith('?')) {
+    return { stem: '', body: parts[0], ask: parts[1] };
+  }
+  return { stem: parts[0], body: parts.slice(1, -1).join(STEM_SEP) || parts[1], ask: parts.length > 2 ? parts[parts.length - 1] : '' };
+}
+/* showNo 는 모의고사 풀이 화면에서만 참이다. 오답 노트·결과 해설·작문 연습도 같은 함수를
+   써야 한 문항이 화면마다 다르게 보이지 않는다(200자 지문이 굵은 줄글로 나오던 곳들). */
+function questionHtml(q, showNo) {
+  const koRaw = qLabel(q.q);
+  const trRaw = qLabel(gl(q, 'q'));
+  const ko = splitStem(koRaw);
+  const tr = trRaw ? splitStem(trRaw) : null;
+  const no = showNo ? `<span class="question-box__no">${quiz.i + 1}</span>` : '';
+  const head = (a, b) => `<div class="question-box__stem">${no}<span>${bi(a, b)}</span></div>`;
+  // 한국어와 번역의 토막 수가 어긋나면 줄이 밀리므로 나누지 않고 예전처럼 한 덩어리로 둔다
+  const same = !trRaw || (tr && koRaw.split(STEM_SEP).length === trRaw.split(STEM_SEP).length);
+  if (!ko || !same) return head(koRaw, trRaw);
+  let out = (ko.stem || no) ? head(ko.stem, tr ? tr.stem : '') : '';
+  out += `<div class="question-box__passage">${bi(ko.body, tr ? tr.body : '')}</div>`;
+  if (ko.ask) out += `<div class="question-box__ask">${bi(ko.ask, tr ? tr.ask : '')}</div>`;
+  return out;
+}
+
+function renderQuestion() {
+  const q = quiz.list[quiz.i];
+  const total = quiz.list.length;
+  const isWriting = q.type !== 'mc';
+
+  $('quizProgress').textContent = `${quiz.i + 1} / ${total}`;
+  $('progressFill').style.width = `${((quiz.i + 1) / total) * 100}%`;
+  if (quiz.mode !== 'mock') $('quizCat').textContent = catName(q.category);
+
+  if (quiz.mode === 'mock') {
+    const countOf = (ty) => quiz.list.filter((x) => x.type === ty).length;
+    const doneOf = (ty) => quiz.list.slice(0, quiz.i + 1).filter((x) => x.type === ty).length;
+    if (q.type === 'mc') $('examBanner').textContent = t('banner.mc', quiz.i + 1, countOf('mc'));
+    else if (q.type === 'writing') $('examBanner').textContent = t('banner.writing', doneOf('writing'), countOf('writing'));
+    else $('examBanner').textContent = t('banner.oral', doneOf('oral'), countOf('oral'));
+  }
+  renderQuestionNavigator();
+
+  $('questionBox').innerHTML = questionHtml(q, quiz.mode === 'mock');
+
+  const chosen = quiz.answers[quiz.i];
+  const showAnswer = quiz.graded && !isWriting && chosen !== null;
+
+  $('choices').classList.toggle('hidden', isWriting);
+  $('writeArea').classList.toggle('hidden', !isWriting);
+
+  if (isWriting) {
+    const ta = $('writeInput');
+    const isOral = q.type === 'oral';
+    ta.placeholder = isOral ? t('write.phOral') : t('write.phWrite');
+    ta.value = quiz.text[q.id] || '';
+    const meta = $('writeArea').querySelector('.write-area__meta');
+    meta.style.display = isOral ? 'none' : '';
+    $('writeCount').textContent = t('count.char', ta.value.length);
+    meta.classList.toggle('over', ta.value.length > 200);
+    $('feedback').classList.add('hidden');
+  } else {
+    // A1: 보기 순서 셔플 — 화면 표시만 섞고, 저장·판정은 원본 인덱스 기준.
+    const order = orderFor(quiz.i, q);       // 표시위치 → 원본인덱스
+    const cwrap = $('choices');
+    cwrap.innerHTML = '';
+    order.forEach((origIdx, pos) => {
+      const c = q.choices[origIdx];
+      const b = document.createElement('button');
+      b.className = 'choice';
+      const czh = glc(q, origIdx);
+      b.innerHTML = `<span class="choice__num">${NUM[pos]}</span><span>${bi(c, czh)}</span>`;
+      if (chosen === origIdx) b.classList.add('is-selected');
+      if (showAnswer) { b.disabled = true; if (origIdx === q.answer) b.classList.add('is-correct'); else if (origIdx === chosen) b.classList.add('is-wrong'); }
+      b.addEventListener('click', () => onChoose(origIdx));
+      cwrap.appendChild(b);
+    });
+    const fb = $('feedback');
+    if (showAnswer) {
+      const ok = chosen === q.answer;
+      const ansPos = order.indexOf(q.answer);       // 정답의 표시 위치로 번호 라벨 재부여
+      const head = ok ? t('fb.correct') : t('fb.wrong', NUM[ansPos] + ' ' + q.choices[q.answer]);
+      fb.className = 'feedback' + (ok ? '' : ' is-wrong');
+      fb.innerHTML = `<strong>${head}</strong>${bi(renumber(q.explanation || '', order), renumber(gl(q, 'explanation'), order))}`;
+      fb.classList.remove('hidden');
+    } else { fb.classList.add('hidden'); }
+  }
+
+  updateFlagBtn();
+
+  // G: 듣고 말하기 재생기 — listen 대본이 있는 구술 문항에서만
+  const lc = $('listenCard');
+  stopSpeak();
+  lc.classList.toggle('hidden', !hasListen(q));
+  if (hasListen(q)) { lc.innerHTML = listenCardHtml(q); wireListen(lc, q); }
+
+  // E: 원고지 작성법 카드 — 종합평가(nat/perm) 작문 문항에서만(사전평가는 단답형이라 무관)
+  const wg = $('wongojiCard');
+  const showWongoji = q.type === 'writing' && (activeExam === 'nat' || activeExam === 'perm');
+  wg.classList.toggle('hidden', !showWongoji);
+  if (showWongoji) { wg.innerHTML = wongojiCardHtml(); wireWongojiToggle(wg); }
+
+  const last = quiz.i === total - 1;
+  $('prevBtn').classList.toggle('hidden', quiz.mode !== 'mock' || quiz.i === 0);
+  if (quiz.mode === 'mock') {
+    $('nextBtn').classList.toggle('hidden', last);
+    $('nextBtn').disabled = false; $('nextBtn').style.opacity = '1'; $('nextBtn').textContent = t('quiz.next');
+    $('submitBtn').classList.toggle('hidden', !last);
+  } else {
+    $('nextBtn').classList.toggle('hidden', false);
+    $('nextBtn').textContent = last ? t('quiz.result') : t('quiz.next');
+    $('nextBtn').disabled = chosen === null;
+    $('nextBtn').style.opacity = chosen === null ? '.5' : '1';
+    $('submitBtn').classList.add('hidden');
+  }
+
+  if (quiz.mode === 'mock') saveMockProgress(); // 답 선택·이동 시마다 중간 저장
+  else if (quiz.mode === 'practice') savePracticeProgress();
+}
+
+function onChoose(idx) {
+  const already = quiz.answers[quiz.i];
+  if (quiz.graded && already !== null) return;
+  quiz.answers[quiz.i] = idx;
+  if (quiz.graded) { const q = quiz.list[quiz.i]; const ok = idx === q.answer; recordAnswer(q, ok); if (!ok) addWrong(q.id); else removeWrong(q.id); }
+  renderQuestion();
+}
+function nextQuestion() {
+  if (!quiz || quiz.scored) return;   // 채점이 끝난 시험에서는 아무 일도 하지 않는다
+  if (quiz.mode !== 'mock' && quiz.answers[quiz.i] === null) return;
+  if (quiz.i < quiz.list.length - 1) { quiz.i++; renderQuestion(); }
+  else { if (quiz.mode === 'mock') gradeMock(); else finishPractice(); }
+}
+function prevQuestion() { if (quiz.i > 0) { quiz.i--; renderQuestion(); } }
+
+function finishPractice() {
+  clearPracticeSave(); // 끝까지 풀면 중간 저장 삭제
+  let correct = 0;
+  quiz.list.forEach((q, i) => { if (quiz.answers[i] === q.answer) correct++; });
+  renderResult(quiz.list, quiz.answers, correct, { isMock: false, totalMc: quiz.list.length });
+}
+function gradeMock() {
+  // 이미 채점한 시험을 다시 채점하지 않는다.
+  // 다시 불리면 학습 통계에 같은 점수가 한 줄 더 쌓이고, 결과 화면이 다시 그려지면서
+  // 읽던 자리를 잃는다(맨 위로 올라간다).
+  if (quiz.scored) { showView('result'); return; }
+  quiz.scored = true;
+  if (quiz.timer) { clearInterval(quiz.timer); quiz.timer = null; }
+  clearMockSave(); // 채점 완료 → 중간 저장 삭제
+  mockSelfGrade = {}; // 새 채점 → 작문·구술 자가채점 초기화
+  const totalMc = quiz.list.filter((q) => q.type === 'mc').length;
+  let correct = 0;
+  quiz.list.forEach((q, i) => {
+    if (q.type !== 'mc') return;
+    const ok = quiz.answers[i] === q.answer;
+    if (ok) correct++;
+    recordAnswer(q, ok);
+    if (quiz.answers[i] === null || !ok) addWrong(q.id); else removeWrong(q.id);
+  });
+  const pct = totalMc ? Math.floor((correct / totalMc) * 100) : 0;
+  const hist = ls(ekey(K.history), []);
+  hist.unshift({ date: new Date().toISOString(), correct, total: totalMc, pct });
+  save(ekey(K.history), hist.slice(0, 30));
+  document.body.classList.remove('exam-mode');
+  renderResult(quiz.list, quiz.answers, correct, { isMock: true, totalMc });
+}
+
+/* =====================================================================
+   작문 자동 채점 — 내용 기반
+   - 사전평가(단답형): 문항에 실린 accept/nearMiss 와 대조. 정답이 확정적이라 사실상 정확하다.
+   - 종합평가(200자 서술): 규칙 기반 루브릭 근사치. 사람 채점을 대신하지 못한다.
+   문항에 채점 데이터(accept·parts)가 없으면 null 을 돌려주고 기존 자가채점으로 남는다.
+
+   기준선은 이 책들의 모범답안 42건으로 맞췄다. 모범답안이 만점권에 들지 않으면
+   그건 학습자가 아니라 채점기가 틀린 것이다. (글자수 134~173·중앙 153, 종결 99.5%가 니다/니까)
+   ===================================================================== */
+
+/* 대조용 정규화: 태그·공백·문장부호를 걷어낸다. 맞춤법은 건드리지 않는다. */
+function wsNorm(s) {
+  return String(s == null ? '' : s)
+    .replace(/<[^>]*>/g, '')
+    .replace(/[\s　]+/g, '')
+    .replace(/[.,!?~…·、。'"“”‘’`()（）\[\]{}:;/\\-]+/g, '')
+    .toLowerCase();
+}
+
+/* 원고지 글자 수 — 공백은 세지 않는다. */
+function wsChars(s) {
+  return String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/[\s　]+/g, '').length;
+}
+
+/* 원고지 max칸까지만 남긴다. 공백은 칸을 세지 않으므로 그대로 통과시킨다. */
+function wsClip(s, max) {
+  let out = '', cnt = 0;
+  for (const ch of String(s == null ? '' : s)) {
+    if (/[\s　]/.test(ch)) { out += ch; continue; }
+    if (cnt >= max) break;
+    out += ch; cnt++;
+  }
+  return out;
+}
+
+/* 문장 분리 — 종결부호가 없으면 줄바꿈으로도 끊는다.
+   인용부호 안의 종결부호에서 자르면 안 된다. '늘 건강하세요. 정말 고맙습니다"라고 말씀드렸습니다'는
+   한 문장인데 잘라 버리면 앞 조각이 해요체로 잡혀 문체가 섞인 것처럼 보인다. */
+function wsSentences(s) {
+  const MASK = '\u0001';
+  const x = String(s == null ? '' : s)
+    .replace(/<[^>]*>/g, '')
+    .replace(/[“"]([^“”"]*)[”"]|[‘']([^‘’']*)[’']/g, (m) => m.replace(/[.!?。]/g, MASK));
+  return x.split(/(?<=[.!?。])\s*|\n+/)
+    .map((y) => y.split(MASK).join('.').trim())
+    .filter((y) => y.length > 1);
+}
+
+/* 문장 하나의 종결 문체.
+   격식체는 '-ㅂ니다'가 앞 음절에 붙어 버려서(엽니다·다릅니다) 자모로 찾으면 안 잡힌다.
+   실제 표면형은 언제나 '니다/니까'로 끝나므로 그것으로 본다.
+   '-다'로 끝나는 한다체(문어체)는 반말이 아니다. 법무부 영주용 견본 모범답안이 문어체라
+   시험 답안으로 정당하다. 반말(해체)은 '-어/-아/-야/-지' 계열만 가리킨다. */
+function wsStyleOf(sent) {
+  const s = String(sent || '').replace(/[\s　.,!?~…·。'"“”‘’)\]]+$/g, '');
+  if (!s) return null;
+  if (/(니다|니까)$/.test(s)) return 'formal';   // 합쇼체
+  if (/(요|죠)$/.test(s)) return 'polite';       // 해요체
+  if (/다$/.test(s)) return 'plain';             // 한다체(문어체)
+  return 'casual';                               // 해체 반말
+}
+
+/* ── 사전평가 단답형 ─────────────────────────────────────────────────
+   학습자가 빈칸만 썼든 문장 전체를 옮겨 썼든 잡히도록 부분문자열로 본다.
+   짧은 쪽이 먼저 걸리면 안 된다: accept '피곤해도'가 nearMiss '피곤해도요'의 앞부분이라
+   앞에서부터 찾으면 구어형이 만점이 된다. 그래서 양쪽을 합쳐 가장 긴 일치를 고른다. */
+function wsScorePre(q, text) {
+  const acc = (q.accept || []).map(wsNorm).filter(Boolean);
+  if (!acc.length) return null;                       // 채점 데이터 없음 → 자가채점 유지
+  const norm = wsNorm(text);   // 이름을 t 로 두면 i18n 함수 t() 를 가린다
+  if (!norm) return { frac: 0, why: 'empty', matched: '' };
+  const near = (q.nearMiss || []).map(wsNorm).filter(Boolean);
+  let best = null;
+  acc.forEach((a) => { if (norm.includes(a) && (!best || a.length > best.s.length)) best = { s: a, frac: 1, why: 'accept' }; });
+  near.forEach((a) => { if (norm.includes(a) && (!best || a.length > best.s.length)) best = { s: a, frac: 0.5, why: 'near' }; });
+  return best ? { frac: best.frac, why: best.why, matched: best.s } : { frac: 0, why: 'miss', matched: '' };
+}
+
+/* 연결·대조 표현 — 네 갈래를 한 편의 글로 이었는지 보는 표지. */
+const WS_CONN = /(그리고|하지만|그러나|그래서|그런데|또한|또|반면|다만|특히|이처럼|게다가|때문|덕분|지만|으며|하며|면서|아서|어서|여서|되어|니까|으니|는데|은데|ㄴ데|거나|으면|이면|아니라|뿐만|보다|처럼|같이|위해|통해)/;
+
+/* ── 종합평가 200자 서술 ─────────────────────────────────────────────
+   공식으로 확인되는 배점은 '작문형 10점 = 4문항 × 2.5점'뿐이다(한국이민재단 배점표).
+   내용/어휘·문법/분량으로 10점을 쪼개는 세부 기준은 법무부 비공개다
+   (기본소양 평가관리 규정 제4조② 별표3 + 제12조② '별표와 별지는 공개하지 아니한다').
+   그래서 점수는 공식 단위인 '소주제 하나당 2.5점'만 따르고, 우리가 지어낸 가중치는 쓰지 않는다.
+   분량·문체·제목은 점수에서 빼지 않고 '점검 항목'으로만 보여 준다.
+
+   한계: 표지어 매칭은 그 소주제를 '건드렸는지'만 본다. 어휘를 늘어놓기만 해도 통과하므로
+   실제보다 후하게 나온다. 분량 상한으로 최소한의 방어만 건다. */
+function wsScoreNat(q, text) {
+  const parts = q.parts || [];
+  if (!parts.length) return null;                     // 채점 데이터 없음 → 자가채점 유지
+  const raw = String(text == null ? '' : text).replace(/<[^>]*>/g, '').trim();
+  const n = wsChars(raw);
+  if (!n) return { frac: 0, pts: 0, max: 10, empty: true, hits: parts.map(() => false), chars: 0, sentences: 0, checks: [] };
+  // 실제 시험지는 200칸 원고지 1장이 물리적 상한이다. 넘긴 부분은 애초에 쓸 자리가 없으므로
+  // 감점하는 대신 아예 없는 것으로 보고 200칸까지만 채점한다.
+  const over = n > 200;
+  const body = over ? wsClip(raw, 200) : raw;
+  const norm = wsNorm(body);   // 이름을 t 로 두면 i18n 함수 t() 를 가린다
+
+  const hits = parts.map((p) => (p.anyOf || []).some((k) => {
+    const kk = wsNorm(k);
+    return kk && norm.includes(kk);
+  }));
+  const nHit = hits.filter(Boolean).length;
+
+  // 분량 상한 — 40자로 네 갈래를 다 다뤘을 리는 없다. 표지어만 흩뿌린 답안을 막는 최소 방어.
+  const g = Math.min(n, 200);
+  const cap = g >= 130 ? 10 : (g >= 100 ? 7.5 : (g >= 70 ? 5 : (g >= 40 ? 2.5 : 0)));
+  const pts = Math.min(nHit * (10 / parts.length), cap);
+
+  // ── 점검 항목: 점수에 넣지 않는다. 규칙으로 확실한 것만 단정한다. ──
+  const sents = wsSentences(body);
+  const st = sents.map(wsStyleOf).filter(Boolean);
+  const cnt = { formal: 0, polite: 0, plain: 0, casual: 0 };
+  st.forEach((x) => { cnt[x]++; });
+  const mixed = Object.values(cnt).filter((x) => x > 0).length > 1;
+  const top = Object.keys(cnt).reduce((a, b) => (cnt[b] > cnt[a] ? b : a), 'formal');
+  // 공식 지시는 '제목 생략, 본문만'. 첫 줄이 짧고 종결어미가 없으면 제목을 쓴 것으로 본다.
+  const first = (body.split(/\n/)[0] || '').trim();
+  const titled = sents.length > 1 && first.length > 0 && first.length <= 20 && !/[.!?]$/.test(first) && wsStyleOf(first) === 'casual';
+  // 표시 문자열은 만들지 않는다. 화면에 그릴 때 autoBox 가 현재 언어로 옮긴다.
+  const checks = [
+    { key: 'len', ok: n >= 130 && n <= 200, n, unit: 'count.char', warn: over ? 'over' : (n < 130 ? 'short' : '') },
+    // 공식 문체 규정은 없다. 혼용과 해체 반말만 지적한다.
+    { key: 'style', ok: !mixed && !cnt.casual, valKey: 'style.' + top,
+      warn: cnt.casual ? 'banmal' : (mixed ? 'mixed' : '') },
+    { key: 'title', ok: !titled, warn: titled ? 'titled' : '' },
+    { key: 'flow', ok: sents.length >= 3 && (WS_CONN.test(body) || g / sents.length >= 25), n: sents.length, unit: 'count.sent', warn: sents.length < 3 ? 'choppy' : '' },
+  ];
+
+  return {
+    frac: Math.max(0, Math.min(1, pts / 10)),
+    pts: Math.round(pts * 10) / 10, max: 10, empty: false,
+    hits, nHit, chars: n, sentences: sents.length, over,
+    capped: pts < nHit * (10 / parts.length), checks,
+  };
+}
+
+/* 문항 하나를 받아 알맞은 채점기를 고른다. 구술(oral)은 대상이 아니다. */
+function wsScore(q, text) {
+  if (!q || q.type !== 'writing') return null;
+  return (q.exam === 'pre') ? wsScorePre(q, text) : wsScoreNat(q, text);
+}
+
+/* =====================================================================
+   결과
+   ===================================================================== */
+function renderResult(list, answers, correct, opts) {
+  lastResult = { list, answers, correct, opts };
+  const { isMock, totalMc } = opts;
+  showView('result');
+  const denom = totalMc || list.length;
+  const mcPct = denom ? Math.floor((correct / denom) * 100) : 0;
+  // 체험으로 푼 시험이면 결과 맨 위에 안내를 얹는다(회원이면 그리지 않는다)
+  renderTrialEnd(mcPct, correct, denom);
+  const hasWriting = list.some((q) => q.type !== 'mc');
+  // 배점은 트랙별로 다르다. 귀화·영주 65/10/25, 사전평가 72/3/25(필기 75 + 구술 25).
+  const P = (exam() && exam().points) || { mc: 65, writing: 10, oral: 25 };
+  const isComposite = isMock && hasWriting;
+  const isLevelTrack = isMock && activeExam === 'pre';
+  const numW = list.filter((q) => q.type === 'writing').length;
+  const numO = list.filter((q) => q.type === 'oral').length;
+  const mcScoreP = denom ? (correct / denom) * P.mc : 0;
+
+  const passEl = $('scorePass');
+  const levelBox = $('levelResult');
+  const sb = $('scoreBreakdown');
+
+  // 작문은 내용 기반으로 자동 채점하고 그 결과를 자가채점 칸에 미리 채운다.
+  // 학습자가 버튼으로 다시 매기면 그쪽이 이긴다(수동 우선).
+  const texts0 = (quiz && quiz.text) ? quiz.text : {};
+  const autoW = {};
+  if (isComposite) {
+    list.forEach((q) => {
+      if (q.type !== 'writing') return;
+      const r = wsScore(q, texts0[q.id]);
+      if (!r) return;                                  // 채점 데이터 없는 문항은 자가채점으로 남긴다
+      autoW[q.id] = r;
+      if (mockSelfGrade[q.id] == null) mockSelfGrade[q.id] = r.frac;
+    });
+  }
+
+  // A4: 미채점 작문·구술을 총점에 0점 합산하지 않는다.
+  //  1층 = 객관식 X/만점(자동채점, 크게).  2층 = 자가채점 포함 추정 총점(전부 채점 시에만).
+  const mc65 = Math.round(mcScoreP);
+  function recompute() {
+    let sw = 0, so = 0, gradedW = 0, gradedO = 0;
+    list.forEach((q) => {
+      const g = mockSelfGrade[q.id]; if (g == null) return;
+      if (q.type === 'writing') { sw += g; gradedW++; } else if (q.type === 'oral') { so += g; gradedO++; }
+    });
+    const wScore = numW ? (sw / numW) * P.writing : 0;
+    const oScore = numO ? (so / numO) * P.oral : 0;
+    const total = Math.round(mcScoreP + wScore + oScore);
+    const ungradedN = list.filter((q) => (q.type === 'writing' || q.type === 'oral') && mockSelfGrade[q.id] == null).length;
+    const allGraded = ungradedN === 0;
+    const wDone = gradedW >= numW;
+
+    if (isLevelTrack) {
+      // 사전평가는 합격·불합격이 아니라 단계 배정이다.
+      // 구술까지 채점되면 100점 만점 총점으로, 아니면 필기(객관식+작문) 백분율로 단계를 추정한다.
+      // 채점 안 된 작문을 0점으로 깔면 단계가 억울하게 내려간다. 채점 전이면 분모에서도 뺀다.
+      const paper = mcScoreP + (wDone ? wScore : 0);
+      const paperMax = P.mc + (wDone ? P.writing : 0);
+      const est = allGraded ? total : Math.round((paper / paperMax) * 100);
+      // 공식 규정: 구술이 3점 미만이면 필기 점수와 무관하게 0단계.
+      // 구술을 끝까지 채점한 경우에만 이 규정을 적용할 수 있다.
+      const oralFloor = gradedO >= numO && numO > 0 && oScore < 3;
+      const lv = oralFloor ? PRE_LEVELS[PRE_LEVELS.length - 1] : preLevelFor(est);
+      $('scorePct').textContent = est;
+      $('scoreUnit').textContent = t('result.unit');
+      $('scoreFrac').innerHTML = allGraded
+        ? `<span class="score-line">${t('result.estTotal')}: <b>${t('result.estOf', total)}</b></span>` +
+          `<span class="score-sub">${t('result.paperOf', Math.round(paper), paperMax)}</span>`
+        : `<span class="score-line">${t('result.paperScore')}: <b>${t('result.paperOf', Math.round(paper), paperMax)}</b></span>` +
+          `<span class="score-sub">${t('result.frac', denom, correct)}${wDone ? ' · ' + t('result.wAuto') : ''}</span>`;
+      passEl.textContent = t('result.estLevel', tx(lv.name)) + (oralFloor ? ' · ' + t('result.oralFloor') : '');
+      passEl.className = 'score-card__pass level';
+      levelBox.innerHTML = renderLevelTable(lv);
+      levelBox.classList.remove('hidden');
+    } else {
+      // 큰 숫자: 전부 채점되면 총점/100, 아니면 객관식 점수/만점
+      $('scorePct').textContent = allGraded ? total : mc65;
+      $('scoreUnit').textContent = allGraded ? t('result.estOf', '').replace(/\s*\{0\}\s*/, '') : '';
+      $('scoreFrac').innerHTML = allGraded
+        ? `<span class="score-line">${t('result.estTotal')}: <b>${t('result.estOf', total)}</b></span>` +
+          `<span class="score-sub">${t('result.mcScore')} ${t('result.mcOf', mc65)}</span>`
+        : `<span class="score-line">${t('result.mcScore')}: <b>${t('result.mcOf', mc65)}</b></span>` +
+          `<span class="score-sub">${t('result.frac', denom, correct)}</span>`;
+      // 합격선(60) 판정은 채점 완료 시에만 총점 기준. 아니면 중립 표기.
+      if (allGraded) {
+        const pass = total >= 60;
+        passEl.textContent = pass ? t('result.pass') : t('result.fail');
+        passEl.className = 'score-card__pass ' + (pass ? 'pass' : 'fail');
+      } else {
+        passEl.textContent = t('result.mcOnly', mc65);
+        passEl.className = 'score-card__pass';
+      }
+      levelBox.classList.add('hidden');
+    }
+
+    const nAuto = Object.keys(autoW).length;
+    sb.innerHTML =
+      `<div class="bd-note">${nAuto ? t('sg.noteAuto') : t('sg.note')}</div>` +
+      `<div class="bd-row"><span>${t('bd.mc')}</span><span>${mc65} / ${P.mc}</span></div>` +
+      `<div class="bd-row"><span>${t('bd.writing')}${nAuto ? ` <em class="bd-auto">${t('bd.autoTag')}</em>` : ''}</span>` +
+        `<span>${wDone ? Math.round(wScore * 10) / 10 : '—'} / ${P.writing}</span></div>` +
+      `<div class="bd-row"><span>${t('bd.oral')}</span><span>${gradedO < numO ? '—' : Math.round(oScore)} / ${P.oral}</span></div>` +
+      (allGraded
+        ? `<div class="bd-row bd-total"><span>${t('bd.total')}</span><span>${total} / 100</span></div>`
+        : `<div class="bd-prompt">${t('result.ungradedN', ungradedN)}</div>`);
+  }
+
+  if (isComposite) {
+    sb.classList.remove('hidden');
+    recompute();
+  } else {
+    sb.classList.add('hidden');
+    levelBox.classList.add('hidden');
+    $('scorePct').textContent = mcPct;
+    $('scoreUnit').textContent = t('result.unit');
+    $('scoreFrac').textContent = t('result.frac', denom, correct) + (hasWriting ? t('result.fracMore') : '');
+    if (isMock && activeExam === 'pre') {
+      // 작문·구술이 하나도 없는 사전평가 모의고사(풀이 빈 경우)라도 합격·불합격이 아니라 단계로 보여준다.
+      const lv = preLevelFor(mcPct);
+      passEl.textContent = t('result.estLevel', tx(lv.name));
+      passEl.className = 'score-card__pass level';
+      levelBox.innerHTML = renderLevelTable(lv);
+      levelBox.classList.remove('hidden');
+    } else if (isMock) { const pass = mcPct >= 60; passEl.textContent = pass ? t('result.pass') : t('result.fail'); passEl.className = 'score-card__pass ' + (pass ? 'pass' : 'fail'); }
+    else { passEl.textContent = t('result.practice'); passEl.className = 'score-card__pass'; }
+  }
+
+  const cat = {};
+  list.forEach((q, i) => { if (q.type !== 'mc') return; cat[q.category] = cat[q.category] || { c: 0, t: 0 }; cat[q.category].t++; if (answers[i] === q.answer) cat[q.category].c++; });
+  const cb = $('catBreakdown'); cb.innerHTML = '';
+  sortCats(Object.keys(cat)).forEach((c) => {
+    const { c: cc, t: tt } = cat[c]; const p = Math.round((cc / tt) * 100);
+    const row = document.createElement('div'); row.className = 'cat-row';
+    row.innerHTML = `<span class="cat-row__name">${catName(c)}</span><span class="cat-row__bar"><span style="width:${p}%"></span></span><span class="cat-row__val">${cc}/${tt}</span>`;
+    cb.appendChild(row);
   });
 
-  function goNext() {
-    if (!state) return;
-    var hasNext = state.idx + 1 < MODES[state.mode].items.length;
-    if (hasNext) startPractice(state.mode, state.idx + 1);
-    else goList(state.mode);
-  }
-
-  // ===== 렌더 =====
-  function render() {
-    var box = $('#targetBox');
-    highlightKeyboard();
-    if (state.kind === 'position') renderPosition(box);
-    else renderText(box);
-    renderNextKey();
-    var pct = state.total ? Math.round(progressCount() / state.total * 100) : 0;
-    $('#pracProgress').style.width = pct + '%';
-  }
-
-  function renderPosition(box) {
-    var seq = state.seq, i = state.posIdx;
-    var html = '<div class="pos-stage"><div class="pos-queue">';
-    for (var k = i - 2; k <= i + 4; k++) {
-      if (k < 0 || k >= seq.length) { html += '<div class="pos-cell"></div>'; continue; }
-      var cls = 'pos-cell' + (k === i ? ' is-current' : k < i ? ' is-done' : '');
-      html += '<div class="' + cls + '">' + (k < i ? '✓' : esc(seq[k])) + '</div>';
-    }
-    html += '</div><div class="pos-progress">' + Math.min(i + 1, seq.length) + ' / ' + seq.length + '</div></div>';
-    box.innerHTML = html;
-  }
-
-  function renderText(box) {
-    var chars = state.chars, toks = state.tokens, pos = state.pos, lines = state.lines, typed = state.typed || [];
-    var currentCi = pos < toks.length ? toks[pos].ci : chars.length;
-    var html = '<div class="txt-lines">';
-    for (var li = 0; li < lines.length; li++) {
-      var ln = lines[li];
-      // 원문(목표) 줄
-      var tHtml = '';
-      for (var c = ln.start; c < ln.end; c++) {
-        var ch = chars[c];
-        var st = c < currentCi ? 'done' : c === currentCi ? 'current' : 'pending';
-        if (ch === ' ') tHtml += (c === currentCi) ? '<span class="ch current sp"> </span>' : '<span class="ch sp"> </span>';
-        else tHtml += '<span class="ch ' + st + '">' + esc(ch) + '</span>';
-      }
-      // 입력(내가 친) 줄 — 실제 친 자모를 조합, 목표와 글자별 비교해 정(검정)/오(빨강)
-      var lineTypedToks = [];
-      for (var ti = 0; ti < typed.length; ti++) { if (toks[ti] && toks[ti].ci >= ln.start && toks[ti].ci < ln.end) lineTypedToks.push(typed[ti]); }
-      var typedStr = HG.compose(lineTypedToks);
-      var targetStr = chars.slice(ln.start, ln.end).join('');
-      var eHtml = '';
-      for (var ei = 0; ei < typedStr.length; ei++) {
-        var cc = typedStr.charAt(ei);
-        var good = cc === targetStr.charAt(ei);
-        eHtml += '<span class="ech ' + (good ? 'ok' : 'bad') + (cc === ' ' ? ' sp' : '') + '">' + esc(cc) + '</span>';
-      }
-      var isCurrentLine = currentCi >= ln.start && currentCi <= ln.end;
-      html += '<div class="tline' + (isCurrentLine ? ' is-current' : '') + '">' +
-        '<div class="tline-target">' + tHtml + '</div>' +
-        '<div class="tline-echo">' + eHtml + (isCurrentLine ? '<span class="caret"></span>' : '') + '</div>' +
-        '</div>';
-    }
-    html += '</div>';
-    box.innerHTML = html;
-    // 현재 줄을 창 맨 위로 — 위 ~3줄만 보이고, 진행하면 아래 내용이 자동으로 올라옴
-    var curLine = box.querySelector('.tline.is-current');
-    var wrap = box.querySelector('.txt-lines');
-    if (curLine && wrap) wrap.scrollTop = curLine.offsetTop;
-  }
-
-  function renderNextKey() {
-    var exp = currentExpected();
-    var nk = $('#nextKey');
-    if (!exp) { nk.innerHTML = ''; return; }
-    var label, big = '';
-    if (state.kind === 'position') { label = t('next.this'); big = exp.jamo; }
-    else if (exp.type === 'space') { label = t('next.char'); big = t('next.space'); }
-    else if (exp.type === 'enter') { label = t('next.char'); big = t('next.enter'); }
-    else if (exp.type === 'jamo') { label = t('next.char'); big = exp.jamo; }
-    else { label = t('next.char'); big = exp.ch; }
-    var html = '<b>' + esc(label) + '</b> <span class="nk-jamo">' + esc(big) + '</span>';
-    var key = exp.key;
-    if (key && HG.FINGER[key.code]) {
-      var f = HG.FINGER[key.code];
-      html += '<span class="nk-finger">' + esc(HG.HAND_LABEL[lang][f.hand] + ' ' + HG.FINGER_LABEL[lang][f.finger]) + '</span>';
-    }
-    if (key && key.shift) html += '<span class="nk-shift">⇧ ' + esc(t('next.shift')) + '</span>';
-    nk.innerHTML = html;
-  }
-
-  function highlightKeyboard() {
-    $$('.key.next, .key.next-shift').forEach(function (el) { el.classList.remove('next', 'next-shift'); });
-    var exp = currentExpected();
-    if (!exp || !exp.key) return;
-    var key = exp.key;
-    if (keyEls[key.code]) keyEls[key.code].classList.add('next');
-    if (key.shift) {
-      var f = HG.FINGER[key.code];
-      var shiftCode = (f && f.hand === 'L') ? 'ShiftRight' : 'ShiftLeft';
-      if (keyEls[shiftCode]) keyEls[shiftCode].classList.add('next-shift');
-    }
-  }
-
-  // ===== 통계 =====
-  function updateStats() {
-    if (!state || state.kind === undefined) return;
-    var elapsed = state.startTime ? (Date.now() - state.startTime) / 1000 : 0;
-    var speed = elapsed >= 0.5 ? Math.min(9999, Math.round(state.correct / (elapsed / 60))) : 0;
-    var attempts = state.correct + state.errors;
-    var acc = attempts > 0 ? Math.round(state.correct / attempts * 100) : 100;
-    $('#statTime').textContent = Math.floor(elapsed) + t('sec.sec');
-    $('#statSpeed').textContent = speed;
-    $('#statAcc').textContent = acc + '%';
-    $('#statMiss').textContent = state.errors;
-  }
-
-  // ===== 완료 =====
-  function finish() {
-    stopTimer();
-    state.finished = true;
-    var elapsed = (Date.now() - state.startTime) / 1000;
-    var speed = elapsed >= 0.5 ? Math.min(9999, Math.round(state.correct / (elapsed / 60))) : 0;
-    var attempts = state.correct + state.errors;
-    var acc = attempts > 0 ? Math.round(state.correct / attempts * 100) : 100;
-
-    // A2: 세션 로그 append (보충 드릴 등 임시 판은 저장 안 함)
-    var savable = !state.ephemeral;
-    if (savable) {
-      pushLog({ m: state.mode, i: state.idx, s: speed, a: acc, e: state.errors, d: new Date().toISOString() });
-    }
-
-    // A1: 최고기록 = 속도 경신 && 정확도 95% 이상. 임시 판은 저장 안 함.
-    var prevBest = getBest(state.mode, state.idx);
-    var speedBeat = speed > prevBest;
-    var accPass = acc >= 95;
-    var isBest = savable && speedBeat && accPass;
-    if (isBest) setBest(state.mode, state.idx, speed, acc);
-
-    // A2: 지난 판 대비(같은 mode 직전 기록) — 방금 push한 것 제외한 직전
-    var prevLog = savable ? secondLastLogForMode(state.mode) : lastLogForMode(state.mode);
-    var deltaHtml = '';
-    if (prevLog) {
-      var dSpeed = speed - (prevLog.s || 0);
-      var dAcc = acc - (prevLog.a != null ? prevLog.a : acc);
-      deltaHtml = '<div class="prac-done__delta">' + t('delta.label') + ': ' +
-        t('delta.speed') + ' <b class="' + (dSpeed < 0 ? 'neg' : '') + '">' + (dSpeed >= 0 ? '+' : '') + dSpeed + '</b> · ' +
-        t('delta.acc') + ' <b class="' + (dAcc < 0 ? 'neg' : '') + '">' + (dAcc >= 0 ? '+' : '') + dAcc + '%p</b></div>';
-    }
-
-    // A3: 약한 키(이번 판에서 틀린 자모 상위 5)
-    var weak = sessionWeak(5);
-    var weakHtml = '';
-    if (weak.length) {
-      var chips = weak.map(function (w) {
-        return '<span class="weak-chip">' + esc(w.jamo) + '<small>' + w.count + '</small></span>';
-      }).join('');
-      weakHtml = '<div class="prac-done__weak">' +
-        '<div class="prac-done__weak-label">' + iconSvg('target', 'prac-done__weak-ico') + t('weak.title') + '</div>' +
-        '<div class="prac-done__weak-keys">' + chips + '</div>' +
-        '<button class="btn btn--ghost btn--sm" id="doneWeakDrill">' + t('weak.drill') + '</button>' +
-        '</div>';
-    }
-
-    var d = $('#pracDone');
-    var hasNext = state.idx + 1 < MODES[state.mode].items.length;
-    d.innerHTML =
-      '<div class="prac-done__title">' + t('done.title') + '</div>' +
-      (isBest ? '<div class="prac-done__best">' + iconSvg('star', 'prac-done__best-ico') + t('done.best') + '</div>' : '') +
-      (savable && speedBeat && !accPass ? '<div class="prac-done__gate">' + t('gate.msg') + '</div>' : '') +
-      deltaHtml +
-      '<div class="prac-done__stats">' +
-      '<div class="prac-done__stat"><b>' + speed + '</b><span>' + t('done.speed') + '</span></div>' +
-      '<div class="prac-done__stat"><b>' + acc + '%</b><span>' + t('done.acc') + '</span></div>' +
-      '<div class="prac-done__stat"><b>' + Math.floor(elapsed) + t('sec.sec') + '</b><span>' + t('done.time') + '</span></div>' +
-      '</div>' + weakHtml +
-      '<div class="prac-done__actions">' +
-      '<button class="btn btn--ghost" id="doneRetry">↻ ' + t('common.retry') + '</button>' +
-      '<button class="btn btn--primary" id="doneNext">' + (hasNext ? t('common.next') : t('common.list')) + '</button>' +
-      '</div><div class="prac-done__hint">⏎ ' + (hasNext ? t('done.nextHint') : t('done.listHint')) + '</div>';
-    d.classList.remove('hidden');
-    $('#doneRetry').addEventListener('click', function () { startPractice(state.mode, state.idx); });
-    $('#doneNext').addEventListener('click', function () {
-      if (state.ephemeral) { goList(state.baseMode || state.mode); return; }
-      goNext();
+  const texts = (quiz && quiz.text) ? quiz.text : {};
+  const rl = $('reviewList'); rl.innerHTML = '';
+  list.forEach((q, i) => rl.appendChild(reviewItem(q, answers[i], texts[q.id], isComposite, mockSelfGrade[q.id], autoW[q.id])));
+  if (isComposite) {
+    rl.querySelectorAll('.sg-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        mockSelfGrade[btn.dataset.qid] = parseFloat(btn.dataset.frac);
+        btn.parentElement.querySelectorAll('.sg-btn').forEach((b) => b.classList.toggle('is-on', b === btn));
+        recompute();
+      });
     });
-    var wd = $('#doneWeakDrill'); if (wd) wd.addEventListener('click', startWeakDrill);
-    d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  // 같은 mode에서 방금 push한 것을 제외한 직전 기록
-  function secondLastLogForMode(mode) {
-    var arr = logStore(), seen = 0;
-    for (var i = arr.length - 1; i >= 0; i--) {
-      if (arr[i].m === mode) { seen++; if (seen === 2) return arr[i]; }
+  const wrongQs = list.filter((q, i) => q.type === 'mc' && answers[i] !== q.answer);
+  $('retryWrongBtn').classList.toggle('hidden', wrongQs.length === 0);
+  $('retryWrongBtn').onclick = () => startQuiz(shuffle(wrongQs), 'practice');
+  // 같은 문제로 다시 풀기 — 문항은 그대로 두고 순서만 섞는다.
+  // 자리를 외워서 맞히는 것을 막고, 보기 순서는 startQuiz 가 회차마다 다시 섞는다.
+  $('retrySameBtn').onclick = () => startQuiz(shuffle(list), isMock ? 'mock' : 'practice');
+}
+
+function renderLevelTable(cur) {
+  const rows = PRE_LEVELS.slice().reverse().map((l) => {
+    const on = l.stage === cur.stage;
+    return `<div class="level-row${on ? ' is-on' : ''}"><span class="level-row__stage">${tx(l.name)}${on ? ' ◀' : ''}</span><span class="level-row__range">${tx(l.range)}</span></div>`;
+  }).join('');
+  return `<div class="level-note">${t('result.levelDisclaimer')}</div><div class="level-table">${rows}</div>`;
+}
+
+/* 작문 자동채점 결과 상자 — 사전평가는 정오, 종합평가는 소주제 커버리지 + 점검 항목. */
+function autoBox(q, r) {
+  const esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  if (q.exam === 'pre') {
+    const k = r.frac === 1 ? 'ok' : (r.frac === 0.5 ? 'mid' : 'no');
+    const label = t(r.frac === 1 ? 'auto.ok' : (r.frac === 0.5 ? 'auto.mid' : (r.why === 'empty' ? 'auto.empty' : 'auto.no')));
+    const hint = (r.frac < 1 && q.hint) ? `<div class="auto-hint">💡 ${esc(q.hint)}</div>` : '';
+    return `<div class="auto-box auto-box--${k}"><div class="auto-head"><span class="auto-verdict">${label}</span>` +
+      `<span class="auto-pts">${r.frac * 1.5} / 1.5</span></div>${hint}` +
+      `<div class="auto-note">${t('auto.notePre')}</div></div>`;
+  }
+  const parts = q.parts || [];
+  const marks = parts.map((p, i) => `<span class="auto-part${r.hits[i] ? ' is-on' : ''}">${'①②③④'[i] || (i + 1)} ${esc(p.label)}</span>`).join('');
+  const val = (c) => (c.valKey ? t(c.valKey) : (c.unit != null ? t(c.unit, c.n) : ''));
+  const checks = (r.checks || []).map((c) => `<div class="auto-row${c.ok ? '' : ' is-warn'}"><span>${c.ok ? '✓' : '⚠'} ${t('auto.' + c.key)}` +
+    `${c.warn ? ` <em>${t('auto.w.' + c.warn)}</em>` : ''}</span><span>${esc(val(c))}</span></div>`).join('');
+  const cls = r.pts >= 7.5 ? 'ok' : (r.pts >= 5 ? 'mid' : 'no');
+  const capped = r.capped ? `<div class="auto-hint">⚠ ${t('auto.capped')}</div>` : '';
+  const over = r.over ? `<div class="auto-hint">⚠ ${t('auto.overNote')}</div>` : '';
+  return `<div class="auto-box auto-box--${cls}"><div class="auto-head"><span class="auto-verdict">${t('auto.task')}</span>` +
+    `<span class="auto-pts">${r.pts} / ${r.max}</span></div>` +
+    `<div class="auto-parts">${marks}</div>${over}${capped}` +
+    `<div class="auto-sub">${t('auto.checkHead')}</div><div class="auto-rows">${checks}</div>` +
+    `<div class="auto-note">${t('auto.noteNat')}</div></div>`;
+}
+
+function reviewItem(q, chosen, writeText, sgMode, sgVal, auto) {
+  const el = document.createElement('div');
+  el.className = 'review-item';
+  if (q.type !== 'mc') {
+    const isOral = q.type === 'oral';
+    const ans = (writeText || '').trim().replace(/</g, '&lt;');
+    const empty = isOral ? t('review.emptyOral') : t('review.emptyWrite');
+    let sgHtml = '';
+    if (sgMode) {
+      const lv = [['1', 'sg.good'], ['0.5', 'sg.mid'], ['0', 'sg.poor']];
+      const btns = lv.map(([f, k]) => `<button type="button" class="sg-btn${String(sgVal) === f ? ' is-on' : ''}" data-qid="${q.id}" data-frac="${f}">${t(k)}</button>`).join('');
+      sgHtml = `<div class="sg-grade"><span class="sg-grade__label">${t(auto ? 'sg.headOverride' : 'sg.head')}</span><div class="sg-btns">${btns}</div></div>`;
     }
-    return null;
+    const autoHtml = auto ? autoBox(q, auto) : '';
+    el.innerHTML = `<div class="review-item__q">${isOral ? '🗣️' : '✍️'} ${questionHtml(q, false)}</div>
+      <div class="review-item__write ${ans ? '' : 'empty-ans'}">${ans || empty}</div>
+      ${autoHtml}
+      ${q.guide ? `<div class="review-item__exp">💡 ${bi(q.guide, gl(q, 'guide'))}</div>` : ''}
+      ${q.model ? `<div class="review-item__model"><b>${t('review.model')}</b><br>${bi(q.model, gl(q, 'model'))}</div>` : ''}
+      ${sgHtml}`;
+    return el;
   }
+  let opts = '';
+  q.choices.forEach((c, idx) => {
+    let cls = ''; if (idx === q.answer) cls = 'correct'; else if (idx === chosen) cls = 'chosen-wrong';
+    const czh = glc(q, idx);
+    opts += `<div class="review-item__opt ${cls}">${NUM[idx]} ${bi(c, czh)}${idx === q.answer ? ' ✓' : ''}</div>`;
+  });
+  const unanswered = chosen === null || chosen === undefined;
+  el.innerHTML = `<div class="review-item__q">${questionHtml(q, false)}</div>${opts}
+    ${unanswered ? `<div class="review-item__opt chosen-wrong">${t('review.unanswered')}</div>` : ''}
+    ${q.explanation ? `<div class="review-item__exp">💡 ${bi(q.explanation, gl(q, 'explanation'))}</div>` : ''}`;
+  return el;
+}
 
-  // A3: 약한 키 보충 드릴 — topWeak 자모들로 임시 position 판 즉석 실행(저장 안 함)
-  function startWeakDrill() {
-    var weak = sessionWeak(5);
-    if (!weak.length) weak = topWeak(5);
-    if (!weak.length) return;
-    var set = weak.map(function (w) { return w.jamo; });
-    var seq = buildDrill(set);
-    var base = state ? (state.baseMode || state.mode) : 'position';
-    state = {
-      mode: 'position', kind: 'position', idx: 0,
-      item: { title: { ko: t('weak.pracTitle'), zh: t('weak.pracTitle'), vi: t('weak.pracTitle'), th: t('weak.pracTitle') }, set: set },
-      correct: 0, errors: 0, startTime: 0, running: false, finished: false,
-      weakSession: {}, seq: seq, posIdx: 0, total: seq.length,
-      ephemeral: true, baseMode: base
-    };
-    $('#pracTitle').textContent = t('weak.pracTitle');
-    var stog = $('#soundToggle'); if (stog) { stog.classList.remove('hidden'); updateSoundToggle(); }
-    $('#pracMeta').classList.add('hidden');
-    $('#fwBox').classList.add('hidden');
-    $('#targetBox').classList.remove('hidden');
-    $('#nextKey').classList.remove('hidden');
-    $('.kbd-wrap').classList.remove('hidden');
-    $('#view-practice').classList.remove('is-long');
-    $('#pracDone').classList.add('hidden');
-    show('practice');
-    render(); updateStats();
-  }
-
-  // ===== 저장 =====
-  // A1: typing_best_v1 값은 {speed,acc,date} 객체. 옛 스키마(숫자)는 읽을 때 {speed:그값}으로 간주(하위호환).
-  function bestStore() { try { return JSON.parse(localStorage.getItem('typing_best_v1') || '{}'); } catch (e) { return {}; } }
-  function bestRec(mode, idx) {
-    var v = bestStore()[mode + ':' + idx];
-    if (v == null) return null;
-    if (typeof v === 'number') return { speed: v, acc: null, date: null }; // 옛 숫자값 하위호환
-    return v;
-  }
-  function getBest(mode, idx) { var r = bestRec(mode, idx); return r ? Math.min(9999, r.speed || 0) : 0; }
-  function getBestRec(mode, idx) { return bestRec(mode, idx); }
-  function setBest(mode, idx, speed, acc) {
-    var s = bestStore();
-    s[mode + ':' + idx] = { speed: speed, acc: acc, date: new Date().toISOString() };
-    try { localStorage.setItem('typing_best_v1', JSON.stringify(s)); } catch (e) {}
-  }
-
-  // A2: 세션 로그 — 판 완료마다 append, 최대 300 FIFO
-  function logStore() { try { return JSON.parse(localStorage.getItem('typing_log_v1') || '[]'); } catch (e) { return []; } }
-  function pushLog(entry) {
-    var arr = logStore();
-    arr.push(entry);
-    if (arr.length > 300) arr = arr.slice(arr.length - 300);
-    try { localStorage.setItem('typing_log_v1', JSON.stringify(arr)); } catch (e) {}
-  }
-  // 같은 mode의 직전 기록(방금 넣은 것 제외한 마지막) 반환
-  function lastLogForMode(mode) {
-    var arr = logStore();
-    for (var i = arr.length - 1; i >= 0; i--) { if (arr[i].m === mode) return arr[i]; }
-    return null;
-  }
-  // 이번 주(최근 7일) 요약: {games, avgSpeed, avgAcc}
-  function weekSummary() {
-    var arr = logStore(), now = Date.now(), wk = 7 * 24 * 3600 * 1000;
-    var g = 0, sp = 0, ac = 0, acN = 0;
-    for (var i = 0; i < arr.length; i++) {
-      var e = arr[i], td = Date.parse(e.d || '');
-      if (isNaN(td) || (now - td) > wk) continue;
-      g++; sp += (e.s || 0);
-      if (e.a != null) { ac += e.a; acN++; }
+/* =====================================================================
+   오답노트 — 숙련 원장 {id:{miss,streak,last}}
+   - 옛 배열형 [id,...]은 로드 시 각 id를 {miss:1,streak:0,last:0}로 자동 승격.
+   - 오답: miss+1, streak=0.  정답: streak+1 → 연속 2회면 제거.
+   ===================================================================== */
+/* 트랙별 오답 원장 로드(배열이면 맵으로 승격 후 저장) */
+/* 되풀이 채점 버그(sw v55 이전)로 부풀려진 틀린 횟수를 한 번만 되돌린다.
+   그 버그는 1초에 한 번씩 채점을 반복해 같은 문항의 miss 를 수백~수천까지 올렸다.
+   진짜 횟수는 알 수 없으므로, 사람이 도달할 수 없는 값은 1회로 본다.
+   졸업 판정은 streak 로 하므로 miss 를 되돌려도 학습 진행에는 영향이 없다. */
+const MISS_REPAIRED = 'nq_missfix_v1';
+function repairInflatedMiss() {
+  try {
+    if (localStorage.getItem(MISS_REPAIRED)) return;
+    for (const suf of ['', '__perm', '__pre']) {
+      const key = K.wrong + suf;
+      const raw = ls(key, null);
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+      let touched = false;
+      for (const id of Object.keys(raw)) {
+        const e = raw[id];
+        if (e && typeof e === 'object' && (e.miss || 0) > 20) { e.miss = 1; touched = true; }
+      }
+      if (touched) save(key, raw);
     }
-    if (!g) return null;
-    return { games: g, avgSpeed: Math.round(sp / g), avgAcc: acN ? Math.round(ac / acN) : null };
-  }
+    localStorage.setItem(MISS_REPAIRED, '1');
+  } catch {}
+}
 
-  // A3: 약한 키(오타 시 정답이었어야 할 자모별 누적) {jamo:count}
-  function weakStore() { try { return JSON.parse(localStorage.getItem('typing_weakkeys_v1') || '{}'); } catch (e) { return {}; } }
-  function addWeak(jamo) {
-    if (!jamo) return;
-    var s = weakStore(); s[jamo] = (s[jamo] || 0) + 1;
-    try { localStorage.setItem('typing_weakkeys_v1', JSON.stringify(s)); } catch (e) {}
+function loadWrong() {
+  const raw = ls(ekey(K.wrong), {});
+  if (Array.isArray(raw)) {
+    const map = {};
+    raw.forEach((id) => { if (id != null) map[id] = { miss: 1, streak: 0, last: 0 }; });
+    save(ekey(K.wrong), map);
+    return map;
   }
-  // 상위 N개 약한 자모 [{jamo,count}]
-  function topWeak(n) {
-    var s = weakStore(), arr = [];
-    for (var k in s) if (s.hasOwnProperty(k)) arr.push({ jamo: k, count: s[k] });
-    arr.sort(function (a, b) { return b.count - a.count; });
-    return arr.slice(0, n || 5);
-  }
-  // 이번 판에서 틀린 자모(세션 한정) — 완료 카드 표시용
-  function sessionWeak(n) {
-    if (!state || !state.weakSession) return [];
-    var s = state.weakSession, arr = [];
-    for (var k in s) if (s.hasOwnProperty(k)) arr.push({ jamo: k, count: s[k] });
-    arr.sort(function (a, b) { return b.count - a.count; });
-    return arr.slice(0, n || 5);
-  }
+  return (raw && typeof raw === 'object') ? raw : {};
+}
+function wrongIds() { return Object.keys(loadWrong()); }
+function wrongCount() { return wrongIds().length; }
+function addWrong(id) {
+  const w = loadWrong();
+  const cur = w[id] || { miss: 0, streak: 0, last: 0 };
+  cur.miss = (cur.miss || 0) + 1; cur.streak = 0; cur.last = Date.now();
+  w[id] = cur; save(ekey(K.wrong), w);
+}
+function removeWrong(id) {
+  // 정답 1회: streak 증가, 연속 2회면 졸업(제거).
+  const w = loadWrong();
+  const cur = w[id];
+  if (!cur) return;
+  cur.streak = (cur.streak || 0) + 1; cur.last = Date.now();
+  if (cur.streak >= 2) delete w[id]; else w[id] = cur;
+  save(ekey(K.wrong), w);
+}
+/* F: 문항별 삭제 — 숙련도와 무관하게 원장에서 즉시 제거 */
+function deleteWrong(id) {
+  const w = loadWrong();
+  if (!(id in w)) return;
+  delete w[id];
+  save(ekey(K.wrong), w);
+}
 
-  // ===== 유틸 =====
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function clip(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+/* ---------------------------------------------------------------------
+   F: 오답노트 카드 — 답을 가리고 실제 문제처럼 다시 푼다.
+   - 보기는 카드마다 섞어서 보여주고(판정은 원본 인덱스), 고르는 즉시 채점.
+   - 채점 결과는 학습 통계·오답 원장(miss/streak)에 그대로 반영.
+   - 틀리면 '다시 풀기'로 그 자리에서 재도전, 맞히면 졸업 여부를 카드에 표시.
+   --------------------------------------------------------------------- */
+function wrongMetaHtml(meta) {
+  const miss = (meta && meta.miss) || 0;
+  const almost = ((meta && meta.streak) || 0) >= 1;
+  return `<span class="wrong-badge">${t('wrong.miss', miss)}</span>` +
+    (almost ? `<span class="wrong-almost">${t('wrong.almost')}</span>` : '');
+}
+function wrongCard(q) {
+  const el = document.createElement('div');
+  el.className = 'review-item wrong-card';
+  el.innerHTML = `<div class="wrong-meta"><span class="wrong-meta__badges"></span>
+      <button type="button" class="wrong-del" title="${t('wrong.del')}" aria-label="${t('wrong.del')}">✕</button></div>
+    <div class="review-item__q">${questionHtml(q, false)}</div>
+    <div class="choices wrong-card__choices"></div>
+    <div class="feedback hidden"></div>
+    <div class="wrong-card__actions hidden"><button type="button" class="btn btn--ghost wrong-retry">${t('wrong.retry')}</button></div>`;
 
-  // 인라인 SVG 아이콘 세트(단색 stroke) — 이모지 대체
-  var ICONS = {
-    star: '<path d="M12 3.5l2.5 5.3 5.8.8-4.2 4 1 5.7L12 16.6 6.9 19.3l1-5.7-4.2-4 5.8-.8Z"/>',
-    target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".6" fill="currentColor" stroke="none"/>',
-    sound: '<path d="M4 9v6h4l5 4V5L8 9Z"/><path d="M16 8.5a5 5 0 0 1 0 7"/>',
-    mute: '<path d="M4 9v6h4l5 4V5L8 9Z"/><path d="M16 9.5l4 5M20 9.5l-4 5"/>'
-  };
-  function iconSvg(name, cls) {
-    return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
-  }
+  const badges = el.querySelector('.wrong-meta__badges');
+  const cwrap = el.querySelector('.wrong-card__choices');
+  const fb = el.querySelector('.feedback');
+  const actions = el.querySelector('.wrong-card__actions');
+  const syncBadges = () => { badges.innerHTML = wrongMetaHtml(loadWrong()[q.id]); };
 
-  // ===== 언어 =====
-  function setLang(l) {
-    if (!LANG_NAME[l]) return;
-    lang = l;
-    localStorage.setItem('typing_lang', l);
-    try { localStorage.setItem('nq_lang', JSON.stringify(l)); } catch (e) {} // 귀화앱과 동기화
-    applyI18n();
-    if (!$('#view-list').classList.contains('hidden')) goList(state.baseMode || state.mode);
-    else if (!$('#view-practice').classList.contains('hidden')) {
-      if (state.kind === 'free') startFreewrite(state.idx);
-      else if (state.ephemeral) { /* 보충 드릴은 언어 바꿔도 그대로 두기 위해 라벨만 갱신 */ $('#pracTitle').textContent = t('weak.pracTitle'); }
-      else startPractice(state.mode, state.idx);
-    }
-  }
-
-  function applyI18n() {
-    document.documentElement.lang = lang;
-    $$('[data-i18n]').forEach(function (el) { el.textContent = t(el.getAttribute('data-i18n')); });
-    var lbn = $('#langBtnName'); if (lbn) lbn.textContent = LANG_NAME[lang];
-    updateSoundToggle();
-    // 홈이 보이는 상태면 배지·요약도 갱신
-    if ($('#view-home') && !$('#view-home').classList.contains('hidden')) renderHome();
-  }
-
-  // 언어 선택 picker (귀화앱 방식)
-  function buildPicker() {
-    var box = $('#langOpts'); box.innerHTML = '';
-    LANG_ORDER.forEach(function (l) {
-      var b = document.createElement('button');
-      b.className = 'lang-opt' + (l === lang ? ' is-active' : '');
+  function ask() {
+    el.classList.remove('is-graduated');
+    fb.classList.add('hidden');
+    actions.classList.add('hidden');
+    cwrap.innerHTML = '';
+    syncBadges();
+    const order = shuffle(q.choices.map((_, k) => k));   // 표시위치 → 원본인덱스
+    order.forEach((origIdx, pos) => {
+      const b = document.createElement('button');
       b.type = 'button';
-      b.innerHTML = '<span class="lang-opt__flag">' + LANG_FLAG[l] + '</span><span class="lang-opt__name">' + esc(LANG_NAME[l]) + '</span>';
-      b.addEventListener('click', function () { closePicker(); setLang(l); });
-      box.appendChild(b);
+      b.className = 'choice';
+      b.innerHTML = `<span class="choice__num">${NUM[pos]}</span><span>${bi(q.choices[origIdx], glc(q, origIdx))}</span>`;
+      b.addEventListener('click', () => grade(order, origIdx));
+      cwrap.appendChild(b);
     });
   }
-  function openPicker() { buildPicker(); $('#langPicker').classList.remove('hidden'); }
-  function closePicker() { $('#langPicker').classList.add('hidden'); }
 
-  // ===== A4: 첫 실행 온보딩(1장) =====
-  function onboardSeen() { try { return localStorage.getItem('typing_onboard_v1') === '1'; } catch (e) { return false; } }
-  function markOnboardSeen() { try { localStorage.setItem('typing_onboard_v1', '1'); } catch (e) {} }
-  function renderOnboardCard() {
-    var c = $('#onboardCard');
-    c.innerHTML =
-      '<div class="onboard__eyebrow">' + esc(t('ob.eyebrow')) + '</div>' +
-      '<h2 class="onboard__title">' + esc(t('ob.title')) + '</h2>' +
-      '<div class="onboard__step"><span class="onboard__num">1</span><div class="onboard__txt">' + t('ob.s1') + '</div></div>' +
-      '<div class="onboard__step"><span class="onboard__num">2</span><div class="onboard__txt">' +
-      esc(t('ob.s2')) + '“가”' + esc(t('ob.s2b')) + '“ㄱ, ㅏ”' + esc(t('ob.s2c')) +
-      '<br><span class="onboard__demo">가 <span class="eq">=</span> ㄱ <span class="plus">+</span> ㅏ</span>' +
-      '</div></div>' +
-      '<div class="onboard__step"><span class="onboard__num">3</span><div class="onboard__txt">' + t('ob.s3') + '</div></div>' +
-      '<button class="btn btn--primary onboard__btn" id="onboardStart">' + esc(t('ob.start')) + '</button>';
-    $('#onboardStart').addEventListener('click', function () {
-      markOnboardSeen();
-      $('#onboard').classList.add('hidden');
+  function grade(order, chosen) {
+    const ok = chosen === q.answer;
+    recordAnswer(q, ok);
+    if (ok) removeWrong(q.id); else addWrong(q.id);
+    const graduated = ok && !(q.id in loadWrong());
+    cwrap.querySelectorAll('.choice').forEach((b, pos) => {
+      b.disabled = true;
+      const orig = order[pos];
+      if (orig === q.answer) b.classList.add('is-correct');
+      else if (orig === chosen) b.classList.add('is-wrong');
     });
-  }
-  function maybeShowOnboarding() {
-    if (onboardSeen()) return;
-    renderOnboardCard();
-    $('#onboard').classList.remove('hidden');
-  }
-
-  // ===== 딥링크 (#모드/번호) =====
-  async function routeFromHash() {
-    var m = (location.hash || '').replace(/^#/, '').split('/');
-    var mode = m[0], idx = parseInt(m[1], 10);
-    if (MODES[mode]) {
-      await requireMembership(function () {
-        if (idx >= 0 && idx < MODES[mode].items.length) startPractice(mode, idx);
-      });
-      return true;
-    }
-    return false;
-  }
-
-  // ===== 이벤트 =====
-  function bind() {
-    $('#homeBtn').addEventListener('click', goHome);
-    $('#langBtn').addEventListener('click', openPicker);
-    $('#langPicker').addEventListener('click', function (e) { if (e.target === this) closePicker(); });
-    $$('.mode-card').forEach(function (c) {
-      c.addEventListener('click', function () {
-        var mode = c.dataset.mode;
-        requireMembership(function () { goList(mode); });
-      });
-    });
-    $$('[data-go]').forEach(function (b) { b.addEventListener('click', function () { if (b.dataset.go === 'home') goHome(); }); });
-    $('#pracBack').addEventListener('click', function () { stopTimer(); goList(state.baseMode || state.mode); });
-    var stog = $('#soundToggle'); if (stog) stog.addEventListener('click', toggleSound);
-    var fwb = $('#fwDone'); if (fwb) fwb.addEventListener('click', function () { if (state && state.kind === 'free' && !state.finished) finishFreewrite(null); });
-  }
-
-  // ===== 초기화 =====
-  function init() {
-    buildKeyboard();
-    applyI18n();
-    bindMemberUi();
-    bind();
+    const ansPos = order.indexOf(q.answer);
+    const head = ok ? t('fb.correct') : t('fb.wrong', NUM[ansPos] + ' ' + q.choices[q.answer]);
+    fb.className = 'feedback' + (ok ? '' : ' is-wrong');
+    fb.innerHTML = `<strong>${head}</strong>${bi(renumber(q.explanation || '', order), renumber(gl(q, 'explanation'), order))}` +
+      (graduated ? `<div class="wrong-card__grad">${t('wrong.grad')}</div>` : '');
+    fb.classList.remove('hidden');
+    if (graduated) { el.classList.add('is-graduated'); badges.innerHTML = ''; }
+    else { syncBadges(); actions.classList.toggle('hidden', ok); }
     renderHome();
-    show('home');
-    if (window.GwiwhaMembership) window.GwiwhaMembership.init().then(function () {});
-    var routed = location.hash ? routeFromHash() : false;
-    if (!routed) maybeShowOnboarding(); // 딥링크 진입 시엔 온보딩 생략
+    $('startWrongBtn').classList.toggle('hidden', wrongSolvable().length === 0);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-})();
+
+  el.querySelector('.wrong-retry').addEventListener('click', ask);
+  el.querySelector('.wrong-del').addEventListener('click', () => {
+    if (!confirm(t('wrong.confirmDel'))) return;
+    deleteWrong(q.id);
+    el.remove();
+    toast(t('wrong.deleted'));
+    renderHome();
+    if (!$('wrongList').children.length) renderWrong(); else $('startWrongBtn').classList.toggle('hidden', wrongSolvable().length === 0);
+  });
+
+  ask();
+  return el;
+}
+/* 현재 트랙에서 다시 풀 수 있는 오답 문항(문항은행에 살아 있고 같은 시험 풀인 것만) */
+function wrongSolvable() {
+  const w = loadWrong();
+  return Object.keys(w).map((id) => BANK.find((q) => q.id === id)).filter((q) => q && inExam(q));
+}
+function renderWrong() {
+  const list = wrongSolvable();
+  $('startWrongBtn').classList.toggle('hidden', list.length === 0);
+  const rl = $('wrongList'); rl.innerHTML = '';
+  if (!list.length) { rl.innerHTML = `<div class="empty">${t('wrong.empty')}</div>`; return; }
+  // 오답 원장에는 객관식만 쌓이지만, 옛 데이터에 작문·구술이 남아 있으면 기존 리뷰 카드로 표시한다.
+  list.forEach((q) => rl.appendChild(q.type === 'mc' ? wrongCard(q) : reviewItem(q, null)));
+}
+
+/* =====================================================================
+   G: 듣고 말하기 — 브라우저 음성합성으로 대본을 읽어 준다.
+   실제 시험은 음성을 듣고 답하므로, 대본은 기본으로 가려 두고 답한 뒤 확인하게 한다.
+   ===================================================================== */
+const TTS = window.speechSynthesis || null;
+
+/* 애플 기기에는 Eddy·Flo·Grandma·Rocko 같은 '캐릭터 음성'이 언어마다 깔려 있다.
+   일부러 만화처럼 들리게 만든 것이라 학습용으로는 못 쓴다.
+   getVoices() 로 그냥 첫 번째 한국어 음성을 고르면 이것들이 걸려서
+   외계인처럼 들린다. 정식 음성(애플 Yuna, 윈도우 Heami, 안드로이드 Google)을 먼저 찾는다. */
+const TTS_NOVELTY = /^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|bells|boing|bubbles|cellos|jester|organ|superstar|trinoids|whisper|wobble|zarvox|albert|bad news|good news|bahh|deranged|hysterical|junior|kathy|princess|ralph)\b/i;
+/* 음성 품질에 점수를 매겨 가장 좋은 것을 고른다.
+   기기에 기본으로 깔린 것은 '압축(compact)' 판이라 기계음이 난다.
+   사용자가 시스템 설정에서 고품질 판을 내려받으면 이름에 Enhanced/Premium 이 붙는데,
+   그때 자동으로 그쪽을 쓰도록 순위를 매긴다. */
+function ttsScore(v) {
+  const n = v.name;
+  let s = 0;
+  if (/premium|siri/i.test(n)) s += 100;          // 가장 자연스러움
+  else if (/enhanced|natural|neural/i.test(n)) s += 80;
+  if (/google|microsoft/i.test(n)) s += 40;        // 안드로이드·윈도우의 정식 음성
+  if (/yuna|heami|sunhi/i.test(n)) s += 20;        // 각 플랫폼의 기본 한국어 음성
+  if (v.localService) s += 5;                      // 오프라인에서도 되는 쪽을 살짝 우대
+  return s;
+}
+
+let ttsVoice = null;
+function pickKoVoice() {
+  if (!TTS) return null;
+  const all = TTS.getVoices().filter((v) => /^ko/i.test(v.lang));
+  if (!all.length) return null;
+  const plain = all.filter((v) => !TTS_NOVELTY.test(v.name.replace(/\s*\(.*\)$/, '')));
+  const pool = plain.length ? plain : all;   // 전부 캐릭터뿐이면 어쩔 수 없이 그중에서
+  return pool.slice().sort((a, b) => ttsScore(b) - ttsScore(a))[0];
+}
+/* 음성 목록은 비동기로 채워진다. 페이지가 막 열렸을 때 getVoices() 는 빈 배열일 수 있어
+   그 상태로 고르면 음성이 안 잡히고 기기 기본 음성(중국어일 수도 있다)으로 한국어를 읽는다. */
+if (TTS) {
+  ttsVoice = pickKoVoice();
+  TTS.addEventListener('voiceschanged', () => { ttsVoice = pickKoVoice(); });
+}
+
+/* 소리로 읽을 때는 화면용 표시를 걷어낸다.
+   <br> 를 그대로 넘기면 '비 아르' 처럼 읽히고, 대화 표시 '가:' 는 '가 콜론' 이 된다.
+   화면에는 그대로 보여 주고 읽을 때만 다듬는다. */
+function speakable(text) {
+  return String(text == null ? '' : text)
+    .replace(/<br\s*\/?>/gi, ' ')       // 줄바꿈 태그는 잠깐 쉬는 자리로
+    .replace(/<[^>]*>/g, '')            // 나머지 태그 제거
+    .replace(/(^|\s)([가나다라])\s*:\s*/g, '$1')   // 대화 화자 표시 '가:' 제거
+    .replace(/[\s　]+/g, ' ')
+    .trim();
+}
+
+function speak(text, onEnd) {
+  if (!TTS) { onEnd && onEnd(); return false; }
+  const say = speakable(text);
+  if (!say) { onEnd && onEnd(); return false; }
+  TTS.cancel();
+  if (!ttsVoice) ttsVoice = pickKoVoice();   // 첫 재생 때 아직 안 잡혔으면 다시 시도
+  const u = new SpeechSynthesisUtterance(say);
+  u.lang = 'ko-KR';
+  u.rate = 0.92;   // 초급 학습자가 따라올 수 있는 속도
+  if (ttsVoice) u.voice = ttsVoice;
+  u.onend = u.onerror = () => onEnd && onEnd();
+  TTS.speak(u);
+  return true;
+}
+function stopSpeak() { if (TTS) TTS.cancel(); }
+function hasListen(q) { return !!(q && q.listen); }
+function listenCardHtml(q) {
+  return `<div class="listen-card__head">${t('listen.head')}</div>
+    <div class="listen-card__btns">
+      <button type="button" class="listen-play">${t('listen.play')}</button>
+      <button type="button" class="listen-script">${t('listen.script')}</button>
+    </div>
+    <div class="listen-card__hint">${TTS ? t('listen.hint') : t('listen.no')}</div>
+    <div class="listen-card__text hidden">${bi(q.listen, gl(q, 'listen'))}</div>`;
+}
+function wireListen(el, q) {
+  const play = el.querySelector('.listen-play');
+  const sc = el.querySelector('.listen-script');
+  const tx = el.querySelector('.listen-card__text');
+  let playing = false, heard = false;
+  const idle = () => { playing = false; play.textContent = heard ? t('listen.replay') : t('listen.play'); };
+  play.addEventListener('click', () => {
+    if (playing) { stopSpeak(); idle(); return; }
+    playing = true; heard = true; play.textContent = t('listen.stop');
+    if (!speak(q.listen, idle)) { tx.classList.remove('hidden'); sc.textContent = t('listen.scriptHide'); idle(); }
+  });
+  sc.addEventListener('click', () => {
+    tx.classList.toggle('hidden');
+    sc.textContent = tx.classList.contains('hidden') ? t('listen.script') : t('listen.scriptHide');
+  });
+}
+
+/* =====================================================================
+   작문 / 구술
+   ===================================================================== */
+function writingCacheKey() {
+  return activeExam + '|' + writingType;
+}
+function writingQuestionsForView() {
+  if (writingViewKey === writingCacheKey()) return writingViewList;
+  return bankFullyLoaded ? byType(writingType) : [];
+}
+async function openWritingView(type) {
+  if (type) writingType = type;
+  syncSeg();
+  writingViewKey = writingCacheKey();
+  writingViewList = await loadExerciseQuestions({ type: writingType });
+  renderWriting();
+  showView('writing');
+}
+/* E: 원고지 작성법 카드(종합평가 nat/perm 작문 전용) — 기존 guide.show/hide 접이식 패턴 재사용 */
+function wongojiCardHtml() {
+  return `<button type="button" class="writing-card__guide-toggle">${t('guide.show')}</button>
+    <div class="writing-card__guide hidden"><div class="wongoji-card__title">${t('wongoji.title')}</div>${t('wongoji.body')}</div>`;
+}
+function wireWongojiToggle(el) {
+  const tg = el.querySelector('.writing-card__guide-toggle');
+  const gd = el.querySelector('.writing-card__guide');
+  tg.addEventListener('click', () => { gd.classList.toggle('hidden'); tg.textContent = gd.classList.contains('hidden') ? t('guide.show') : t('guide.hide'); });
+}
+function renderWriting() {
+  const list = writingQuestionsForView();
+  // E: 원고지 카드는 작문 탭 + 종합평가(nat/perm)에서만, 목록 위에 한 번만 표시(문항마다 반복하지 않음)
+  const wp = $('wongojiPractice');
+  const showWongoji = writingType === 'writing' && (activeExam === 'nat' || activeExam === 'perm');
+  wp.classList.toggle('hidden', !showWongoji);
+  if (showWongoji) { wp.innerHTML = wongojiCardHtml(); wireWongojiToggle(wp); }
+  const drafts = ls(ekey(K.drafts), {});
+  const wrap = $('writingList'); wrap.innerHTML = '';
+  if (!list.length) { wrap.innerHTML = `<div class="empty">${t('writing.empty')}</div>`; return; }
+  const isOralMode = writingType === 'oral';
+  list.forEach((q) => {
+    const card = document.createElement('div');
+    card.className = 'writing-card' + (isOralMode ? ' writing-card--oral' : '');
+    const isWriting = q.type === 'writing';
+    // A6: 구술 = "가리고 말하기" — 질문 표시 → 낭독 안내 → 모범답안 보기 → 자가확인 3버튼
+    const oralSelf = isOralMode && q.model ? `
+      <div class="oral-self">
+        <span class="oral-self__label">${t('oral.selfHead')}</span>
+        <div class="oral-self__btns">
+          <button type="button" class="oral-btn" data-frac="1">${t('oral.good')}</button>
+          <button type="button" class="oral-btn" data-frac="0.5">${t('oral.mid')}</button>
+          <button type="button" class="oral-btn" data-frac="0">${t('oral.poor')}</button>
+        </div>
+      </div>` : '';
+    card.innerHTML = `
+      ${hasListen(q) ? `<div class="listen-card">${listenCardHtml(q)}</div>` : ''}
+      <div class="writing-card__q">${questionHtml(q, false)}</div>
+      ${isOralMode && !hasListen(q) ? `<div class="oral-recite">${t('oral.recite')}</div>` : ''}
+      ${isWriting ? `<textarea data-id="${q.id}" placeholder="${t('writing.draftPh')}">${drafts[q.id] || ''}</textarea>
+        <div class="writing-card__meta"><span class="writing-card__count">0${CHAR_UNIT[LANG] || '자'}</span></div>` : ''}
+      <button class="writing-card__guide-toggle">${t('guide.show')}</button>
+      <div class="writing-card__guide hidden">${bi(q.guide || '', gl(q, 'guide'))}</div>
+      ${q.model ? `<button class="writing-card__model-toggle">${isOralMode ? t('oral.reveal') : t('model.show')}</button>
+      <div class="writing-card__model hidden">${bi(q.model, gl(q, 'model'))}</div>` : ''}
+      ${oralSelf}`;
+    if (isWriting) {
+      const ta = card.querySelector('textarea'); const cnt = card.querySelector('.writing-card__count');
+      const upd = () => { const n = ta.value.length; cnt.textContent = t('count.char', n); cnt.classList.toggle('over', n > 200); };
+      ta.addEventListener('input', () => { upd(); const d = ls(ekey(K.drafts), {}); d[q.id] = ta.value; save(ekey(K.drafts), d); });
+      upd();
+    }
+    if (hasListen(q)) wireListen(card.querySelector('.listen-card'), q);
+    const tg = card.querySelector('.writing-card__guide-toggle'); const gd = card.querySelector('.writing-card__guide');
+    tg.addEventListener('click', () => { gd.classList.toggle('hidden'); tg.textContent = gd.classList.contains('hidden') ? t('guide.show') : t('guide.hide'); });
+    const mtg = card.querySelector('.writing-card__model-toggle');
+    if (mtg) {
+      const md = card.querySelector('.writing-card__model');
+      const showLbl = isOralMode ? t('oral.reveal') : t('model.show');
+      const hideLbl = isOralMode ? t('oral.hideModel') : t('model.hide');
+      mtg.addEventListener('click', () => { md.classList.toggle('hidden'); mtg.textContent = md.classList.contains('hidden') ? showLbl : hideLbl; });
+    }
+    // A6: 자가확인 3버튼 → 통계에 기록
+    card.querySelectorAll('.oral-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        card.querySelectorAll('.oral-btn').forEach((b) => b.classList.toggle('is-on', b === btn));
+        recordOral(q, parseFloat(btn.dataset.frac));
+        toast(t('oral.saved'));
+      });
+    });
+    wrap.appendChild(card);
+  });
+}
+/* A6: 구술 자가확인 결과를 통계에 기록(잘함=정답, 보통=반영 부분정답, 부족=오답 취급) */
+function recordOral(q, frac) {
+  const s = ls(ekey(K.stats), { total: 0, correct: 0, cat: {} });
+  const ok = frac >= 1;
+  s.total++; if (ok) s.correct++;
+  const cat = q.category || '구술';
+  s.cat[cat] = s.cat[cat] || { t: 0, c: 0 };
+  s.cat[cat].t++; if (ok) s.cat[cat].c++;
+  save(ekey(K.stats), s);
+}
+
+/* =====================================================================
+   통계
+   ===================================================================== */
+function recordAnswer(q, ok) {
+  const s = ls(ekey(K.stats), { total: 0, correct: 0, cat: {} });
+  s.total++; if (ok) s.correct++;
+  s.cat[q.category] = s.cat[q.category] || { t: 0, c: 0 };
+  s.cat[q.category].t++; if (ok) s.cat[q.category].c++;
+  save(ekey(K.stats), s);
+}
+function renderStats() {
+  const s = ls(ekey(K.stats), { total: 0, correct: 0, cat: {} });
+  const acc = s.total ? Math.round((s.correct / s.total) * 100) : 0;
+  $('statsBox').innerHTML = `
+    <div class="stat"><div class="stat__num">${s.total}</div><div class="stat__label">${t('stats.total')}</div></div>
+    <div class="stat"><div class="stat__num">${acc}%</div><div class="stat__label">${t('stats.acc')}</div></div>`;
+  // 영역별 정답률 막대 + "이 영역만 연습" 버튼(해당 영역에 MC 문항이 있을 때만)
+  const mcCats = new Set(
+    bankFullyLoaded
+      ? mcOnly().map((q) => q.category)
+      : (catalogExam().categories || []).filter((c) => c.mc).map((c) => c.category)
+  );
+  const hl = $('historyList');
+  hl.innerHTML = '';
+  const catKeys = sortCats(Object.keys(s.cat));
+  if (catKeys.length) {
+    const cb = document.createElement('div');
+    cb.className = 'cat-breakdown cat-breakdown--stats';
+    catKeys.forEach((c) => {
+      const { t: tt, c: cc } = s.cat[c]; const p = tt ? Math.round((cc / tt) * 100) : 0;
+      const row = document.createElement('div'); row.className = 'cat-row';
+      const canPractice = mcCats.has(c);
+      row.innerHTML =
+        `<span class="cat-row__name">${catName(c)}</span>` +
+        `<span class="cat-row__bar"><span style="width:${p}%"></span></span>` +
+        `<span class="cat-row__val">${p}%</span>` +
+        (canPractice ? `<button class="cat-row__practice" type="button">${t('stats.practiceCat')}</button>` : '');
+      const btn = row.querySelector('.cat-row__practice');
+      if (btn) btn.addEventListener('click', () => practiceCategory(c));
+      cb.appendChild(row);
+    });
+    hl.appendChild(cb);
+  }
+  const hist = ls(ekey(K.history), []);
+  if (!hist.length) { hl.insertAdjacentHTML('beforeend', `<div class="empty">${t('stats.noHistory')}</div>`); return; }
+  hist.forEach((h) => { hl.insertAdjacentHTML('beforeend', `<div class="history-item"><span>${fmtDate(h.date)}</span><span class="history-item__score">${h.pct}${t('result.unit')} (${h.correct}/${h.total})</span></div>`); });
+}
+
+/* =====================================================================
+   이벤트
+   ===================================================================== */
+function wireEvents() {
+  $('homeBtn').addEventListener('click', () => { showView('home'); renderHome(); });
+  $('syncBtn').addEventListener('click', () => sync({ silent: false }));
+  $('langBtn').addEventListener('click', openLangPicker);
+  document.querySelectorAll('#langSplash .lang-opt').forEach((b) => b.addEventListener('click', () => chooseLang(b.dataset.lang)));
+  document.querySelectorAll('#trackSeg .seg__btn').forEach((b) => b.addEventListener('click', () => setExam(b.dataset.exam)));
+
+  const tb = $('trialBtn');
+  if (tb) tb.addEventListener('click', () => startTrialExam());
+  document.querySelectorAll('[data-go]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const go = el.dataset.go;
+      if (go === 'home') { showView('home'); renderHome(); }
+      else if (go === 'mock') showExamIntro();
+      else if (go === 'practice') { renderCategories(); showView('practice'); }
+      else if (go === 'writing') requireMembership(() => openWritingView('writing'));
+      else if (go === 'wrong') requireMembership(() => { renderWrong(); showView('wrong'); }, { loadBank: true });
+      else if (go === 'stats') { renderStats(); showView('stats'); }
+      else if (go === 'typing') requireMembership(() => { window.location.href = 'typing/'; });
+    });
+  });
+
+  // A3: 시험일 설정
+  const edi = $('examDateInput');
+  if (edi) edi.addEventListener('change', () => setExamDate(edi.value));
+  const edc = $('examDateClear');
+  if (edc) edc.addEventListener('click', clearExamDate);
+
+  $('nextBtn').addEventListener('click', nextQuestion);
+  $('prevBtn').addEventListener('click', prevQuestion);
+  $('flagBtn').addEventListener('click', toggleFlag);
+  $('navToggle').addEventListener('click', toggleNav);
+  // 화면을 돌리거나 창을 넓히면 접힘 상태를 그 폭에 맞게 되돌린다
+  /* 폭이 바뀌면 그 폭에 맞는 상태로 되돌린다. 넓어지면 펼치고, 좁아지면 접는다.
+     한쪽만 처리하면 휴대폰을 가로로 들었다가 세로로 돌렸을 때 펼쳐진 채로 남아
+     문제가 다시 화면 아래로 밀린다. */
+  let navWasNarrow = navIsNarrow();
+  window.addEventListener('resize', () => {
+    const now = navIsNarrow();
+    if (now === navWasNarrow) return;   // 경계를 넘을 때만 건드린다(사용자가 편 것을 뺏지 않는다)
+    navWasNarrow = now;
+    setNavCollapsed(now);
+  });
+  $('submitBtn').addEventListener('click', () => { if (confirm(t('confirm.submit'))) gradeMock(); });
+  $('examStartBtn').addEventListener('click', () => requireMembership(startMockExam));
+  $('resumeBanner').addEventListener('click', () => requireMembership(resumeMock, { loadBank: true }));
+  $('examResumeBtn').addEventListener('click', () => requireMembership(resumeMock, { loadBank: true }));
+  $('practiceResume').addEventListener('click', () => requireMembership(resumePractice, { loadBank: true }));
+  $('writeInput').addEventListener('input', onWriteInput);
+
+  window.addEventListener('pagehide', () => {
+    saveMockProgress();
+    savePracticeProgress();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      saveMockProgress();
+      savePracticeProgress();
+    }
+  });
+
+  $('writingSeg').querySelectorAll('.seg__btn').forEach((b) => { b.addEventListener('click', () => requireMembership(() => openWritingView(b.dataset.wt))); });
+
+  $('startWrongBtn').addEventListener('click', () => requireMembership(() => startQuiz(shuffle(wrongSolvable()), 'wrong'), { loadBank: true }));
+  $('clearWrongBtn').addEventListener('click', () => { if (confirm(t('confirm.clearWrong'))) { save(ekey(K.wrong), {}); renderWrong(); renderHome(); toast(t('toast.clearedWrong')); } });
+  $('resetStatsBtn').addEventListener('click', () => { if (confirm(t('confirm.resetStats'))) { save(ekey(K.stats), { total: 0, correct: 0, cat: {} }); save(ekey(K.history), []); renderStats(); toast(t('toast.resetStats')); } });
+}
+function syncSeg() { $('writingSeg').querySelectorAll('.seg__btn').forEach((b) => { b.classList.toggle('seg__btn--active', b.dataset.wt === writingType); }); }
+
+window.addEventListener('DOMContentLoaded', init);
