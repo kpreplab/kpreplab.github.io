@@ -1976,9 +1976,7 @@ function questionHtml(q, showNo) {
   const tr = (mode && trRaw) ? splitStem(trRaw, mode) : null;
   const no = showNo ? `<span class="question-box__no">${quiz.i + 1}</span>` : '';
   const head = (a, b) => `<div class="question-box__stem">${no}<span>${bi(a, b)}</span></div>`;
-  // 한국어와 번역의 토막 수가 어긋나면 줄이 밀리므로 나누지 않고 예전처럼 한 덩어리로 둔다
-  /* 한국어와 번역의 줄바꿈 자리가 다르면 지시문과 내용이 어긋나게 짝지어진다.
-     <br><br> 로 가른 문항은 개수가, <br> 하나로 가른 문항은 <br> 전체 개수가 같아야 한다. */
+  const box = (a, b) => `<div class="question-box__passage">${bi(a, b)}</div>`;
   /* 한국어와 번역의 줄바꿈 자리가 다르면 지시문과 내용이 어긋나게 짝지어진다.
      같은 방식으로 갈랐을 때 토막 수가 같아야 한다. */
   const marks = (t) => (mode === 'single' || mode === 'bare'
@@ -1986,9 +1984,12 @@ function questionHtml(q, showNo) {
     : mode === 'quote' ? 'Q'
     : 'D' + String(t).split(STEM_SEP).length);
   const same = !trRaw || (tr && marks(koRaw) === marks(trRaw));
-  if (!ko || !same) return head(koRaw, trRaw);
+  /* 가를 수 없는 문항(한 줄짜리 질문, 번역과 줄바꿈이 어긋나는 것)도 상자에 담는다.
+     소유자 요청: 상자가 있는 문항과 없는 문항이 섞이면 화면이 들쭉날쭉해 보인다.
+     읽는 자리를 상자가 늘 잡아 주는 편이 눈이 덜 피로하다. */
+  if (!ko || !same) return (no ? head('', '') : '') + box(koRaw, trRaw);
   let out = (ko.stem || no) ? head(ko.stem, tr ? tr.stem : '') : '';
-  out += `<div class="question-box__passage">${bi(ko.body, tr ? tr.body : '')}</div>`;
+  out += box(ko.body, tr ? tr.body : '');
   if (ko.ask) out += `<div class="question-box__ask">${bi(ko.ask, tr ? tr.ask : '')}</div>`;
   return out;
 }
