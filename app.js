@@ -1893,8 +1893,69 @@ const STEM_SEP = '<br><br>';
    3토막 60 · 4토막 1). 세 토막짜리는 '읽어라 / 지문 / 무엇을 묻는가' 순서다.
    묻는 말까지 노란 상자에 넣으면 지문의 일부처럼 보이므로 상자 밖 아래에 따로 둔다. */
 function plainLen(html) { return String(html || '').replace(/<[^>]+>/g, '').trim().length; }
-function splitStem(text) {
-  const parts = String(text || '').split(STEM_SEP);
+function plainOf(html) { return String(html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
+
+/* 지시문 끝에 붙는 말들. 이 말로 끝나는 첫 줄은 '묻는 말' 이고 그 아래가 읽을 내용이다. */
+const ASK_MARK = ['고르십시오', '고르세요', '고르시오', '답하세요', '답하시오', '답하십시오',
+                  '무엇입니까', '것을 고르', '알맞은 것', '쓰세요', '쓰십시오', '것은?'];
+function looksLikeAsk(seg) {
+  const t = plainOf(seg);
+  return !!t && ASK_MARK.some((m) => t.indexOf(m) >= 0);
+}
+/* 지시문 아래가 '(밑줄 부분은 각 보기의 마지막 서술어입니다.)' 처럼 통째로 괄호에 싸인
+   덧붙임이면 읽을 글이 아니다. 상자에 넣으면 지문인 줄 알게 된다. 은행에 5문항 있다. */
+function isSideNote(seg) {
+  const t = plainOf(seg);
+  return (t.startsWith('(') && t.endsWith(')')) || t.startsWith('※');
+}
+
+/* 어떻게 가를지는 **한국어를 보고** 정한다. 번역에도 같은 자리로 가른다.
+   번역이 스스로 판단하게 두면 안 된다 — 지시문 표시(고르십시오 …)는 한국어에만 있어서
+   중국어·베트남어·태국어는 늘 '못 가름' 이 되고, 그러면 한국어까지 상자가 사라진다. */
+const OPEN_Q = /[\u201c"]/;
+function splitMode(koRaw) {
+  const raw = String(koRaw || '');
+  if (raw.indexOf(STEM_SEP) >= 0) return 'double';
+  const at = raw.indexOf('<br>');
+  if (at >= 0) {
+    if (looksLikeAsk(raw.slice(0, at)) && !isSideNote(raw.slice(at + 4))) return 'single';
+    /* 지시문 없이 대화만 있는 문항이 111개 있다(pa-dia001 '가: … 나: …').
+       가를 지시문이 없으니 통째로 상자에 담는다. 그래야 같은 대화 문항끼리 같아 보인다. */
+    if (!looksLikeAsk(raw.slice(0, at))) return 'bare';
+  }
+  /* 한 줄 안에서 따옴표로 읽을 문장을 감싼 문항이 204개 있다
+     (kr01 '다음 빈칸에 들어갈 가장 알맞은 말은? "운동을 꾸준히 하면 건강이 ___."').
+     따옴표 앞이 지시문, 따옴표부터가 읽을 내용이다. */
+  if (splitQuote(raw)) return 'quote';
+  return null;
+}
+/* 첫 따옴표 앞을 지시문, 따옴표부터 끝까지를 내용으로 본다.
+   따옴표가 맨 앞이거나 닫히지 않으면 가르지 않는다(은행에 18문항). */
+function splitQuote(text) {
+  const raw = String(text || '');
+  const m = OPEN_Q.exec(raw);
+  if (!m || m.index === 0) return null;
+  /* 닫는 따옴표가 글 맨 끝이 아니라 가운데 있고 뒤에 묻는 말이 더 붙는 문항이 14개 있다
+     (g007 '다음 문장을 읽고 답하세요. "민수 씨는 …" 민수 씨가 …?').
+     그때는 따옴표 안이 읽을 글, 그 뒤가 묻는 말이다. */
+  const close = Math.max(raw.lastIndexOf('"'), raw.lastIndexOf('\u201d'));
+  if (close <= m.index) return null;
+  const head = raw.slice(0, m.index).trim();
+  const body = raw.slice(m.index, close + 1).trim();
+  const ask = raw.slice(close + 1).trim();
+  if (plainLen(head) < 4 || plainLen(body) < 8) return null;
+  return { stem: head, body: body, ask: ask };
+}
+function splitStem(text, mode) {
+  const raw = String(text || '');
+  if (mode === 'single') {
+    const at = raw.indexOf('<br>');
+    if (at < 0) return null;
+    return { stem: raw.slice(0, at), body: raw.slice(at + 4), ask: '' };
+  }
+  if (mode === 'bare') return { stem: '', body: raw, ask: '' };
+  if (mode === 'quote') return splitQuote(raw);
+  const parts = raw.split(STEM_SEP);
   if (parts.length < 2) return null;
   /* 거의 모든 문항이 '지시문 / 지문' 순서지만(2토막 678문항 중 669), 안내문을 먼저 놓고
      "위 안내에 따라 …는?" 으로 나중에 묻는 문항이 있다. 그대로 가르면 묻는 말이
@@ -1910,12 +1971,21 @@ function splitStem(text) {
 function questionHtml(q, showNo) {
   const koRaw = qLabel(q.q);
   const trRaw = qLabel(gl(q, 'q'));
-  const ko = splitStem(koRaw);
-  const tr = trRaw ? splitStem(trRaw) : null;
+  const mode = splitMode(koRaw);
+  const ko = mode ? splitStem(koRaw, mode) : null;
+  const tr = (mode && trRaw) ? splitStem(trRaw, mode) : null;
   const no = showNo ? `<span class="question-box__no">${quiz.i + 1}</span>` : '';
   const head = (a, b) => `<div class="question-box__stem">${no}<span>${bi(a, b)}</span></div>`;
   // 한국어와 번역의 토막 수가 어긋나면 줄이 밀리므로 나누지 않고 예전처럼 한 덩어리로 둔다
-  const same = !trRaw || (tr && koRaw.split(STEM_SEP).length === trRaw.split(STEM_SEP).length);
+  /* 한국어와 번역의 줄바꿈 자리가 다르면 지시문과 내용이 어긋나게 짝지어진다.
+     <br><br> 로 가른 문항은 개수가, <br> 하나로 가른 문항은 <br> 전체 개수가 같아야 한다. */
+  /* 한국어와 번역의 줄바꿈 자리가 다르면 지시문과 내용이 어긋나게 짝지어진다.
+     같은 방식으로 갈랐을 때 토막 수가 같아야 한다. */
+  const marks = (t) => (mode === 'single' || mode === 'bare'
+    ? 'S' + (String(t).match(/<br>/g) || []).length
+    : mode === 'quote' ? 'Q'
+    : 'D' + String(t).split(STEM_SEP).length);
+  const same = !trRaw || (tr && marks(koRaw) === marks(trRaw));
   if (!ko || !same) return head(koRaw, trRaw);
   let out = (ko.stem || no) ? head(ko.stem, tr ? tr.stem : '') : '';
   out += `<div class="question-box__passage">${bi(ko.body, tr ? tr.body : '')}</div>`;
