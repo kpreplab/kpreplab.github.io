@@ -3,26 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>귀화·영주 종합평가 + 사회통합 사전평가 연습 | 문제 3,280개 · 4개 언어</title>
-  <meta name="description" content="사회통합프로그램(KIIP) 귀화용·영주용 종합평가와 사전평가를 실제 시험처럼 연습합니다. 객관식·작문·구술 문제 3,280개, 한국어·中文·Tiếng Việt·ภาษาไทย 번역, 작문 자동 채점, 오답노트와 학습통계. 설치해서 앱처럼 쓸 수 있습니다." />
-  <meta name="keywords" content="귀화시험, 종합평가, 사회통합프로그램, KIIP, 사전평가, 영주용 종합평가, KINAT, 귀화 필기시험, 작문형, 구술시험, 归化考试, 社会统合项目" />
-  <link rel="canonical" href="https://kpreplab.github.io/" />
-
-  <!-- 카카오톡·위챗·페이스북 등에 공유했을 때 보이는 미리보기 -->
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="귀화·영주 종합평가 연습" />
-  <meta property="og:url" content="https://kpreplab.github.io/" />
-  <meta property="og:title" content="귀화·영주 종합평가 + 사전평가 연습 · 문제 3,280개" />
-  <meta property="og:description" content="객관식·작문·구술 3,280문제를 실제 시험처럼. 4개 언어 번역, 작문 자동 채점, 오답노트." />
-  <meta property="og:image" content="https://kpreplab.github.io/icon-512.png" />
-  <meta property="og:locale" content="ko_KR" />
-  <meta property="og:locale:alternate" content="zh_CN" />
-  <meta property="og:locale:alternate" content="vi_VN" />
-  <meta property="og:locale:alternate" content="th_TH" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="귀화·영주 종합평가 + 사전평가 연습 · 문제 3,280개" />
-  <meta name="twitter:description" content="객관식·작문·구술 3,280문제를 실제 시험처럼. 4개 언어 번역, 작문 자동 채점." />
-  <meta name="twitter:image" content="https://kpreplab.github.io/icon-512.png" />
+  <title>한글 타자 연습 · 종합평가 작문</title>
+  <meta name="description" content="한글 자판 자리연습부터 종합평가 작문 모범답안 따라 치기까지 · 두벌식 타자 연습 PWA" />
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest" />
@@ -31,7 +13,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="귀화시험" />
+  <meta name="apple-mobile-web-app-title" content="한글타자" />
 
   <!-- Pretendard(모던 산세리프): 온라인이면 로드, 오프라인이면 시스템 폰트 폴백(무해) -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -39,251 +21,148 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- 공유 비밀번호 잠금: 링크와 함께 비밀번호를 받은 사람만 들어온다 -->
-
-  <!-- 첫 실행: 국가/언어(주석) 선택 -->
-  <div id="langSplash" class="lang-splash hidden" role="dialog" aria-modal="true" aria-label="Select language">
-    <div class="lang-splash__card">
-      <div class="lang-splash__flag">🇰🇷</div>
-      <h2 class="lang-splash__title">언어 선택 · Language</h2>
-      <p class="lang-splash__desc">문제와 함께 볼 모국어 주석을 고르세요.<br>Choose the language for in-question notes.</p>
-      <div class="lang-splash__opts">
-        <button class="lang-opt" data-lang="ko"><span class="lang-opt__flag">🇰🇷</span><span class="lang-opt__name">한국어</span><span class="lang-opt__sub">주석 없음</span></button>
-        <button class="lang-opt" data-lang="zh"><span class="lang-opt__flag">🇨🇳</span><span class="lang-opt__name">中文</span><span class="lang-opt__sub">中文注释</span></button>
-        <button class="lang-opt" data-lang="vi"><span class="lang-opt__flag">🇻🇳</span><span class="lang-opt__name">Tiếng Việt</span><span class="lang-opt__sub">Chú thích tiếng Việt</span></button>
-        <button class="lang-opt" data-lang="th"><span class="lang-opt__flag">🇹🇭</span><span class="lang-opt__name">ภาษาไทย</span><span class="lang-opt__sub">คำอธิบายภาษาไทย</span></button>
-      </div>
-    </div>
-  </div>
 
   <header class="appbar">
-    <button id="homeBtn" class="appbar__home" aria-label="홈"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></button>
-    <h1 class="appbar__title" data-i18n="app.title">귀화시험 연습</h1>
-    <button id="langBtn" class="appbar__lang" title="Select Language" aria-label="Select Language">🇰🇷</button>
-    <div id="memberStatus" class="appbar__member"></div>
-    <button id="syncBtn" class="appbar__sync" title="문제 동기화">
-      <span class="appbar__sync-icon">⟳</span><span class="appbar__sync-text" data-i18n="app.sync">동기화</span>
+    <button id="homeBtn" class="appbar__home" aria-label="홈" title="홈">
+      <svg class="appbar__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+    </button>
+    <h1 class="appbar__title" data-i18n="app.title">한글 타자 연습</h1>
+    <a class="appbar__back" href="../" title="문제 풀기로">
+      <svg class="appbar__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5Z"/><path d="M13 4h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13Z"/></svg>
+      <span data-i18n="app.toQuiz">문제풀기</span>
+    </a>
+    <button id="langBtn" class="appbar__lang" title="언어 / 语言 / Ngôn ngữ / ภาษา" aria-label="언어 선택">
+      <svg class="appbar__ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>
+      <span class="appbar__lang-name" id="langBtnName">한국어</span>
     </button>
   </header>
 
+  <!-- 언어 선택 -->
+  <div id="langPicker" class="lang-picker hidden" role="dialog" aria-modal="true" aria-label="Select language">
+    <div class="lang-picker__card">
+      <div class="lang-picker__title">언어 선택 · Language</div>
+      <div class="lang-picker__opts" id="langOpts"></div>
+    </div>
+  </div>
+
+  <!-- 첫 실행 온보딩 (1장) -->
+  <div id="onboard" class="onboard hidden" role="dialog" aria-modal="true" aria-label="시작 안내">
+    <div class="onboard__card" id="onboardCard"></div>
+  </div>
+
   <main id="app">
 
-    <!-- 홈 -->
+    <!-- 홈: 모드 선택 -->
     <section id="view-home" class="view">
-      <!-- 시험 트랙 전환: 귀화 종합평가 / 사회통합 사전평가 -->
-      <div class="seg track-seg" id="trackSeg">
-        <button class="seg__btn seg__btn--active" data-exam="pre" data-i18n="track.pre">사회통합 사전평가</button>
-        <button class="seg__btn" data-exam="perm" data-i18n="track.perm">영주 종합평가</button>
-        <button class="seg__btn" data-exam="nat" data-i18n="track.nat">귀화 종합평가</button>
-      </div>
+      <p class="lead" data-i18n="home.lead">한글 자판이 손에 익을 때까지, 한 단계씩 천천히 연습해요.</p>
 
-      <!-- 처음 온 사람에게 이 앱이 다른 연습 앱과 무엇이 다른지 먼저 보여 준다.
-           회원이 되면 사라진다(이미 아는 사람에게는 자리만 차지한다). -->
-      <section class="intro-card hidden" id="introCard">
-        <h2 class="intro-card__title" id="introTitle"></h2>
-        <p class="intro-card__counts" id="introCounts"></p>
-        <ul class="intro-card__list" id="introList"></ul>
-        <button id="trialBtn" class="btn btn--primary intro-card__try hidden" type="button"></button>
-      </section>
+      <!-- 미니 요약 스트립 (기록 있을 때만) -->
+      <div id="miniStrip" class="mini-strip hidden"></div>
 
-      <div class="sync-status" id="syncStatus">문제를 불러오는 중…</div>
+      <p class="lead-sub">
+        <svg class="lead-sub__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.3 1 2.5h6c0-1.2.3-1.8 1-2.5A6 6 0 0 0 12 3Z"/></svg>
+        <span data-i18n="home.imeTip">컴퓨터 입력기를 한글로 바꾸지 않아도 됩니다. 화면이 알려주는 키를 그대로 누르세요.</span>
+      </p>
 
-      <!-- 시험일 카운트다운·페이싱 (트랙별 저장) -->
-      <div class="examdate-card" id="examDateCard">
-        <div class="examdate-card__top">
-          <span class="examdate-card__title" data-i18n="examdate.title">시험일 설정</span>
-          <span class="examdate-card__controls">
-            <input type="date" id="examDateInput" class="examdate-input" />
-            <button type="button" id="examDateClear" class="examdate-clear hidden" data-i18n="examdate.clear">지우기</button>
+      <div class="mode-grid">
+        <button class="mode-card" data-mode="position">
+          <span class="mode-card__icon">
+            <svg class="mode-card__ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="1.5"/><path d="M6 9.5h.01M9 9.5h.01M12 9.5h.01M15 9.5h.01M18 9.5h.01M6.5 13.5h11"/></svg>
           </span>
-        </div>
-        <div class="examdate-card__info" id="examDateInfo"></div>
-      </div>
-
-      <button id="resumeBanner" class="resume-banner hidden"></button>
-
-      <div class="card-grid">
-        <button class="menu-card menu-card--primary" data-go="mock">
-          <span class="menu-card__eyebrow">MOCK EXAM</span>
-          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H16l4 4v12.5A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5z"/><path d="M15 3v4h4"/><path d="M8 12h6M8 16h4"/></svg></span>
-          <span class="menu-card__title" data-i18n="home.mock.t">모의고사 보기</span>
-          <span class="menu-card__sub" data-i18n="home.mock.s">실제 시험처럼 풀기</span>
+          <span class="mode-card__title" data-i18n="mode.position.t">자리 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.position.s">ㅎ ㅁ ㅂ ㅕ · 자판 위치와 손가락 익히기</span>
+          <span class="mode-card__badge hidden" data-badge="position"></span>
         </button>
-        <button class="menu-card" data-go="practice">
-          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v15H5.5C4.7 19 4 18.3 4 17.5z"/><path d="M20 5.5C20 4.7 19.3 4 18.5 4H13v15h5.5c.8 0 1.5-.7 1.5-1.5z"/></svg></span>
-          <span class="menu-card__title" data-i18n="home.practice.t">영역별 연습</span>
-          <span class="menu-card__sub" data-i18n="home.practice.s">9개 영역별로 풀기</span>
+        <button class="mode-card" data-mode="syllable">
+          <span class="mode-card__icon"><span class="mode-card__ico-text">가</span></span>
+          <span class="mode-card__title" data-i18n="mode.syllable.t">낱글자 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.syllable.s">자음+모음을 모아 한 글자씩 완성</span>
+          <span class="mode-card__badge hidden" data-badge="syllable"></span>
         </button>
-        <button class="menu-card" data-go="writing">
-          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6"/><path d="M4 20l1.2-4.2L15.5 5.5a2 2 0 0 1 2.8 0l.2.2a2 2 0 0 1 0 2.8L8.2 18.8z"/><path d="M4 20l4-1"/></svg></span>
-          <span class="menu-card__title" data-i18n="home.writing.t">작문·구술 연습</span>
-          <span class="menu-card__sub" data-i18n="home.writing.s">주제별 말하기·쓰기</span>
+        <button class="mode-card" data-mode="word">
+          <span class="mode-card__icon"><span class="mode-card__ico-text">낱</span></span>
+          <span class="mode-card__title" data-i18n="mode.word.t">낱말 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.word.s">비슷한 낱말을 빠르게 구별하며 치기</span>
+          <span class="mode-card__badge hidden" data-badge="word"></span>
         </button>
-        <button class="menu-card" data-go="typing">
-          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="1.8"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg></span>
-          <span class="menu-card__title" data-i18n="home.typing.t">타자 연습</span>
-          <span class="menu-card__sub" data-i18n="home.typing.s">작문 모범답안 따라 치기</span>
+        <button class="mode-card" data-mode="short">
+          <span class="mode-card__icon">
+            <svg class="mode-card__ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg>
+          </span>
+          <span class="mode-card__title" data-i18n="mode.short.t">단문 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.short.s">짧은 문장 따라 치기</span>
+          <span class="mode-card__badge hidden" data-badge="short"></span>
         </button>
-        <button class="menu-card" data-go="wrong">
-          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.9 4.5"/><path d="M20 5v5h-5"/></svg></span>
-          <span class="menu-card__title" data-i18n="home.wrong.t">오답 노트</span>
-          <span class="menu-card__sub" id="wrongCount">틀린 문제 0개</span>
-        </button>
-        <button class="menu-card" data-go="stats">
-          <span class="menu-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12.5" y="8" width="3" height="9"/><rect x="18" y="5" width="3" height="12" transform="translate(-4 0)"/></svg></span>
-          <span class="menu-card__title" data-i18n="home.stats.t">학습 통계</span>
-          <span class="menu-card__sub" data-i18n="home.stats.s">정답률·기록 보기</span>
+        <button class="mode-card mode-card--primary" data-mode="long">
+          <span class="mode-card__icon">
+            <svg class="mode-card__ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M14.5 4.5 18 8 8 18l-4 1 1-4Z"/><path d="M12.5 6.5 16 10"/></svg>
+          </span>
+          <span class="mode-card__title" data-i18n="mode.long.t">작문 연습</span>
+          <span class="mode-card__sub" data-i18n="mode.long.s">작문 모범답안(200자) 따라 치기</span>
+          <span class="mode-card__badge hidden" data-badge="long"></span>
         </button>
       </div>
 
-      <p class="hint" id="bankInfo"></p>
-      <footer class="app-credit" data-i18n-html="credit.html"></footer>
+      <p class="hint" data-i18n="home.hint">개인용 연습 도구 · 점수는 이 기기에만 저장됩니다.</p>
     </section>
 
-    <!-- 영역 선택(연습) -->
+    <!-- 항목/단계 선택 -->
+    <section id="view-list" class="view hidden">
+      <div class="list-head">
+        <button class="btn btn--ghost btn--sm" data-go="home">← <span data-i18n="common.home">홈</span></button>
+        <h2 class="view-title" id="listTitle">목록</h2>
+      </div>
+      <p class="view-desc" id="listDesc"></p>
+      <div id="listItems" class="select-list"></div>
+    </section>
+
+    <!-- 연습 화면 -->
     <section id="view-practice" class="view hidden">
-      <h2 class="view-title" data-i18n="practice.title">영역별 연습</h2>
-      <p class="view-desc" data-i18n="practice.desc">한 문제씩 풀고 바로 정답·해설을 확인합니다.</p>
-      <button id="practiceResume" class="resume-banner hidden"></button>
-      <!-- 난이도 고르기: 선택지가 문장인 실전형만 / 낱말인 기본형만 -->
-      <div id="diffSeg" class="seg"></div>
-      <p id="diffHint" class="view-desc diff-hint hidden"></p>
-      <div id="categoryList" class="cat-list"></div>
-    </section>
-
-    <!-- 모의고사 표지 / 유의사항 -->
-    <section id="view-examintro" class="view hidden">
-      <div class="exam-cover">
-        <p class="exam-cover__org" data-i18n="exam.org">사회통합프로그램 (KIIP)</p>
-        <h2 class="exam-cover__title" data-i18n="exam.title">귀화용 종합평가</h2>
-        <p class="exam-cover__subtitle" data-i18n="exam.subtitle">필기시험 모의고사</p>
-        <div class="exam-cover__fields">
-          <label><span data-i18n="exam.name">성 명</span><input id="examName" type="text" data-i18n-ph="exam.namePh" placeholder="이름 입력" /></label>
-          <label><span data-i18n="exam.no">수험번호</span><input id="examNo" type="text" readonly /></label>
-        </div>
-        <div class="exam-notice">
-          <h3 data-i18n="exam.noticeTitle">유의사항</h3>
-          <ol id="examNoticeList"></ol>
-        </div>
-        <button class="btn resume-cover-btn hidden" id="examResumeBtn"></button>
-        <div class="quiz-actions">
-          <button class="btn btn--ghost" data-go="home" data-i18n="common.cancel">취소</button>
-          <button class="btn btn--primary" id="examStartBtn" data-i18n="exam.start">시험 시작</button>
-        </div>
+      <div class="prac-top">
+        <button class="btn btn--ghost btn--sm" id="pracBack">← <span data-i18n="common.list">목록</span></button>
+        <span class="prac-title" id="pracTitle"></span>
       </div>
-    </section>
 
-    <!-- 퀴즈(연습/모의고사 공용) -->
-    <section id="view-quiz" class="view hidden">
-      <div class="quiz-top">
-        <span id="quizProgress" class="quiz-progress">1 / 36</span>
-        <span id="quizTimer" class="quiz-timer hidden">60:00</span>
-        <span id="quizCat" class="quiz-cat"></span>
+      <!-- 통계 -->
+      <div class="stat-bar">
+        <div class="stat"><span class="stat__label" data-i18n="stat.time">시간</span><span class="stat__val" id="statTime">0초</span></div>
+        <div class="stat"><span class="stat__label" data-i18n="stat.speed">타수</span><span class="stat__val" id="statSpeed">0</span></div>
+        <div class="stat"><span class="stat__label" data-i18n="stat.acc">정확도</span><span class="stat__val" id="statAcc">100%</span></div>
+        <div class="stat"><span class="stat__label" data-i18n="stat.miss">오타</span><span class="stat__val" id="statMiss">0</span></div>
       </div>
-      <div class="progress-bar"><div id="progressFill" class="progress-bar__fill"></div></div>
+      <div class="progress-bar"><div id="pracProgress" class="progress-bar__fill"></div></div>
 
-      <div id="examBanner" class="exam-banner hidden"></div>
+      <!-- 의미/주제 (단문·장문) -->
+      <div id="pracMeta" class="prac-meta hidden"></div>
 
-      <!-- 문항 이동표는 문제 왼쪽에 세로로 둔다. 위에 가로로 놓으면 문제가 그만큼
-           아래로 밀려 답을 고르는 데 방해가 된다. 좁은 화면에서는 위로 돌아간다. -->
-      <div class="quiz-body">
-        <aside id="questionNavigator" class="question-nav hidden" aria-label="Question navigator">
-          <button type="button" id="navToggle" class="question-nav__head" aria-expanded="true" aria-controls="questionNavGrid">
-            <strong data-i18n="nav.title">문항 이동</strong>
-            <span id="questionNavCount"></span>
-            <i class="question-nav__chev" aria-hidden="true"></i>
-          </button>
-          <div id="questionNavGrid" class="question-nav__grid"></div>
-          <ul class="question-nav__legend">
-            <li><i class="dot dot--done"></i><span data-i18n="nav.legendDone">답한 것</span></li>
-            <li><i class="dot dot--flag"></i><span data-i18n="nav.legendFlag">헷갈리는 것</span></li>
-            <li><i class="dot dot--todo"></i><span data-i18n="nav.legendTodo">안 푼 것</span></li>
-          </ul>
-        </aside>
+      <!-- 타깃 표시 -->
+      <div id="targetBox" class="target-box"></div>
 
-        <div class="quiz-main">
-          <!-- G: 듣고 말하기 재생기(사전평가 구술 listen 유형에서만, JS가 채움) -->
-          <div id="listenCard" class="listen-card hidden"></div>
-
-          <div id="questionBox" class="question-box"></div>
-          <div id="choices" class="choices"></div>
-
-          <div id="writeArea" class="write-area hidden">
-            <textarea id="writeInput" placeholder="여기에 답안을 작성하세요 (200자 이내)"></textarea>
-            <div class="write-area__meta"><span id="writeCount">0자</span><span data-i18n="writeCount.suffix"> / 200자</span></div>
-          </div>
-
-          <!-- E: 원고지 작성법 카드(종합평가 nat/perm 작문에서만, JS가 채움/토글) -->
-          <div id="wongojiCard" class="wongoji-card hidden"></div>
-
-          <div id="feedback" class="feedback hidden"></div>
+      <!-- 실전 쓰기(자유 타이핑) 입력 영역 -->
+      <div id="fwBox" class="fw-box hidden">
+        <div id="fwEcho" class="fw-echo" aria-live="polite"></div>
+        <div class="fw-gauge-wrap">
+          <div class="fw-gauge"><div id="fwGauge" class="fw-gauge__fill"></div></div>
+          <span class="fw-count"><b id="fwCount">0</b> / 200</span>
+          <button id="fwDone" class="btn btn--primary btn--sm" type="button" data-i18n="fw.showModel">완료 · 모범답안 보기</button>
         </div>
       </div>
 
-      <div class="quiz-actions">
-        <button id="flagBtn" class="btn btn--flag hidden" type="button" data-i18n="quiz.flag">헷갈림 표시</button>
-        <button id="prevBtn" class="btn btn--ghost hidden" data-i18n="quiz.prev">← 이전</button>
-        <button id="nextBtn" class="btn btn--primary" data-i18n="quiz.next">다음 →</button>
-        <button id="submitBtn" class="btn btn--primary hidden" data-i18n="quiz.submit">제출하고 채점</button>
-      </div>
-    </section>
+      <!-- 다음 키 안내 -->
+      <div class="nextkey" id="nextKey"></div>
 
-    <!-- 작문/구술 -->
-    <section id="view-writing" class="view hidden">
-      <h2 class="view-title" data-i18n="writing.title">작문·구술 연습</h2>
-      <div class="seg" id="writingSeg">
-        <button class="seg__btn seg__btn--active" data-wt="writing"><span class="seg__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6"/><path d="M4 20l1.2-4.2L15.5 5.5a2 2 0 0 1 2.8 0l.2.2a2 2 0 0 1 0 2.8L8.2 18.8z"/><path d="M4 20l4-1"/></svg></span><span data-i18n="seg.writing">작문</span></button>
-        <button class="seg__btn" data-wt="oral"><span class="seg__ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3z"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v4M9 21h6"/></svg></span><span data-i18n="seg.oral">구술</span></button>
+      <!-- 발음 듣기 토글 (자리·낱글자 전용) -->
+      <div class="prac-tools">
+        <button id="soundToggle" class="sound-toggle hidden" type="button" aria-pressed="false"></button>
       </div>
-      <!-- E: 원고지 작성법 카드(작문 탭 + 종합평가 nat/perm에서만, JS가 채움/토글) -->
-      <div id="wongojiPractice" class="wongoji-card hidden"></div>
-      <div id="writingList" class="writing-list"></div>
-    </section>
 
-    <!-- 결과 -->
-    <section id="view-result" class="view hidden">
-      <h2 class="view-title" data-i18n="result.title">채점 결과</h2>
-      <!-- 무료 체험으로 푼 시험일 때만 뜬다 (renderTrialEnd) -->
-      <div id="trialEnd" class="trial-end hidden"></div>
-      <div class="score-card">
-        <div class="score-card__num"><span id="scorePct">0</span><small id="scoreUnit" data-i18n="result.unit">점</small></div>
-        <div class="score-card__detail">
-          <div id="scoreFrac">0 / 0 정답</div>
-          <div id="scorePass" class="score-card__pass"></div>
-        </div>
+      <!-- 가상 키보드 -->
+      <div class="kbd-wrap">
+        <div id="keyboard" class="keyboard" role="group" aria-label="가상 키보드"></div>
       </div>
-      <div id="levelResult" class="level-result hidden"></div>
-      <div id="scoreBreakdown" class="score-breakdown hidden"></div>
-      <div id="catBreakdown" class="cat-breakdown"></div>
-      <h3 class="subhead" data-i18n="result.reviewHead">문제 다시보기</h3>
-      <div id="reviewList" class="review-list"></div>
-      <div class="quiz-actions">
-        <button class="btn btn--ghost" data-go="home" data-i18n="common.home">홈으로</button>
-        <button class="btn btn--ghost" id="retrySameBtn" data-i18n="result.retrySame">같은 문제로 다시 풀기</button>
-        <button class="btn btn--primary" id="retryWrongBtn" data-i18n="result.retryWrong">틀린 문제만 다시 풀기</button>
-      </div>
-    </section>
 
-    <!-- 오답노트 -->
-    <section id="view-wrong" class="view hidden">
-      <h2 class="view-title" data-i18n="wrong.title">오답 노트</h2>
-      <p class="view-desc" data-i18n-html="wrong.desc3">틀린 문제가 모입니다. 답은 가려져 있고, 보기를 고르면 그 자리에서 채점합니다. <b>두 번 연속</b> 맞히면 목록에서 졸업합니다.</p>
-      <div class="quiz-actions">
-        <button class="btn btn--primary" id="startWrongBtn" data-i18n="wrong.start">오답 문제 풀기</button>
-        <button class="btn btn--ghost" id="clearWrongBtn" data-i18n="wrong.clear">오답노트 비우기</button>
-      </div>
-      <div id="wrongList" class="review-list"></div>
-    </section>
-
-    <!-- 통계 -->
-    <section id="view-stats" class="view hidden">
-      <h2 class="view-title" data-i18n="stats.title">학습 통계</h2>
-      <div id="statsBox" class="stats-box"></div>
-      <h3 class="subhead" data-i18n="stats.recentHead">최근 모의고사 기록</h3>
-      <div id="historyList" class="history-list"></div>
-      <div class="quiz-actions">
-        <button class="btn btn--ghost" id="resetStatsBtn" data-i18n="stats.reset">통계 초기화</button>
-      </div>
+      <!-- 완료 -->
+      <div id="pracDone" class="prac-done hidden"></div>
     </section>
 
   </main>
@@ -294,42 +173,34 @@
     <div class="member-modal__card">
       <button id="memberCancelBtn" class="member-modal__close" type="button" aria-label="닫기">×</button>
       <div class="member-modal__lock">🔒</div>
-      <h2 class="member-modal__title" data-i18n="member.title">회원 전용 콘텐츠입니다.</h2>
-      <p class="member-modal__desc" data-i18n="member.desc">회원 로그인 후 이용할 수 있습니다.</p>
+      <h2 class="member-modal__title">회원 전용 콘텐츠입니다.</h2>
+      <p class="member-modal__desc">회원 로그인 후 이용할 수 있습니다.</p>
       <form id="memberOtpForm" class="member-form" autocomplete="on">
-        <label class="member-form__label" for="memberEmail" data-i18n="member.email">이메일</label>
+        <label class="member-form__label" for="memberEmail">이메일</label>
         <div class="member-form__row">
           <input id="memberEmail" class="member-form__input" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" />
-          <button id="memberSendOtpBtn" class="btn btn--primary" type="button" data-i18n="member.send">인증번호 받기</button>
+          <button id="memberSendOtpBtn" class="btn btn--primary" type="button">인증번호 받기</button>
         </div>
-        <label class="member-form__label" for="memberOtp" data-i18n="member.otp">인증번호</label>
+        <label class="member-form__label" for="memberOtp">인증번호</label>
         <div class="member-form__row">
           <input id="memberOtp" class="member-form__input" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
-          <button id="memberVerifyBtn" class="btn btn--primary" type="submit" data-i18n="member.login">로그인</button>
+          <button id="memberVerifyBtn" class="btn btn--primary" type="submit">로그인</button>
         </div>
       </form>
       <p id="memberMessage" class="member-message"></p>
-      <button id="memberLogoutBtn" class="btn btn--ghost member-logout hidden" type="button" data-i18n="member.logout">로그아웃</button>
-      <!-- 아직 회원이 아닌 사람에게 다음에 무엇을 하면 되는지 알려 준다.
-           이게 없으면 "회원이 아닙니다"에서 길이 끊긴다. -->
-      <div class="member-join">
-        <p class="member-join__q" data-i18n="member.joinQ">아직 회원이 아니신가요?</p>
-        <div class="price-box">
-          <span class="price-box__num"><span data-i18n="member.priceNum">20,000</span><span class="price-box__unit" data-i18n="member.priceUnit">원</span></span>
-          <span class="price-box__note" data-i18n="member.priceNote">한 번 결제 · 기간 제한 없음</span>
-        </div>
-        <p class="member-join__d" data-i18n="member.joinD">아래 메일로 연락 주시면 안내해 드립니다.</p>
-        <div class="member-join__row">
-          <a id="memberJoinMail" class="member-join__mail" href="mailto:ningning6146@gmail.com?subject=KIIP%20%EC%97%B0%EC%8A%B5%20%ED%9A%8C%EC%9B%90%20%EB%AC%B8%EC%9D%98">ningning6146@gmail.com</a>
-          <button id="memberJoinCopy" class="member-join__copy" type="button" data-i18n="member.joinCopy">복사</button>
-        </div>
-      </div>
+      <button id="memberLogoutBtn" class="btn btn--ghost member-logout hidden" type="button">로그아웃</button>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
-  <script src="membership.js"></script>
+  <script src="../supabase-config.js"></script>
+  <script src="../membership.js"></script>
+  <script src="hangul.js"></script>
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js'); });
+    }
+  </script>
 </body>
 </html>

@@ -62,7 +62,11 @@ git add -A && git commit -m "설명" && git push origin main
 
 ## 5. 손대지 말 것
 
-- **공유 비밀번호 잠금을 다시 넣지 않는다.** 2026-09-30 에 소유자 지시로 없앴다. 원래도 유료 콘텐츠를 지키는 장치가 아니었다 — 브라우저 안에서만 확인하는 값이라 개발자도구로 지나갈 수 있었고, `question-catalog.json` 은 잠금과 무관하게 공개되어 있었다. 반면 처음 온 사람이 이 사이트가 무엇인지조차 볼 수 없게 막고 있었다. 인가 경계는 Supabase Auth + `members` + RLS 하나뿐이다.
+- **공유 비밀번호 잠금을 다시 넣지 않는다.** 2026-09-30 에 소유자 지시로 본 앱에서 없앴고,
+  **2026-10-01 에 타자 서브앱(`typing/`)에서도 없앴다.** 9월 30일에는 본 앱만 고쳐서
+  타자앱에는 잠금이 한 달 더 남아 있었다 — 돈을 낸 회원이 홈의 '타자 연습' 을 눌렀다가
+  비밀번호 벽에 막히고 있었다. 두 앱은 같은 잠금 코드를 복사해 쓰고 있었으므로,
+  한쪽을 고칠 때 **`typing/` 도 같이 보는 습관**이 필요하다(문구·디자인도 마찬가지다). 원래도 유료 콘텐츠를 지키는 장치가 아니었다 — 브라우저 안에서만 확인하는 값이라 개발자도구로 지나갈 수 있었고, `question-catalog.json` 은 잠금과 무관하게 공개되어 있었다. 반면 처음 온 사람이 이 사이트가 무엇인지조차 볼 수 없게 막고 있었다. 인가 경계는 Supabase Auth + `members` + RLS 하나뿐이다.
 - Supabase service-role key 는 브라우저 코드, `supabase-config.js`, GitHub 저장소에 절대 넣지 않는다. `supabase-config.js` 에는 URL 과 anon/publishable key 만 넣는다.
 - `questions.json`, `typing/data.js`, Service Worker precache 에 실제 문항/모범답안을 다시 넣지 않는다.
 - `.nojekyll` 은 GitHub Pages 설정이다. 지우지 않는다.
