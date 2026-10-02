@@ -1,10 +1,10 @@
 {
   "version": "2026-08-18",
-  "sourceCount": 3280,
+  "sourceCount": 3288,
   "exams": {
     "pre": {
-      "total": 1399,
-      "mc": 1261,
+      "total": 1402,
+      "mc": 1264,
       "writing": 38,
       "oral": 100,
       "categories": [
@@ -45,8 +45,8 @@
         },
         {
           "category": "한국문화",
-          "total": 130,
-          "mc": 130,
+          "total": 133,
+          "mc": 133,
           "writing": 0,
           "oral": 0
         },
@@ -67,8 +67,8 @@
       ]
     },
     "perm": {
-      "total": 1752,
-      "mc": 1341,
+      "total": 1757,
+      "mc": 1346,
       "writing": 65,
       "oral": 346,
       "categories": [
@@ -130,8 +130,8 @@
         },
         {
           "category": "문화",
-          "total": 133,
-          "mc": 133,
+          "total": 138,
+          "mc": 138,
           "writing": 0,
           "oral": 0
         },
@@ -152,8 +152,8 @@
       ]
     },
     "nat": {
-      "total": 1881,
-      "mc": 1464,
+      "total": 1886,
+      "mc": 1469,
       "writing": 66,
       "oral": 351,
       "categories": [
@@ -215,8 +215,8 @@
         },
         {
           "category": "문화",
-          "total": 135,
-          "mc": 135,
+          "total": 140,
+          "mc": 140,
           "writing": 0,
           "oral": 0
         },
