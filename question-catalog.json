@@ -1,10 +1,10 @@
 {
   "version": "2026-08-18",
-  "sourceCount": 3288,
+  "sourceCount": 3295,
   "exams": {
     "pre": {
-      "total": 1402,
-      "mc": 1264,
+      "total": 1409,
+      "mc": 1271,
       "writing": 38,
       "oral": 100,
       "categories": [
@@ -24,8 +24,8 @@
         },
         {
           "category": "한국사회",
-          "total": 166,
-          "mc": 166,
+          "total": 171,
+          "mc": 171,
           "writing": 0,
           "oral": 0
         },
@@ -45,8 +45,8 @@
         },
         {
           "category": "한국문화",
-          "total": 133,
-          "mc": 133,
+          "total": 135,
+          "mc": 135,
           "writing": 0,
           "oral": 0
         },

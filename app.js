@@ -13,6 +13,7 @@ const K = {
   stats: 'nq_stats', history: 'nq_history', drafts: 'nq_drafts', lang: 'nq_lang',
   mockSave: 'nq_mocksave', practiceSave: 'nq_practicesave', exam: 'nq_exam',
   examdate: 'nq_examdate', catalog: 'nq_catalog', diff: 'nq_diff', trial: 'nq_trial',
+  recent: 'nq_recent', seen: 'nq_seen',
 };
 
 /* ---------- 공개 폴백(민감한 문제 본문은 넣지 않는다) ---------- */
@@ -144,7 +145,7 @@ const I18N = {
     'result.ungradedN': '미채점 {0}개 · 채점하면 총점이 나옵니다',
     'result.mcOnly': '객관식만으로 {0} / 65',
     /* A5 통계 → 연습 */
-    'stats.practiceCat': '이 영역만 연습', 'practice.weak': '약점 우선', 'practice.weakSub': '틀린 영역을 더 자주',
+    'stats.practiceCat': '이 영역만 연습', 'stats.cover': '본 문항 {0}/{1}', 'practice.weak': '약점 우선', 'practice.weakSub': '틀린 영역을 더 자주',
     'diff.all': '전체', 'diff.hard': '문장형', 'diff.easy': '단어형',
     'diff.hint': '선택지가 문장인 실전 교재형 문제만 골라 풉니다.', 'diff.hintEasy': '선택지가 짧은 단어인 기본 문제만 풉니다.',
     /* A6 구술 가리고 말하기 */
@@ -261,7 +262,7 @@ const I18N = {
     'result.ungradedN': '还有{0}题未评分 — 评分后才能算出总分',
     'result.mcOnly': '仅选择题 {0} / 65',
     /* A5 统计 → 练习 */
-    'stats.practiceCat': '只练这个领域', 'practice.weak': '弱项优先', 'practice.weakSub': '答错多的领域出得更频繁',
+    'stats.practiceCat': '只练这个领域', 'stats.cover': '做过 {0}/{1}', 'practice.weak': '弱项优先', 'practice.weakSub': '答错多的领域出得更频繁',
     'diff.all': '全部', 'diff.hard': '长句题', 'diff.easy': '短词题',
     'diff.hint': '只练选项是整句的实战教材型难题。', 'diff.hintEasy': '只练选项是短词的基础题。',
     /* A6 口试遮住作答 */
@@ -385,6 +386,7 @@ Object.assign(I18N.zh, {
 });
 Object.assign(I18N.vi, {
   'nav.title': 'Câu hỏi', 'nav.answered': 'Đã trả lời {0}/{1}', 'nav.question': 'Câu {0}',
+  'stats.cover': 'Đã làm {0}/{1}',
   'nav.legendDone': 'Đã trả lời', 'nav.legendFlag': 'Chưa chắc', 'nav.legendTodo': 'Chưa làm',
   'quiz.flag': 'Đánh dấu chưa chắc', 'quiz.unflag': 'Bỏ đánh dấu',
   'member.loginShort': 'Đăng nhập hội viên',
@@ -414,6 +416,7 @@ Object.assign(I18N.vi, {
 });
 Object.assign(I18N.th, {
   'nav.title': 'ข้อคำถาม', 'nav.answered': 'ตอบแล้ว {0}/{1}', 'nav.question': 'ข้อ {0}',
+  'stats.cover': 'ทำแล้ว {0}/{1}',
   'nav.legendDone': 'ตอบแล้ว', 'nav.legendFlag': 'ไม่แน่ใจ', 'nav.legendTodo': 'ยังไม่ทำ',
   'quiz.flag': 'ทำเครื่องหมายไม่แน่ใจ', 'quiz.unflag': 'ลบเครื่องหมาย',
   'member.loginShort': 'เข้าสู่ระบบสมาชิก',
@@ -1298,10 +1301,19 @@ function weakPriorityOrder(list) {
 function practiceCategory(cat) {
   startPracticeCategory(cat);
 }
+/* 아직 한 번도 안 풀어 본 문항을 앞에 세운다. 연습은 그 영역을 통째로 내보내므로
+   끝까지 하면 어차피 다 보지만, 중간에 그만두는 일이 많다. 안 본 것부터 나와야
+   '본 것만 계속 보고 안 본 것은 계속 안 보는' 일이 생기지 않는다. */
+function unseenFirst(list) {
+  const seen = seenSet();
+  const fresh = [], done = [];
+  (list || []).forEach((q) => { (seen.has(q.id) ? done : fresh).push(q); });
+  return shuffle(fresh).concat(shuffle(done));
+}
 function startPracticeAll(weak) {
   requireMembership(async () => {
     const pool = byDiff(await loadExerciseQuestions({ type: 'mc' }));
-    const list = weak ? weakPriorityOrder(pool) : shuffle(pool);
+    const list = weak ? weakPriorityOrder(pool) : unseenFirst(pool);
     if (!list.length) { toast(t('toast.noQ')); return; }
     startQuiz(list, 'practice');
   });
@@ -1309,7 +1321,7 @@ function startPracticeAll(weak) {
 function startPracticeCategory(cat) {
   requireMembership(async () => {
     const pool = byDiff(await loadExerciseQuestions({ type: 'mc', category: cat }));
-    const list = shuffle(pool);
+    const list = unseenFirst(pool);
     if (!list.length) { toast(t('toast.noQ')); return; }
     startQuiz(list, 'practice');
   });
@@ -1444,7 +1456,7 @@ function matchPassageLength(picked, pool, wantLong, wantMid) {
     const used = new Set(out.map((q) => q.id));
     // 같은 영역 안에서만 바꿔 끼운다. 영역별 개수는 그대로 둔다.
     // 넣는 쪽이 심화면 귀화 회차의 심화가 10개를 넘는다(교재 430쪽 교체표가 10개로 정한다)
-    const cand = shuffle(pool.filter((q) => band(q) === kind && q.tier !== 'advanced' && !used.has(q.id)));
+    const cand = freshFirst(pool.filter((q) => band(q) === kind && q.tier !== 'advanced' && !used.has(q.id)), recentSet());
     for (const fresh of cand) {
       if (need <= 0) break;
       let i = -1;
@@ -1470,8 +1482,8 @@ function matchPassageLength(picked, pool, wantLong, wantMid) {
       const q = out[i];
       if (band(q) !== kind || q.tier === 'advanced') continue;
       // 넣는 쪽도 심화면 안 된다. 귀화 회차의 심화는 교재 교체표대로 10개로 정해져 있다.
-      const cand = shuffle(pool.filter((p) => p.category === q.category
-        && band(p) !== kind && p.tier !== 'advanced' && !used.has(p.id)));
+      const cand = freshFirst(pool.filter((p) => p.category === q.category
+        && band(p) !== kind && p.tier !== 'advanced' && !used.has(p.id)), recentSet());
       if (!cand.length) continue;
       used.delete(q.id); used.add(cand[0].id);
       out[i] = cand[0]; extra -= 1;
@@ -1512,7 +1524,7 @@ function matchSocialLevel(picked, pool) {
     const cand = pool.filter((q) => q.category === old.category && !usedIds.has(q.id)
       && q.tier !== 'advanced' && (want > 0 ? isHardQ(q) : !isHardQ(q)));
     if (!cand.length) return;
-    const fresh = shuffle(cand)[0];
+    const fresh = freshFirst(cand, recentSet())[0];
     out[out.indexOf(old)] = fresh;
     usedIds.delete(old.id);
     usedIds.add(fresh.id);
@@ -1638,15 +1650,16 @@ async function startMockExam() {
     const quota = { '어휘': 10, '대화': 3, '문법': 15, '읽기·이해': 12, '한국문화': 4, '한국사회': 4 };
     const byCat = {};
     all.forEach((q) => { (byCat[q.category] = byCat[q.category] || []).push(q); });
+    const recent = recentSet();   // 최근 회차에 나온 문항은 뒤로 미룬다
     let picked = [];
     Object.keys(quota).forEach((cat) => {
       const want = Math.round(quota[cat] * cfg.mc / 48);
-      picked = picked.concat(shuffle(byCat[cat] || []).slice(0, want));
+      picked = picked.concat(freshFirst(byCat[cat] || [], recent).slice(0, want));
     });
     // cfg.mc 하드코딩 금지: 쿼터 합이나 특정 영역 풀이 cfg.mc 와 어긋나도 무작위 가감으로 맞춘다
     if (picked.length < cfg.mc) {
       const got = new Set(picked.map((q) => q.id));
-      picked = picked.concat(shuffle(all.filter((q) => !got.has(q.id))).slice(0, cfg.mc - picked.length));
+      picked = picked.concat(freshFirst(all.filter((q) => !got.has(q.id)), recent).slice(0, cfg.mc - picked.length));
     } else if (picked.length > cfg.mc) {
       picked = shuffle(picked).slice(0, cfg.mc);
     }
@@ -1676,19 +1689,20 @@ async function startMockExam() {
     const advCount = activeExam === 'nat' ? 10 : 0;
     const isAdv = (q) => q.tier === 'advanced';
     const left = Object.assign({}, quota);
+    const recent = recentSet();   // 최근 회차에 나온 문항은 뒤로 미룬다
     let picked = [];
     if (advCount) {
-      picked = shuffle(all.filter(isAdv)).slice(0, advCount);
+      picked = freshFirst(all.filter(isAdv), recent).slice(0, advCount);
       // 심화로 채운 만큼 그 영역의 기본 문항 몫을 줄인다(한국어는 심화가 없어 그대로다)
       picked.forEach((q) => { if (left[q.category] > 0) left[q.category] -= 1; });
     }
     const byCat = {};
     all.forEach((q) => { if (!advCount || !isAdv(q)) (byCat[q.category] = byCat[q.category] || []).push(q); });
-    Object.keys(left).forEach((cat) => { picked = picked.concat(shuffle(byCat[cat] || []).slice(0, left[cat])); });
+    Object.keys(left).forEach((cat) => { picked = picked.concat(freshFirst(byCat[cat] || [], recent).slice(0, left[cat])); });
     // cfg.mc 하드코딩 금지: quota 합이나 특정 카테고리 풀이 cfg.mc와 어긋나도 비례조정 없이 무작위 가감으로 총수를 맞춘다.
     if (picked.length < cfg.mc) {
       const pickedIds = new Set(picked.map((q) => q.id));
-      picked = picked.concat(shuffle(all.filter((q) => !pickedIds.has(q.id))).slice(0, cfg.mc - picked.length));
+      picked = picked.concat(freshFirst(all.filter((q) => !pickedIds.has(q.id)), recent).slice(0, cfg.mc - picked.length));
     } else if (picked.length > cfg.mc) {
       /* 그냥 잘라 내면 심화도 같이 빠져 회차마다 정해진 10개가 깨진다(교재 430쪽 교체표).
          심화는 남기고 기본 문항부터 덜어 낸다. */
@@ -1701,17 +1715,20 @@ async function startMockExam() {
     const restMc = picked.filter((q) => q.category !== '한국어');
     mc = shuffle(korMc).concat(shuffle(restMc));
   }
-  const wr = shuffle(writingPool).slice(0, cfg.writing);
+  const wr = freshFirst(writingPool, recentSet()).slice(0, cfg.writing);
   const or = pickOral(cfg.oral, oralPool);
-  startQuiz(mc.concat(wr).concat(or), 'mock');
+  const list = mc.concat(wr).concat(or);
+  pushRecent(list.map((q) => q.id));   // 다음 회차에서 이 문항들을 뒤로 미룬다
+  startQuiz(list, 'mock');
 }
 /* G: 구술 출제 — 사전평가는 공식 유형 구성(읽기1·이해1·대화1·듣고말하기2)을 재현한다.
    지문 읽기(read)와 그 내용 확인(comp)은 짝이라 읽기를 먼저 뽑고 이해는 같은 지문 세트에서 고른다.
    종합평가는 유형 구분이 없으므로 무작위. */
 function pickOral(n, source) {
   const pool = source || byType('oral');
-  if (activeExam !== 'pre' || !pool.some((q) => q.otype)) return shuffle(pool).slice(0, n);
-  const of = (t) => shuffle(pool.filter((q) => q.otype === t));
+  const recent = recentSet();   // 최근 회차에 나온 문항은 뒤로 미룬다
+  if (activeExam !== 'pre' || !pool.some((q) => q.otype)) return freshFirst(pool, recent).slice(0, n);
+  const of = (t) => freshFirst(pool.filter((q) => q.otype === t), recent);
   const quota = { read: 1, comp: 1, talk: 1, listen: 2 };
   const picked = [];
   // 읽기 지문과 그 내용 확인은 같은 set 이어야 한다. 읽기를 먼저 뽑고, 같은 set 의 이해 문항을 짝으로 고른다.
@@ -1724,7 +1741,7 @@ function pickOral(n, source) {
   // 쿼터를 못 채웠으면(유형별 문항 부족) 남은 것으로 총수를 맞춘다
   if (picked.length < n) {
     const got = new Set(picked.map((q) => q.id));
-    picked.push(...shuffle(pool.filter((q) => !got.has(q.id))).slice(0, n - picked.length));
+    picked.push(...freshFirst(pool.filter((q) => !got.has(q.id)), recent).slice(0, n - picked.length));
   }
   // 실제 시험 순서: 읽기 → 이해 → 대화 → 듣고 말하기
   const rank = { read: 0, comp: 1, talk: 2, listen: 3 };
@@ -1758,6 +1775,32 @@ function startTimer() {
   }, 1000);
 }
 function updateTimerLabel() { const m = Math.floor(quiz.timeLeft / 60), s = quiz.timeLeft % 60; $('quizTimer').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
+
+/* 최근 회차에 나온 문항을 기억해 두고 다음 회차에서 뒤로 미룬다.
+   이것이 없으면 회차마다 처음부터 무작위로 뽑으므로 금방 같은 문항이 다시 나온다.
+   쿼터가 영역을 좁혀 놓아서 더 심하다 — 사전평가는 문법 15문항을 264개에서,
+   읽기 12문항을 180개에서 뽑고, 긴 지문 2문항은 20개뿐인 데서 뽑는다.
+   실제로 재어 보니 5회차에 이미 본 문항이 30%, 10회차에는 긴 지문 2개가 모두
+   본 것이었다. 기억해 두면 풀을 한 바퀴 돈 뒤에야 다시 나온다.
+   트랙마다 따로 센다(ekey).
+
+   용량은 풀 크기만큼 크게 잡는다. 400개로 해 보니 8회차쯤에서 1회차 문항이 기억에서
+   밀려나 '안 본 것'으로 되살아나, 7회차부터 중복이 다시 30~50%로 올라갔다.
+   1500개면 사전평가 풀(1271) 전체를 담으므로 한 바퀴를 다 돈 뒤에야 다시 나온다.
+   문항 id 1500개는 15KB 정도라 localStorage 에 부담이 없다. */
+const RECENT_CAP = 1500;
+function recentSet() { try { return new Set(ls(ekey(K.recent), [])); } catch (e) { return new Set(); } }
+function pushRecent(ids) {
+  const cur = ls(ekey(K.recent), []);
+  save(ekey(K.recent), cur.concat(ids).slice(-RECENT_CAP));
+}
+/* 안 나온 것을 앞에, 최근에 나온 것을 뒤에 둔다. 둘 다 각각 섞는다.
+   풀이 모자라면 뒤쪽에서 가져오게 되므로 문항 수가 모자랄 일은 없다. */
+function freshFirst(list, recent) {
+  const fresh = [], used = [];
+  (list || []).forEach((q) => { (recent.has(q.id) ? used : fresh).push(q); });
+  return shuffle(fresh).concat(shuffle(used));
+}
 
 /* 보기가 ㉠㉡㉢㉣ 이나 (가)(나)(다)(라) 처럼 순서가 있는 기호일 때가 있다.
    읽기 문항에서 지문 안의 자리를 가리키는 보기다. 이런 보기를 섞으면
@@ -2872,7 +2915,20 @@ function recordOral(q, frac) {
 /* =====================================================================
    통계
    ===================================================================== */
+/* 문항별로 '풀어 봤는지' 를 남긴다. 지금까지는 영역별 정답률만 쌓고 있어서,
+   아직 한 번도 안 나온 문항이 무엇인지 알 길이 없었다. 모의고사는 실제 시험처럼
+   영역 비율을 맞추므로(귀화는 교육이 회당 1문항인데 교육 문항은 82개다) 가만히 두면
+   어떤 영역은 몇 해를 풀어도 다 못 본다. 이 기록이 있어야 안 본 것부터 내보낼 수 있다. */
+function markSeen(id) {
+  if (!id) return;
+  const cur = ls(ekey(K.seen), []);
+  if (cur.indexOf(id) >= 0) return;
+  cur.push(id); save(ekey(K.seen), cur);
+}
+function seenSet() { try { return new Set(ls(ekey(K.seen), [])); } catch (e) { return new Set(); } }
+
 function recordAnswer(q, ok) {
+  markSeen(q && q.id);
   const s = ls(ekey(K.stats), { total: 0, correct: 0, cat: {} });
   s.total++; if (ok) s.correct++;
   s.cat[q.category] = s.cat[q.category] || { t: 0, c: 0 };
@@ -2893,18 +2949,36 @@ function renderStats() {
   );
   const hl = $('historyList');
   hl.innerHTML = '';
-  const catKeys = sortCats(Object.keys(s.cat));
+  /* 영역 목록은 '풀어 본 영역' 이 아니라 '이 시험의 모든 영역' 으로 만든다.
+     한 번도 안 건드린 영역이 목록에서 통째로 빠지면, 바로 그 영역을 안 하고 있다는
+     사실이 화면에 안 보인다. 함께 '본 문항 N/M' 을 적어 어디가 비었는지 드러낸다. */
+  const seen = seenSet();
+  const totByCat = {}, seenByCat = {};
+  if (bankFullyLoaded) {
+    mcOnly().forEach((q) => {
+      totByCat[q.category] = (totByCat[q.category] || 0) + 1;
+      if (seen.has(q.id)) seenByCat[q.category] = (seenByCat[q.category] || 0) + 1;
+    });
+  } else {
+    (catalogExam().categories || []).forEach((c) => { if (c.mc) totByCat[c.category] = c.mc; });
+  }
+  const catKeys = sortCats(Array.from(new Set(Object.keys(s.cat).concat(Object.keys(totByCat)))));
   if (catKeys.length) {
     const cb = document.createElement('div');
     cb.className = 'cat-breakdown cat-breakdown--stats';
     catKeys.forEach((c) => {
-      const { t: tt, c: cc } = s.cat[c]; const p = tt ? Math.round((cc / tt) * 100) : 0;
+      const rec = s.cat[c] || { t: 0, c: 0 };
+      const tt = rec.t, cc = rec.c; const p = tt ? Math.round((cc / tt) * 100) : 0;
       const row = document.createElement('div'); row.className = 'cat-row';
       const canPractice = mcCats.has(c);
+      const tot = totByCat[c] || 0;
+      const cover = tot ? `<span class="cat-row__cover">${t('stats.cover', seenByCat[c] || 0, tot)}</span>` : '';
       row.innerHTML =
         `<span class="cat-row__name">${catName(c)}</span>` +
-        `<span class="cat-row__bar"><span style="width:${p}%"></span></span>` +
-        `<span class="cat-row__val">${p}%</span>` +
+        `<span class="cat-row__bar"><span style="width:${tt ? p : 0}%"></span></span>` +
+        // 한 번도 안 푼 영역에 0% 를 적으면 '다 틀렸다' 로 읽힌다. 아직 안 했다는 뜻으로 줄표를 쓴다.
+        `<span class="cat-row__val">${tt ? p + '%' : '—'}</span>` +
+        cover +
         (canPractice ? `<button class="cat-row__practice" type="button">${t('stats.practiceCat')}</button>` : '');
       const btn = row.querySelector('.cat-row__practice');
       if (btn) btn.addEventListener('click', () => practiceCategory(c));

@@ -647,6 +647,9 @@ body.exam-mode .question-box .zh { color: var(--muted); }
 /* 세 토막짜리 문항의 '무엇을 묻는가' 한 줄. 지문 상자 밖 아래에 둔다. */
 .question-box__ask { margin-top: 13px; font-weight: 600; line-height: 1.6; }
 
+/* 통계 화면: 그 영역에서 몇 문항을 봤는지. 정답률과 달리 '얼마나 돌았는지' 를 보여 준다. */
+.cat-row__cover { color: var(--muted); font-size: .76rem; font-family: var(--font-mono); white-space: nowrap; }
+
 .question-box__ask .zh { color: var(--muted); }
 
 
