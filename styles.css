@@ -644,6 +644,27 @@ body.exam-mode .question-box .zh { color: var(--muted); }
 
 .question-box__passage .zh { color: #6b6450; }
 
+/* 지문에 딸린 어휘 노트. 지문 상자 바로 아래에 붙이되, 기본은 접어 둔다.
+   노란색은 지문 상자에만 쓰기로 했으므로(AGENTS.md 6장) 여기는 옅은 회색 면을 쓴다. */
+.gloss { margin-top: 8px; }
+.gloss > summary {
+  cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 6px;
+  font-size: .82rem; font-weight: 600; color: var(--muted);
+  padding: 5px 11px; border: 1px solid var(--border); border-radius: 9999px; background: var(--card);
+}
+.gloss > summary::-webkit-details-marker { display: none; }
+.gloss > summary::before { content: '＋'; font-weight: 700; }
+.gloss[open] > summary::before { content: '－'; }
+.gloss > summary:hover { background: var(--cream-2); }
+.gloss__body {
+  margin-top: 8px; padding: 11px 13px; border-radius: var(--radius-sm);
+  background: var(--cream-2); border: 1px solid var(--border);
+  font-size: .9rem; line-height: 1.75;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.gloss__item b { color: var(--ink); font-weight: 600; margin-right: 6px; }
+.gloss__item { color: var(--muted); }
+
 /* 세 토막짜리 문항의 '무엇을 묻는가' 한 줄. 지문 상자 밖 아래에 둔다. */
 .question-box__ask { margin-top: 13px; font-weight: 600; line-height: 1.6; }
 
