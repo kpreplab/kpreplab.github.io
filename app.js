@@ -1439,18 +1439,25 @@ function showExamIntro() {
    그런데 은행에서 그냥 뽑으면 중간 2.3문항·긴 것 0.6문항밖에 안 들어온다.
    긴 지문은 전체 1,372문항 중 24개뿐이라 확률로는 거의 안 나온다.
    읽는 부담이야말로 이 시험에서 갈리는 지점이라, 연습에서 빠지면 안 된다. */
+const XLONG_Q = 420;         // 한 단락으로 이어지는 '초장문'
 const LONG_Q = 200;          // 이 길이를 넘으면 '긴 지문'
 const MID_Q = 100;           // 여기부터 '중간 길이'
+/* 2026-10-27. 이 앱 사용자가 실제 사전평가에서 받은 지문의 길이를 직접 보여 주었다 —
+   줄바꿈 없이 한 단락으로 이어지는 450~550자였다. 그때까지 題庫에서 가장 긴 지문이
+   393자여서 그만한 것이 한 편도 없었다(법무부 공개 견본도 최대 358자라 현행보다 짧다).
+   초장문 12편을 새로 넣고, 한 회차에 두 편이 꼭 들어가도록 따로 센다.
+   사용자의 말: "연습할 때 어려워야 시험장에서 쉽다." */
+const WANT_XLONG = 2;
 const WANT_LONG = 2;
 const WANT_MID = 7;
 function qLen(q) { return String(q && q.q || '').replace(/<[^>]+>/g, '').length; }
-function matchPassageLength(picked, pool, wantLong, wantMid) {
-  const band = (q) => (qLen(q) >= LONG_Q ? 'long' : qLen(q) >= MID_Q ? 'mid' : 'short');
+function matchPassageLength(picked, pool, wantLong, wantMid, wantXLong) {
+  const band = (q) => (qLen(q) >= XLONG_Q ? 'xlong' : qLen(q) >= LONG_Q ? 'long' : qLen(q) >= MID_Q ? 'mid' : 'short');
   let out = picked.slice();
   /* 어떤 문항을 빼고 그 자리에 넣을지. 긴 지문을 채울 때 짧은 문항이 남아 있지 않은
      영역이 있다(사전평가 읽기·이해는 180문항 중 짧은 것이 19개뿐이다). 그때는
      중간 길이 문항을 내준다. 내주지 않으면 긴 지문이 한 개도 안 들어간다. */
-  const donorsFor = (kind) => (kind === 'long' ? ['short', 'mid'] : ['short']);
+  const donorsFor = (kind) => (kind === 'xlong' ? ['short', 'mid', 'long'] : kind === 'long' ? ['short', 'mid'] : ['short']);
   const fill = (kind, want) => {
     const have = out.filter((q) => band(q) === kind).length;
     let need = want - have;
@@ -1492,8 +1499,13 @@ function matchPassageLength(picked, pool, wantLong, wantMid) {
     }
   };
   const wantL = wantLong == null ? WANT_LONG : wantLong;
-  trim('long', wantL);
-  fill('long', wantL);
+  /* 초장문을 먼저 채운다. 늦게 채우면 긴 지문이 이미 자리를 다 차지해 들어갈 틈이 없다.
+     초장문도 200자를 넘으므로, 긴 지문 몫(wantL)에서 초장문 수만큼 빼고 센다. */
+  const wantX = Math.min(wantXLong == null ? WANT_XLONG : wantXLong, wantL);
+  trim('xlong', wantX);
+  fill('xlong', wantX);
+  trim('long', Math.max(0, wantL - wantX));
+  fill('long', Math.max(0, wantL - wantX));
   fill('mid', wantMid == null ? WANT_MID : wantMid);
   return out;
 }
@@ -1718,7 +1730,7 @@ async function startMockExam() {
       picked = shuffle(picked.filter(isAdv)).concat(shuffle(picked.filter((q) => !isAdv(q)))).slice(0, cfg.mc);
     }
     picked = matchSocialLevel(picked, all);
-    picked = matchPassageLength(picked, all);
+    picked = matchPassageLength(picked, all, null, null, 0);   // 초장문은 사전평가 몫이다
     // 출제 순서: 한국어 먼저(내부 셔플) → 나머지 영역(영역 간 섞어 셔플) — 사전평가 ladder(한국어 앞배치)와 일관
     const korMc = picked.filter((q) => q.category === '한국어');
     const restMc = picked.filter((q) => q.category !== '한국어');
@@ -1753,7 +1765,14 @@ function pickOral(n, source) {
   const recent = recentSet();   // 최근 회차에 나온 문항은 뒤로 미룬다
   if (activeExam !== 'pre' || !pool.some((q) => q.otype)) return freshFirst(pool, recent).slice(0, n);
   const of = (t) => freshFirst(pool.filter((q) => q.otype === t), recent);
-  const quota = { read: 1, comp: 1, talk: 1, listen: 2 };
+  /* 2026-10-27 에 바꿨다. 이 앱 사용자가 실제 사전평가 구술을 보고 와서, 다섯 문항 가운데
+     **두 문항이 '말하기'** 였다고 했다 — 하나는 "한국 출생률이 낮은 까닭과 그에 대한 생각",
+     다른 하나는 "고향에서는 어떤 대중교통을 쓰는지, 편리한 점과 불편한 점".
+     그 전까지 말하기가 한 문항뿐이고 듣기가 두 문항이었다.
+     법무부 견본(지문 읽기1 · 내용 확인1 · 말하기3, 듣기 없음)과도 어긋났다.
+     다만 사용자는 **듣기 문항도 있었다**고 했으므로 견본이 옛것이다. 듣기를 없애지 않고
+     한 문항으로 줄여 말하기에 한 자리를 넘긴다. 듣기가 몇 문항이었는지는 기억하지 못했다. */
+  const quota = { read: 1, comp: 1, talk: 2, listen: 1 };
   const picked = [];
   // 읽기 지문과 그 내용 확인은 같은 set 이어야 한다. 읽기를 먼저 뽑고, 같은 set 의 이해 문항을 짝으로 고른다.
   const readPick = of('read')[0];
