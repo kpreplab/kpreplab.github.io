@@ -147,8 +147,9 @@ const I18N = {
     'result.mcOnly': '객관식만으로 {0} / 65',
     /* A5 통계 → 연습 */
     'stats.practiceCat': '이 영역만 연습', 'stats.cover': '본 문항 {0}/{1}', 'practice.weak': '약점 우선', 'practice.weakSub': '틀린 영역을 더 자주',
-    'diff.all': '전체', 'diff.hard': '문장형', 'diff.easy': '단어형',
-    'diff.hint': '선택지가 문장인 실전 교재형 문제만 골라 풉니다.', 'diff.hintEasy': '선택지가 짧은 단어인 기본 문제만 풉니다.',
+    'diff.all': '전체', 'diff.hard': '문장형', 'diff.easy': '단어형', 'diff.long': '긴 지문',
+    'diff.hint': '보기 네 개가 모두 문장인 문제만 풉니다. 교재 실전 문제가 이 꼴입니다.', 'diff.hintEasy': '보기가 짧은 낱말인 기본 문제만 풉니다.',
+    'diff.hintLong': '읽을 글이 200자를 넘는 문제만 풉니다. 실제 시험에서 시간을 가장 많이 잡아먹는 문제입니다.',
     /* A6 구술 가리고 말하기 */
     'oral.recite': '모범답안을 가린 채로 소리 내어 답해 보세요.',
     'oral.reveal': '모범답안 보기', 'oral.hideModel': '모범답안 숨기기',
@@ -265,8 +266,9 @@ const I18N = {
     'result.mcOnly': '仅选择题 {0} / 65',
     /* A5 统计 → 练习 */
     'stats.practiceCat': '只练这个领域', 'stats.cover': '做过 {0}/{1}', 'practice.weak': '弱项优先', 'practice.weakSub': '答错多的领域出得更频繁',
-    'diff.all': '全部', 'diff.hard': '长句题', 'diff.easy': '短词题',
-    'diff.hint': '只练选项是整句的实战教材型难题。', 'diff.hintEasy': '只练选项是短词的基础题。',
+    'diff.all': '全部', 'diff.hard': '整句型', 'diff.easy': '短词型', 'diff.long': '长文题',
+    'diff.hint': '只练「四个选项都是整整一句话」的题。教材实战题是这种。', 'diff.hintEasy': '只练「选项是短词」的基础题。',
+    'diff.hintLong': '只练「要读的文章超过200字」的题。真实考试中最花时间的就是这些。',
     /* A6 口试遮住作答 */
     'oral.recite': '请遮住范文，先出声作答一遍。',
     'oral.reveal': '查看范文', 'oral.hideModel': '隐藏范文',
@@ -563,8 +565,12 @@ const EXAMS = {
     noPrefix: 'KIIP',
     /* 사전평가 필기는 총 60분이다. 객관식과 단답형에 시간이 나뉘어 있지 않고 통으로 준다
        (사회통합정보망 기본소양평가 안내: "시험시간은 총 60분").
-       중간평가·종합평가는 "총 50분으로 객관식(40분), 작문형(10분)" 처럼 쪼개 적는데
-       사전평가만 그 구분이 없다.
+       중간평가·종합평가는 시간을 쪼개 적는데 사전평가만 그 구분이 없다.
+         중간평가  "총 50분으로 객관식(40분), 작문형(10분)"
+         종합평가  "총 60분으로 객관식(50분), 작문형(10분)"  ← 50분이 아니다
+       종합평가 쪽 60분은 한국이민재단 안내와도 맞는다(객관식 36문항 50분 65점,
+       작문형 4문항 10분 10점, 구술 5문항 10분 25점 / 45문항·70분·100점).
+       nat·perm 의 time: 60*60 은 맞게 들어가 있다. 이 줄을 근거로 깎지 말 것.
        법무부 견본 문제지 표지의 "시험시간은 50분입니다" 는 2016년 게시분이라 옛 수치다.
        같은 견본의 중간평가 40분·종합평가 55분도 지금과 다르다. 견본 표지를 근거로
        시간을 고치지 말 것. */
@@ -1245,11 +1251,20 @@ function isHardQ(q) {
   if (avg >= HARD_CHOICE_LEN) return true;
   return texts.filter((c) => c.length <= 12 && COMBO_CHOICE.test(c)).length >= 3;
 }
-function diffMode() { const v = ls(ekey(K.diff), 'all'); return v === 'hard' || v === 'easy' ? v : 'all'; }
+/* 2026-10-28. '긴 지문' 갈래를 더했다. 사용자가 '문장형'(중국어 이름이 长句题 였다)을
+   누르고 "이런 문제도 긴 문제냐" 고 물었다. 가리키는 것이 서로 달랐다 — 문장형은
+   **보기**가 문장인 문제를 고르는 것이고, 읽을 글 자체가 긴 문제를 모아 주는 갈래는
+   아예 없었다. 중국어 이름도 整句型 으로 바꿔 보기를 가리킨다는 것을 분명히 했다.
+   사전평가는 84문항(모두 읽기·이해), 종합평가는 115문항(한국어 110 · 사회 3 · 법 1 ·
+   경제 1)이 걸린다. 영역 카드는 0개인 영역에 키를 만들지 않으므로 저절로 숨는다.
+   2026-10-26 사전평가에서 필기 57/75 를 받은 사용자가 "시간이 모자랐다" 고 했다.
+   긴 지문만 따로 몰아 푸는 자리가 필요하다. */
+function diffMode() { const v = ls(ekey(K.diff), 'all'); return (v === 'hard' || v === 'easy' || v === 'long') ? v : 'all'; }
 function setDiffMode(v) { save(ekey(K.diff), v); }
 function byDiff(list) {
   const m = diffMode();
   if (m === 'all') return list;
+  if (m === 'long') return list.filter((q) => qLen(q) >= LONG_Q);
   return list.filter((q) => (m === 'hard' ? isHardQ(q) : !isHardQ(q)));
 }
 /* 난이도를 걸면 개수를 세는 데 문제 본문이 필요하다. 목차만으로는 셀 수 없으니
@@ -1258,7 +1273,7 @@ function renderDiffSeg() {
   const seg = $('diffSeg');
   if (!seg) return;
   const cur = diffMode();
-  seg.innerHTML = ['all', 'hard', 'easy'].map((m) =>
+  seg.innerHTML = ['all', 'hard', 'easy', 'long'].map((m) =>
     `<button class="seg__btn${m === cur ? ' seg__btn--active' : ''}" data-diff="${m}">${t('diff.' + m)}</button>`).join('');
   seg.querySelectorAll('[data-diff]').forEach((b) => {
     b.addEventListener('click', () => {
@@ -1273,7 +1288,8 @@ function renderDiffSeg() {
   });
   const hint = $('diffHint');
   if (hint) {
-    hint.textContent = cur === 'hard' ? t('diff.hint') : cur === 'easy' ? t('diff.hintEasy') : '';
+    hint.textContent = cur === 'hard' ? t('diff.hint') : cur === 'easy' ? t('diff.hintEasy')
+                     : cur === 'long' ? t('diff.hintLong') : '';
     hint.classList.toggle('hidden', cur === 'all');
   }
 }
