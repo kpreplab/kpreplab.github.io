@@ -223,6 +223,16 @@ a.menu-card, a.menu-card:link, a.menu-card:visited { color: var(--ink); text-dec
 .quiz-timer { margin-left: auto; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); background: var(--card); border: 1px solid var(--border); padding: 4px 12px; border-radius: var(--radius-md); }
 .quiz-cat { margin-left: auto; font-size: .78rem; font-weight: 700; color: var(--navy-soft); background: var(--navy-bg); border: 1px solid var(--border); padding: 3px 10px; border-radius: var(--radius-md); }
 .quiz-timer + .quiz-cat { margin-left: 8px; }
+/* 전체화면 단추 — 모의고사에서만 보인다. 시계 오른쪽에 붙는다. */
+.quiz-fs {
+  margin-left: 8px; flex: 0 0 auto; font: inherit; font-size: .78rem; font-weight: 600;
+  color: var(--navy-soft); background: var(--card); border: 1px solid var(--border);
+  padding: 4px 11px; border-radius: var(--radius-md); cursor: pointer;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.quiz-fs:hover { border-color: var(--copper-line); color: var(--copper); }
+.quiz-fs[aria-pressed="true"] { border-color: var(--copper); color: var(--copper); }
+.quiz-fs:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 .progress-bar { height: 4px; background: var(--cream-2); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 18px; }
 .progress-bar__fill { height: 100%; width: 0; background: var(--copper); transition: width var(--dur) var(--ease); }
 
@@ -277,6 +287,26 @@ a.menu-card, a.menu-card:link, a.menu-card:visited { color: var(--ink); text-dec
 
 .question-nav__legend .dot--todo { background: var(--cream-2); }
 .question-nav__item:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+/* ===== 답안지 줄 (번호 + ①②③④) =====
+   넓은 화면에서만 동그라미를 펼친다. 좁은 화면에서는 줄 상자를 display:contents 로
+   녹여서 번호만 예전처럼 격자에 담는다 — 176px 칸에 동그라미 네 개는 들어가지 않는다. */
+.omr__row { display: contents; }
+.omr__bubbles, .omr__mark { display: none; }
+.omr__bub {
+  padding: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--card);
+  color: var(--muted); font-family: var(--font-mono); font-size: .82rem; line-height: 1; cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.omr__bub:hover { border-color: var(--copper-line); color: var(--copper); }
+/* 고른 것은 파랗게 찬다. 왼쪽 선택지의 번호와 같은 색·같은 모양이다. */
+.omr__bub.is-on { background: var(--copper); border-color: var(--copper); color: #fff; font-weight: 700; }
+.omr__bub:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.omr__mark {
+  font-size: .72rem; font-weight: 600; color: var(--muted); text-align: center;
+  border: 1px dashed var(--border); border-radius: 6px;
+}
+.omr__mark.is-on { color: var(--copper); border-color: var(--copper-line); background: var(--copper-bg); }
 /* 좁은 화면에서는 왼쪽에 세울 자리가 없다. 문제 위로 돌아가되 예전보다 촘촘하게. */
 @media (max-width: 640px) {
   .quiz-body { display: block; }
@@ -605,9 +635,12 @@ body.exam-mode .choice {
   border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; box-shadow: none; padding: 11px 8px;
 }
 body.exam-mode .choice:not([disabled]):hover { background: var(--cream); }
-body.exam-mode .choice.is-selected { border-color: var(--navy); background: var(--navy-bg); }
+/* 고른 보기는 파랗게 한다. 실제 시험장 화면이 그렇다(사용자가 2026-10-26 에 보고 왔다).
+   그때까지 시험지 모드만 검정에 가까운 회색(--navy)이라, 연습 화면과 색이 달랐고
+   오른쪽 답안지의 파란 동그라미와도 짝이 맞지 않았다. */
+body.exam-mode .choice.is-selected { border-color: var(--copper); background: var(--copper-bg); }
 body.exam-mode .choice__num { background: transparent; color: var(--ink); font-size: 1.05rem; border-color: transparent; }
-body.exam-mode .choice.is-selected .choice__num { color: var(--navy); }
+body.exam-mode .choice.is-selected .choice__num { background: var(--copper); color: #fff; border-color: var(--copper); }
 
 .review-item__write { background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; margin: 6px 0; font-size: .95rem; white-space: pre-wrap; line-height: 1.7; }
 .review-item__write.empty-ans { color: var(--muted); font-style: italic; }
@@ -674,10 +707,28 @@ body.exam-mode .question-box .zh { color: var(--muted); }
 .question-box__ask .zh { color: var(--muted); }
 
 
+/* 2026-10-31. 답안지를 문제 오른쪽에 세우고 ①②③④ 를 펼친다.
+   실제 시험장 화면이 그렇다(사용자가 2026-10-26 사전평가에서 보고 왔다).
+   768px 부터 켠다 — 아이패드 세로가 768이고, 그보다 좁으면 동그라미 네 개가
+   들어갈 자리가 없어 예전처럼 번호만 격자로 보여 준다. */
+@media (min-width: 768px) {
+  body.exam-mode .question-nav { order: 2; width: clamp(206px, 20vw, 248px); }
+  body.exam-mode .question-nav__grid { display: flex; flex-direction: column; gap: 4px; }
+  body.exam-mode .omr__row { display: flex; align-items: center; gap: 6px; }
+  body.exam-mode .omr__no { aspect-ratio: auto; flex: 0 0 28px; height: 28px; }
+  body.exam-mode .omr__bubbles { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; }
+  body.exam-mode .omr__bub { flex: 1 1 0; min-width: 0; height: 28px; }
+  body.exam-mode .omr__mark { display: block; flex: 1 1 auto; height: 28px; line-height: 26px; }
+}
+
 /* 넓은 화면에서는 시험지를 크게 편다. 720px 상한 안에 이동표(176px)까지 들어가면
    문제에 남는 폭이 520px 뿐이라 지문이 잘게 끊어져 읽기 힘들다. */
 @media (min-width: 900px) {
-  body.exam-mode #app { max-width: 1060px; padding-left: 22px; padding-right: 22px; }
+  /* 2026-10-31. 실제 시험장 화면에 맞춘다 — 전체화면, 문제는 왼쪽, 답안지는 오른쪽.
+     그때까지 오른쪽 칸(여기서는 왼쪽이었다)은 번호만 있는 이동표였고, 답은 왼쪽
+     선택지에서만 고를 수 있었다. 상한을 1060px 에서 1440px 로 올려 전체화면에서
+     화면을 채운다. */
+  body.exam-mode #app { max-width: 1440px; padding-left: 26px; padding-right: 26px; }
   body.exam-mode .question-box { font-size: 1.22rem; }
   body.exam-mode .question-box__no { font-size: 1.8rem; }
   body.exam-mode .question-box__passage { padding: 22px 26px; font-size: 1.13rem; line-height: 1.9; }
@@ -748,8 +799,6 @@ body.exam-mode .question-box .zh { color: var(--muted); }
 .lang-opt__flag { font-size: 1.7rem; line-height: 1; }
 .lang-opt__name { font-weight: 700; color: var(--navy); font-size: .98rem; }
 .lang-opt__sub { font-size: .68rem; color: var(--muted); }
-
-/* ===== 공유 비밀번호 잠금 화면 ===== */
 
 /* ===== 홈 하단 제작자 크레딧 ===== */
 .app-credit {

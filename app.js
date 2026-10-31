@@ -113,7 +113,7 @@ const I18N = {
     'guide.show': '💡 도움말 보기', 'guide.hide': '💡 도움말 숨기기', 'writing.draftPh': '여기에 답을 작성해 보세요 (200자 이내)',
     'model.show': '📝 모범답안 보기', 'model.hide': '📝 모범답안 숨기기', 'review.model': '모범답안',
     'resume.banner': '📌 진행 중인 모의고사 이어서 풀기 ({0}/{1})', 'exam.resume': '이어서 풀기 ({0}/{1})',
-    'nav.title': '문항 이동', 'nav.answered': '{0}/{1} 답변 완료', 'nav.question': '{0}번 문항',
+    'nav.title': '답안지', 'nav.answered': '{0}/{1} 답변 완료', 'nav.question': '{0}번 문항',
     'nav.legendDone': '답한 것', 'nav.legendFlag': '헷갈리는 것', 'nav.legendTodo': '안 푼 것',
     'quiz.flag': '헷갈림 표시', 'quiz.unflag': '표시 해제',
     'confirm.discardMock': '진행 중인 모의고사 기록이 사라집니다. 새로 시작할까요?', 'toast.resumed': '이어서 풉니다.',
@@ -234,7 +234,7 @@ const I18N = {
     'guide.show': '💡 查看提示', 'guide.hide': '💡 隐藏提示', 'writing.draftPh': '请在此作答（200字以内）',
     'model.show': '📝 查看范文', 'model.hide': '📝 隐藏范文', 'review.model': '范文',
     'resume.banner': '📌 继续上次的模拟考试 ({0}/{1})', 'exam.resume': '继续作答 ({0}/{1})',
-    'nav.title': '题号', 'nav.answered': '{0}/{1} 已作答', 'nav.question': '第{0}题',
+    'nav.title': '答题卡', 'nav.answered': '{0}/{1} 已作答', 'nav.question': '第{0}题',
     'nav.legendDone': '已作答', 'nav.legendFlag': '不确定', 'nav.legendTodo': '未作答',
     'quiz.flag': '标记不确定', 'quiz.unflag': '取消标记',
     'confirm.discardMock': '正在进行的模拟考试记录将被删除。要重新开始吗？', 'toast.resumed': '继续作答。',
@@ -287,6 +287,9 @@ CAT_TR.th = {"한국어": "ภาษาเกาหลี", "사회": "สัง
 T2.vi = {"귀화 종합평가": "Đánh giá tổng hợp nhập tịch", "사회통합프로그램 (KIIP)": "Chương trình Hội nhập xã hội (KIIP)", "귀화용 종합평가": "Đánh giá tổng hợp dùng cho nhập tịch", "필기시험 모의고사": "Thi thử phần thi viết", "실제 시험처럼 풀기 (객관식+작문+구술)": "Làm bài như thi thật (trắc nghiệm + viết + vấn đáp)", "9개 영역별로 풀기": "Luyện theo 9 lĩnh vực", "귀화용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "Đánh giá tổng hợp dùng cho nhập tịch gồm <b>trắc nghiệm 36 câu (65 điểm) + tự luận viết (10 điểm) + vấn đáp (25 điểm) = 100 điểm</b>, <b>đạt 60 điểm trở lên là đậu</b>.", "이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.": "Bài thi thử này làm <b>phần viết (trắc nghiệm + tự luận) trong 60 phút</b>, sau đó luyện tiếp <b>phần vấn đáp</b>.", "객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>4문제가 통합된 1문제</b>를 <b>200자 원고지 1장 이내</b>로 작성합니다.": "Trắc nghiệm chọn một trong ①②③④; phần tự luận là <b>1 đề gộp từ 4 câu</b>, viết trong <b>1 tờ giấy ô 200 chữ</b>.", "객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.": "Chỉ trắc nghiệm được chấm tự động; phần viết · vấn đáp tự kiểm tra bằng đáp án mẫu · gợi ý.", "실제 시험의 구술은 별도 10분 세션(<b>5문항×5점</b>)입니다. 사회통합프로그램 <b>5단계 전 과정(기본+심화) 이수</b> + 합격 시 <b>귀화 면접심사가 면제</b>됩니다.": "Phần vấn đáp ở kỳ thi thật là một phiên riêng 10 phút (<b>5 câu × 5 điểm</b>). Khi <b>hoàn thành toàn bộ giai đoạn 5 (cơ bản + chuyên sâu)</b> của Chương trình Hội nhập xã hội và thi đậu, bạn <b>được miễn phỏng vấn nhập tịch</b>.", "귀화허가 신청자는 <b>신청일로부터 1년 이내 재응시 2회</b>(최초 포함 총 3회)까지 가능하며, <b>3회 모두 불합격하면 귀화신청이 불허</b>됩니다.": "Người xin phép nhập tịch có thể <b>thi lại tối đa 2 lần trong vòng 1 năm kể từ ngày nộp đơn</b> (tổng cộng 3 lần kể cả lần đầu); nếu <b>trượt cả 3 lần, đơn xin nhập tịch sẽ không được chấp thuận</b>.", "TOPIK 급수가 있으면 사전평가 없이 단계 배정이 가능합니다(<b>1급→2단계, 2급→3단계, 3급→4단계, 4급 이상→5단계</b>). 배정 단계는 <b>2년간 유효</b>하며, 사전평가에 재응시하면 이전 교육 이수 기록이 무효가 됩니다.": "Nếu có chứng chỉ TOPIK, bạn có thể được xếp giai đoạn mà không cần thi đánh giá đầu vào (<b>cấp 1→giai đoạn 2, cấp 2→giai đoạn 3, cấp 3→giai đoạn 4, cấp 4 trở lên→giai đoạn 5</b>). Giai đoạn được xếp có <b>hiệu lực 2 năm</b>; nếu thi lại đánh giá đầu vào, hồ sơ học tập trước đó sẽ bị hủy.", "영주 종합평가": "Đánh giá tổng hợp định cư", "영주용 종합평가": "Đánh giá tổng hợp dùng cho định cư", "영주용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "Đánh giá tổng hợp dùng cho định cư gồm <b>trắc nghiệm 36 câu (65 điểm) + tự luận viết (10 điểm) + vấn đáp (25 điểm) = 100 điểm</b>, <b>đạt 60 điểm trở lên là đậu</b>.", "응시 자격: 사회통합프로그램 <b>5단계 기본과정 수료</b>, 또는 <b>사전평가 85점 이상 득점 후 2년 이내</b>. 영주용은 <b>지필(PBT)로만</b> 시행됩니다.": "Điều kiện dự thi: <b>hoàn thành khóa cơ bản giai đoạn 5</b> của Chương trình Hội nhập xã hội, hoặc <b>trong vòng 2 năm sau khi đạt từ 85 điểm trở lên ở đánh giá đầu vào</b>. Bài thi định cư <b>chỉ thi trên giấy (PBT)</b>.", "사회통합 사전평가": "Đánh giá đầu vào Hội nhập xã hội", "사회통합프로그램 사전평가": "Đánh giá đầu vào Chương trình Hội nhập xã hội", "단계 배정 모의평가": "Đánh giá thử để xếp giai đoạn", "어휘·문법·읽기·대화·문화·사회": "Từ vựng · ngữ pháp · đọc · hội thoại · văn hóa · xã hội", "사회통합프로그램 <b>사전평가</b>는 합격·불합격 시험이 아니라, 점수에 따라 <b>0~5단계</b>를 배정하는 레벨 평가입니다.": "<b>Đánh giá đầu vào</b> của Chương trình Hội nhập xã hội không phải kỳ thi đậu · rớt, mà là bài đánh giá phân cấp để xếp <b>giai đoạn 0~5</b> theo điểm số.", "실제 시험은 <b>필기 50문항(60분, 75점)</b> + <b>구술 5문항(10분, 25점)</b> = 100점입니다. 이 모의평가는 필기(객관식+작문)를 풀고 이어서 구술을 연습합니다.": "Kỳ thi thật gồm <b>phần viết 50 câu (60 phút, 75 điểm)</b> + <b>vấn đáp 5 câu (10 phút, 25 điểm)</b> = 100 điểm. Bài đánh giá thử này làm phần viết (trắc nghiệm + tự luận) rồi luyện tiếp phần vấn đáp.", "객관식은 ①②③④ 중 하나를 고르고, 작문은 빈칸에 알맞은 표현을 짧게 씁니다.": "Trắc nghiệm chọn một trong ①②③④, phần viết điền ngắn gọn cách diễn đạt thích hợp vào chỗ trống.", "객관식만 자동 채점되어 <b>예상 배정 단계</b>를 알려줍니다. 작문·구술은 모범답안으로 스스로 점검합니다.": "Chỉ trắc nghiệm được chấm tự động và cho biết <b>giai đoạn xếp lớp dự kiến</b>. Phần viết · vấn đáp tự kiểm tra bằng đáp án mẫu.", "실제로는 <b>구술 점수가 3점 미만이면 0단계</b>로 배정됩니다. 정확한 단계는 시험 당일 점수로 정해지며, 표시되는 단계는 <b>연습용 참고치</b>입니다.": "Trên thực tế, <b>nếu điểm vấn đáp dưới 3 điểm thì xếp giai đoạn 0</b>. Giai đoạn chính xác được quyết định theo điểm trong ngày thi, giai đoạn hiển thị chỉ là <b>giá trị tham khảo khi luyện tập</b>.", "5단계 · 한국사회이해": "Giai đoạn 5 · Hiểu biết xã hội Hàn Quốc", "81~100점": "81~100 điểm", "4단계 · 중급2": "Giai đoạn 4 · Trung cấp 2", "61~80점": "61~80 điểm", "3단계 · 중급1": "Giai đoạn 3 · Trung cấp 1", "41~60점": "41~60 điểm", "2단계 · 초급2": "Giai đoạn 2 · Sơ cấp 2", "21~40점": "21~40 điểm", "1단계 · 초급1": "Giai đoạn 1 · Sơ cấp 1", "3~20점": "3~20 điểm", "0단계 · 한국어기초": "Giai đoạn 0 · Tiếng Hàn cơ bản", "구술 3점 미만": "Vấn đáp dưới 3 điểm"};
 T2.th = {"귀화 종합평가": "การประเมินรวมแปลงสัญชาติ", "사회통합프로그램 (KIIP)": "โครงการบูรณาการสังคม (KIIP)", "귀화용 종합평가": "การประเมินรวมเพื่อแปลงสัญชาติ", "필기시험 모의고사": "ข้อสอบจำลองภาคข้อเขียน", "실제 시험처럼 풀기 (객관식+작문+구술)": "ทำเหมือนสอบจริง (ปรนัย+เขียน+พูด)", "9개 영역별로 풀기": "ฝึกตาม 9 หมวด", "귀화용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "การประเมินรวมเพื่อแปลงสัญชาติคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.": "ข้อสอบจำลองนี้ให้ทำ <b>ภาคข้อเขียน (ปรนัย+เขียน) ภายใน 60 นาที</b> แล้วฝึก <b>ข้อสอบพูด</b> ต่อ", "객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>4문제가 통합된 1문제</b>를 <b>200자 원고지 1장 이내</b>로 작성합니다.": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนเป็น<b>ข้อสอบ 1 ข้อที่รวมมาจาก 4 คำถาม</b> เขียนภายใน<b>กระดาษคำตอบแบบช่อง 200 ตัวอักษร 1 แผ่น</b>", "객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัย ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง·คำแนะนำ", "실제 시험의 구술은 별도 10분 세션(<b>5문항×5점</b>)입니다. 사회통합프로그램 <b>5단계 전 과정(기본+심화) 이수</b> + 합격 시 <b>귀화 면접심사가 면제</b>됩니다.": "การพูดในสอบจริงเป็นช่วงแยกต่างหาก 10 นาที (<b>5 ข้อ × 5 คะแนน</b>) เมื่อเรียนจบ<b>หลักสูตรระดับ 5 ทั้งหมด (พื้นฐาน+เชิงลึก)</b>ของโครงการบูรณาการสังคมและสอบผ่าน จะ<b>ได้รับการยกเว้นการสัมภาษณ์แปลงสัญชาติ</b>", "귀화허가 신청자는 <b>신청일로부터 1년 이내 재응시 2회</b>(최초 포함 총 3회)까지 가능하며, <b>3회 모두 불합격하면 귀화신청이 불허</b>됩니다.": "ผู้ยื่นขอแปลงสัญชาติสามารถ<b>สอบใหม่ได้ไม่เกิน 2 ครั้งภายใน 1 ปีนับจากวันยื่นคำขอ</b> (รวมครั้งแรกทั้งหมด 3 ครั้ง) หาก<b>ไม่ผ่านทั้ง 3 ครั้ง คำขอแปลงสัญชาติจะไม่ได้รับอนุมัติ</b>", "TOPIK 급수가 있으면 사전평가 없이 단계 배정이 가능합니다(<b>1급→2단계, 2급→3단계, 3급→4단계, 4급 이상→5단계</b>). 배정 단계는 <b>2년간 유효</b>하며, 사전평가에 재응시하면 이전 교육 이수 기록이 무효가 됩니다.": "หากมีระดับ TOPIK สามารถจัดระดับได้โดยไม่ต้องสอบประเมินเบื้องต้น (<b>ระดับ1→ขั้น2, ระดับ2→ขั้น3, ระดับ3→ขั้น4, ระดับ4ขึ้นไป→ขั้น5</b>) ระดับที่จัดมีผล <b>2 ปี</b> และหากสอบประเมินเบื้องต้นใหม่ ประวัติการเรียนก่อนหน้าจะถือเป็นโมฆะ", "영주 종합평가": "การประเมินรวมถิ่นที่อยู่ถาวร", "영주용 종합평가": "การประเมินรวมเพื่อถิ่นที่อยู่ถาวร", "영주용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "การประเมินรวมเพื่อถิ่นที่อยู่ถาวรคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "응시 자격: 사회통합프로그램 <b>5단계 기본과정 수료</b>, 또는 <b>사전평가 85점 이상 득점 후 2년 이내</b>. 영주용은 <b>지필(PBT)로만</b> 시행됩니다.": "คุณสมบัติผู้สอบ: จบ<b>หลักสูตรพื้นฐานระดับ 5</b> ของโครงการบูรณาการสังคม หรืออยู่ภายใน <b>2 ปีหลังได้คะแนนประเมินเบื้องต้นตั้งแต่ 85 คะแนนขึ้นไป</b> แบบถิ่นที่อยู่ถาวรจัดสอบ <b>ด้วยกระดาษ-ปากกา (PBT) เท่านั้น</b>", "사회통합 사전평가": "การประเมินเบื้องต้นบูรณาการสังคม", "사회통합프로그램 사전평가": "การประเมินเบื้องต้นโครงการบูรณาการสังคม", "단계 배정 모의평가": "การประเมินจำลองเพื่อจัดระดับ", "어휘·문법·읽기·대화·문화·사회": "คำศัพท์·ไวยากรณ์·การอ่าน·บทสนทนา·วัฒนธรรม·สังคม", "사회통합프로그램 <b>사전평가</b>는 합격·불합격 시험이 아니라, 점수에 따라 <b>0~5단계</b>를 배정하는 레벨 평가입니다.": "<b>การประเมินเบื้องต้น</b> ของโครงการบูรณาการสังคมไม่ใช่การสอบผ่าน·ไม่ผ่าน แต่เป็นการประเมินระดับที่จัด <b>ระดับ 0~5</b> ตามคะแนน", "실제 시험은 <b>필기 50문항(60분, 75점)</b> + <b>구술 5문항(10분, 25점)</b> = 100점입니다. 이 모의평가는 필기(객관식+작문)를 풀고 이어서 구술을 연습합니다.": "สอบจริงคือ <b>ข้อเขียน 50 ข้อ (60 นาที, 75 คะแนน)</b> + <b>พูด 5 ข้อ (10 นาที, 25 คะแนน)</b> = 100 คะแนน การประเมินจำลองนี้ให้ทำภาคข้อเขียน (ปรนัย+เขียน) แล้วฝึกพูดต่อ", "객관식은 ①②③④ 중 하나를 고르고, 작문은 빈칸에 알맞은 표현을 짧게 씁니다.": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนให้เติมคำที่เหมาะสมลงในช่องว่างสั้นๆ", "객관식만 자동 채점되어 <b>예상 배정 단계</b>를 알려줍니다. 작문·구술은 모범답안으로 스스로 점검합니다.": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัยแล้วบอก <b>ระดับที่คาดว่าจะได้รับการจัด</b> ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง", "실제로는 <b>구술 점수가 3점 미만이면 0단계</b>로 배정됩니다. 정확한 단계는 시험 당일 점수로 정해지며, 표시되는 단계는 <b>연습용 참고치</b>입니다.": "ในความเป็นจริง <b>หากคะแนนพูดต่ำกว่า 3 คะแนนจะถูกจัดเป็นระดับ 0</b> ระดับที่แน่นอนกำหนดจากคะแนนในวันสอบ ส่วนระดับที่แสดงเป็น <b>ค่าอ้างอิงสำหรับฝึกซ้อม</b>", "5단계 · 한국사회이해": "ระดับ 5 · ความเข้าใจสังคมเกาหลี", "81~100점": "81~100 คะแนน", "4단계 · 중급2": "ระดับ 4 · กลาง 2", "61~80점": "61~80 คะแนน", "3단계 · 중급1": "ระดับ 3 · กลาง 1", "41~60점": "41~60 คะแนน", "2단계 · 초급2": "ระดับ 2 · ต้น 2", "21~40점": "21~40 คะแนน", "1단계 · 초급1": "ระดับ 1 · ต้น 1", "3~20점": "3~20 คะแนน", "0단계 · 한국어기초": "ระดับ 0 · ภาษาเกาหลีพื้นฐาน", "구술 3점 미만": "พูดต่ำกว่า 3 คะแนน"};
 Object.assign(I18N.ko, {
+  'sheet.writing': '작문', 'sheet.oral': '구술',
+  'sheet.mark': '{0}번 문항, {1}번 보기 고르기',
+  'quiz.full': '전체화면', 'quiz.fullOff': '전체화면 끄기',
   'member.loginShort': '회원 로그인',
   'member.title': '회원 전용 콘텐츠입니다.',
   'member.desc': '회원 로그인 후 이용할 수 있습니다.',
@@ -338,6 +341,9 @@ Object.assign(I18N.ko, {
   'sync.memberReady': '{0} · {1}문항 준비 완료',
 });
 Object.assign(I18N.zh, {
+  'sheet.writing': '写作', 'sheet.oral': '口试',
+  'sheet.mark': '第{0}题，选第{1}项',
+  'quiz.full': '全屏', 'quiz.fullOff': '退出全屏',
   'member.loginShort': '会员登录',
   'member.title': '会员专用内容。',
   'member.desc': '会员登录后可以使用。',
@@ -389,7 +395,10 @@ Object.assign(I18N.zh, {
   'sync.memberReady': '{0} · 共{1}题 已就绪',
 });
 Object.assign(I18N.vi, {
-  'nav.title': 'Câu hỏi', 'nav.answered': 'Đã trả lời {0}/{1}', 'nav.question': 'Câu {0}',
+  'sheet.writing': 'Viết', 'sheet.oral': 'Nói',
+  'sheet.mark': 'Câu {0}, chọn đáp án {1}',
+  'quiz.full': 'Toàn màn hình', 'quiz.fullOff': 'Tắt toàn màn hình',
+  'nav.title': 'Phiếu trả lời', 'nav.answered': 'Đã trả lời {0}/{1}', 'nav.question': 'Câu {0}',
   'stats.cover': 'Đã làm {0}/{1}',
   'nav.legendDone': 'Đã trả lời', 'nav.legendFlag': 'Chưa chắc', 'nav.legendTodo': 'Chưa làm',
   'quiz.flag': 'Đánh dấu chưa chắc', 'quiz.unflag': 'Bỏ đánh dấu',
@@ -419,7 +428,10 @@ Object.assign(I18N.vi, {
   'sync.memberReady': '{0} · {1} câu đã sẵn sàng',
 });
 Object.assign(I18N.th, {
-  'nav.title': 'ข้อคำถาม', 'nav.answered': 'ตอบแล้ว {0}/{1}', 'nav.question': 'ข้อ {0}',
+  'sheet.writing': 'เขียน', 'sheet.oral': 'พูด',
+  'sheet.mark': 'ข้อ {0} เลือกตัวเลือกที่ {1}',
+  'quiz.full': 'เต็มหน้าจอ', 'quiz.fullOff': 'ออกจากเต็มหน้าจอ',
+  'nav.title': 'กระดาษคำตอบ', 'nav.answered': 'ตอบแล้ว {0}/{1}', 'nav.question': 'ข้อ {0}',
   'stats.cover': 'ทำแล้ว {0}/{1}',
   'nav.legendDone': 'ตอบแล้ว', 'nav.legendFlag': 'ไม่แน่ใจ', 'nav.legendTodo': 'ยังไม่ทำ',
   'quiz.flag': 'ทำเครื่องหมายไม่แน่ใจ', 'quiz.unflag': 'ลบเครื่องหมาย',
@@ -1384,6 +1396,8 @@ function startQuiz(questions, mode, resume) {
   document.body.classList.toggle('exam-mode', isMock);
   $('examBanner').classList.toggle('hidden', !isMock);
   $('quizTimer').classList.toggle('hidden', !isMock);
+  $('fsBtn').classList.toggle('hidden', !isMock);
+  updateFsBtn();
   $('quizCat').classList.toggle('hidden', isMock);
   if (isMock) startTimer();
   setNavCollapsed(navIsNarrow());
@@ -1637,6 +1651,7 @@ function renderTrialEnd(pct, correct, totalMc) {
 
 async function startMockExam() {
   if (getMockSaveRaw() && !confirm(t('confirm.discardMock'))) return;
+  reqFullscreen();   // 누른 동작 안에서 요청해야 받아 준다. 아래 await 뒤에서는 거부된다.
   clearMockSave();
   const cfg = exam().mock;
   let mcPool = [];
@@ -1834,6 +1849,7 @@ function pickOral(n, source) {
 }
 
 function resumeMock() {
+  reqFullscreen();
   const s = getMockSave();
   if (!s) { clearMockSave(); showView('home'); renderHome(); return; }
   startQuiz(s.list, 'mock', { i: s.i, answers: s.answers, text: s.text, order: s.order, flags: s.flags, timeLeft: s.timeLeft });
@@ -1984,9 +2000,11 @@ function renderQuestionNavigator() {
   const grid = $('questionNavGrid');
   grid.innerHTML = '';
   quiz.list.forEach((q, i) => {
+    const row = document.createElement('div');
+    row.className = 'omr__row';
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'question-nav__item';
+    btn.className = 'question-nav__item omr__no';
     if (isQuestionAnswered(i)) btn.classList.add('is-answered');
     if (quiz.flags && quiz.flags[i]) btn.classList.add('is-flagged');
     if (i === quiz.i) btn.classList.add('is-current');
@@ -2000,15 +2018,102 @@ function renderQuestionNavigator() {
     btn.addEventListener('click', () => {
       quiz.i = i; renderQuestion();
       if (navIsNarrow()) setNavCollapsed(true);   // 옮겼으면 문제가 바로 보여야 한다
-      /* renderQuestion 안에서 이동표를 통째로 다시 그리므로 방금 누른 버튼이 사라진다.
+      /* renderQuestion 안에서 답안지를 통째로 다시 그리므로 방금 누른 버튼이 사라진다.
          키보드만 쓰는 사람은 초점을 잃고 페이지 맨 위부터 다시 탭을 눌러야 한다.
          새로 그려진 같은 번호 칸으로 초점을 옮겨 준다. */
-      const fresh = $('questionNavGrid').children[i];
-      if (fresh) fresh.focus();
+      focusSheetRow(i);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-    grid.appendChild(btn);
+    row.appendChild(btn);
+    if (q.type === 'mc') {
+      const bubbles = document.createElement('div');
+      bubbles.className = 'omr__bubbles';
+      /* 보기는 화면에서 섞어 보여 준다(orderFor). 그러므로 동그라미도 **표시 순서**를
+         따라야 한다. 원본 인덱스로 적으면 왼쪽 선택지의 ②와 답안지의 ②가 서로 다른
+         보기를 가리켜, 답안지만 보고 고친 답이 엉뚱한 보기로 들어간다. */
+      orderFor(i, q).forEach((origIdx, pos) => {
+        const bub = document.createElement('button');
+        bub.type = 'button';
+        bub.className = 'omr__bub';
+        bub.textContent = NUM[pos];
+        const on = quiz.answers[i] === origIdx;
+        if (on) bub.classList.add('is-on');
+        bub.setAttribute('aria-label', t('sheet.mark', i + 1, pos + 1));
+        bub.setAttribute('aria-pressed', on ? 'true' : 'false');
+        bub.addEventListener('click', () => markOnSheet(i, origIdx));
+        bubbles.appendChild(bub);
+      });
+      row.appendChild(bubbles);
+    } else {
+      /* 작문·구술은 고를 보기가 없다. 동그라미 자리에 무엇을 쓰는 칸인지 적고,
+         글을 적어 두었으면 색을 넣는다. 번호를 누르면 그 문항으로 옮겨 간다. */
+      const mark = document.createElement('span');
+      mark.className = 'omr__mark' + (isQuestionAnswered(i) ? ' is-on' : '');
+      mark.textContent = t(q.type === 'oral' ? 'sheet.oral' : 'sheet.writing');
+      row.appendChild(mark);
+    }
+    grid.appendChild(row);
   });
+  /* 지금 푸는 줄이 답안지 안에서 보이게 한다. 55문항이면 한 번에 스무 줄쯤만 보이는데,
+     '다음' 으로 넘기다 보면 지금 줄이 칸 밖으로 밀려 어디를 푸는지 알 수 없다.
+     창 전체를 굴리면 읽던 지문이 함께 움직이므로 답안지 안에서만 굴린다. */
+  const cur = grid.children[quiz.i];
+  if (cur && nav.scrollHeight > nav.clientHeight + 4) {
+    const top = cur.offsetTop, bot = top + cur.offsetHeight;
+    /* 칸 밖으로 나갔을 때만 움직이고, 움직일 때는 가운데로 데려온다.
+       가장자리에 붙여 놓으면 답안지 아래쪽이 창 밖에 걸쳐 있을 때 그 줄이 안 보인다.
+       가운데로 두면 다음 열몇 줄은 더 움직이지 않아도 보인다. */
+    if (top < nav.scrollTop + 8 || bot > nav.scrollTop + nav.clientHeight - 8) {
+      const mid = top - (nav.clientHeight - cur.offsetHeight) / 2;
+      nav.scrollTop = Math.max(0, Math.min(nav.scrollHeight - nav.clientHeight, mid));
+    }
+  }
+}
+
+/* 답안지에서 바로 답을 표시한다.
+   누른 줄로 문제도 함께 옮긴다 — 왼쪽에 보이는 문제와 방금 표시한 줄이 어긋나면
+   무엇에 답했는지 알 수 없다. 같은 줄을 누른 보통의 경우에는 아무것도 움직이지 않는다. */
+function markOnSheet(i, origIdx) {
+  if (!quiz || quiz.scored) return;
+  quiz.i = i;
+  quiz.answers[i] = origIdx;
+  renderQuestion();
+  const row = $('questionNavGrid').children[i];
+  const on = row && row.querySelector('.omr__bub.is-on');
+  if (on) on.focus();
+}
+/* 다시 그린 뒤 같은 번호 칸으로 초점을 돌려준다. 줄이 div 라 children[i] 자체는
+   누를 수 있는 것이 아니다. */
+function focusSheetRow(i) {
+  const row = $('questionNavGrid').children[i];
+  const no = row && row.querySelector('.omr__no');
+  if (no) no.focus();
+}
+
+/* 실제 시험은 전체화면이다(사용자가 2026-10-26 사전평가에서 본 화면).
+   브라우저는 누른 동작 안에서 요청해야 전체화면을 받아 준다. 모의고사를 시작하는
+   함수는 문항을 await 로 받아 오므로 그 뒤에 요청하면 거부된다 — 그래서 누름 직후에
+   한 번 요청하고, 거부되거나 ESC 로 빠져나오면 그대로 둔다. 다시 붙잡지 않는다.
+   아이폰 사파리는 이 기능이 아예 없다. 조용히 넘어간다. */
+function fsOn() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function reqFullscreen() {
+  const el = document.documentElement;
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!fn) return;
+  try { const p = fn.call(el); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+}
+function exitFullscreen() {
+  const fn = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!fn) return;
+  try { const p = fn.call(document); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+}
+function toggleFullscreen() { if (fsOn()) exitFullscreen(); else reqFullscreen(); }
+function updateFsBtn() {
+  const b = $('fsBtn');
+  if (!b) return;
+  const on = fsOn();
+  b.textContent = t(on ? 'quiz.fullOff' : 'quiz.full');
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
 }
 
 /* 시험지처럼 보이게 한다. 교재의 시험지는 지시문 한 줄을 위에 두고 지문은 옅은 색
@@ -3133,6 +3238,10 @@ function wireEvents() {
   if (edc) edc.addEventListener('click', clearExamDate);
 
   $('nextBtn').addEventListener('click', nextQuestion);
+  $('fsBtn').addEventListener('click', toggleFullscreen);
+  /* ESC 로 빠져나오거나 브라우저 단추로 들어와도 버튼 글씨가 맞아야 한다. */
+  document.addEventListener('fullscreenchange', updateFsBtn);
+  document.addEventListener('webkitfullscreenchange', updateFsBtn);
   $('prevBtn').addEventListener('click', prevQuestion);
   $('flagBtn').addEventListener('click', toggleFlag);
   $('navToggle').addEventListener('click', toggleNav);

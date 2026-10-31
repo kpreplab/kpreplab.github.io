@@ -178,17 +178,19 @@
         <span id="quizProgress" class="quiz-progress">1 / 36</span>
         <span id="quizTimer" class="quiz-timer hidden">60:00</span>
         <span id="quizCat" class="quiz-cat"></span>
+        <!-- 실제 시험은 전체화면이다. 모의고사에서만 보인다. -->
+        <button id="fsBtn" class="quiz-fs hidden" type="button" aria-pressed="false" data-i18n="quiz.full">전체화면</button>
       </div>
       <div class="progress-bar"><div id="progressFill" class="progress-bar__fill"></div></div>
 
       <div id="examBanner" class="exam-banner hidden"></div>
 
-      <!-- 문항 이동표는 문제 왼쪽에 세로로 둔다. 위에 가로로 놓으면 문제가 그만큼
-           아래로 밀려 답을 고르는 데 방해가 된다. 좁은 화면에서는 위로 돌아간다. -->
+      <!-- 답안지는 실제 시험장처럼 문제 오른쪽에 세로로 둔다(CSS order).
+           좁은 화면에서는 자리가 없으므로 문제 위로 돌아가고 번호만 남는다. -->
       <div class="quiz-body">
         <aside id="questionNavigator" class="question-nav hidden" aria-label="Question navigator">
           <button type="button" id="navToggle" class="question-nav__head" aria-expanded="true" aria-controls="questionNavGrid">
-            <strong data-i18n="nav.title">문항 이동</strong>
+            <strong data-i18n="nav.title">답안지</strong>
             <span id="questionNavCount"></span>
             <i class="question-nav__chev" aria-hidden="true"></i>
           </button>
