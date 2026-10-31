@@ -218,14 +218,16 @@
           <div id="wongojiCard" class="wongoji-card hidden"></div>
 
           <div id="feedback" class="feedback hidden"></div>
-        </div>
-      </div>
 
-      <div class="quiz-actions">
-        <button id="flagBtn" class="btn btn--flag hidden" type="button" data-i18n="quiz.flag">헷갈림 표시</button>
-        <button id="prevBtn" class="btn btn--ghost hidden" data-i18n="quiz.prev">← 이전</button>
-        <button id="nextBtn" class="btn btn--primary" data-i18n="quiz.next">다음 →</button>
-        <button id="submitBtn" class="btn btn--primary hidden" data-i18n="quiz.submit">제출하고 채점</button>
+          <!-- 버튼은 선택지 바로 밑, 왼쪽 칸 안에 둔다. 오른쪽 답안지는 세로로 길어서
+               바깥에 두면 문제가 짧아도 '다음' 이 화면 밖으로 밀린다. -->
+          <div class="quiz-actions">
+            <button id="flagBtn" class="btn btn--flag hidden" type="button" data-i18n="quiz.flag">헷갈림 표시</button>
+            <button id="prevBtn" class="btn btn--ghost hidden" data-i18n="quiz.prev">← 이전</button>
+            <button id="nextBtn" class="btn btn--primary" data-i18n="quiz.next">다음 →</button>
+            <button id="submitBtn" class="btn btn--primary hidden" data-i18n="quiz.submit">제출하고 채점</button>
+          </div>
+        </div>
       </div>
     </section>
 

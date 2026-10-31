@@ -3239,6 +3239,20 @@ function wireEvents() {
 
   $('nextBtn').addEventListener('click', nextQuestion);
   $('fsBtn').addEventListener('click', toggleFullscreen);
+  /* 화살표로도 넘긴다. '다음' 을 누르러 손을 옮기는 것이 번거롭다는 말이 있었다.
+     글을 쓰는 중(작문·구술 칸)이나 창이 떠 있을 때는 끼어들지 않는다. */
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+    if (!quiz || quiz.scored) return;
+    if ($('view-quiz').classList.contains('hidden')) return;
+    if (!$('memberModal').classList.contains('hidden')) return;
+    if (!$('langSplash').classList.contains('hidden')) return;
+    const el = document.activeElement;
+    if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+    e.preventDefault();
+    if (e.key === 'ArrowRight') nextQuestion(); else prevQuestion();
+  });
   /* ESC 로 빠져나오거나 브라우저 단추로 들어와도 버튼 글씨가 맞아야 한다. */
   document.addEventListener('fullscreenchange', updateFsBtn);
   document.addEventListener('webkitfullscreenchange', updateFsBtn);
