@@ -288,6 +288,8 @@ T2.vi = {"귀화 종합평가": "Đánh giá tổng hợp nhập tịch", "사�
 T2.th = {"귀화 종합평가": "การประเมินรวมแปลงสัญชาติ", "사회통합프로그램 (KIIP)": "โครงการบูรณาการสังคม (KIIP)", "귀화용 종합평가": "การประเมินรวมเพื่อแปลงสัญชาติ", "필기시험 모의고사": "ข้อสอบจำลองภาคข้อเขียน", "실제 시험처럼 풀기 (객관식+작문+구술)": "ทำเหมือนสอบจริง (ปรนัย+เขียน+พูด)", "9개 영역별로 풀기": "ฝึกตาม 9 หมวด", "귀화용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "การประเมินรวมเพื่อแปลงสัญชาติคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.": "ข้อสอบจำลองนี้ให้ทำ <b>ภาคข้อเขียน (ปรนัย+เขียน) ภายใน 60 นาที</b> แล้วฝึก <b>ข้อสอบพูด</b> ต่อ", "객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>4문제가 통합된 1문제</b>를 <b>200자 원고지 1장 이내</b>로 작성합니다.": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนเป็น<b>ข้อสอบ 1 ข้อที่รวมมาจาก 4 คำถาม</b> เขียนภายใน<b>กระดาษคำตอบแบบช่อง 200 ตัวอักษร 1 แผ่น</b>", "객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัย ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง·คำแนะนำ", "실제 시험의 구술은 별도 10분 세션(<b>5문항×5점</b>)입니다. 사회통합프로그램 <b>5단계 전 과정(기본+심화) 이수</b> + 합격 시 <b>귀화 면접심사가 면제</b>됩니다.": "การพูดในสอบจริงเป็นช่วงแยกต่างหาก 10 นาที (<b>5 ข้อ × 5 คะแนน</b>) เมื่อเรียนจบ<b>หลักสูตรระดับ 5 ทั้งหมด (พื้นฐาน+เชิงลึก)</b>ของโครงการบูรณาการสังคมและสอบผ่าน จะ<b>ได้รับการยกเว้นการสัมภาษณ์แปลงสัญชาติ</b>", "귀화허가 신청자는 <b>신청일로부터 1년 이내 재응시 2회</b>(최초 포함 총 3회)까지 가능하며, <b>3회 모두 불합격하면 귀화신청이 불허</b>됩니다.": "ผู้ยื่นขอแปลงสัญชาติสามารถ<b>สอบใหม่ได้ไม่เกิน 2 ครั้งภายใน 1 ปีนับจากวันยื่นคำขอ</b> (รวมครั้งแรกทั้งหมด 3 ครั้ง) หาก<b>ไม่ผ่านทั้ง 3 ครั้ง คำขอแปลงสัญชาติจะไม่ได้รับอนุมัติ</b>", "TOPIK 급수가 있으면 사전평가 없이 단계 배정이 가능합니다(<b>1급→2단계, 2급→3단계, 3급→4단계, 4급 이상→5단계</b>). 배정 단계는 <b>2년간 유효</b>하며, 사전평가에 재응시하면 이전 교육 이수 기록이 무효가 됩니다.": "หากมีระดับ TOPIK สามารถจัดระดับได้โดยไม่ต้องสอบประเมินเบื้องต้น (<b>ระดับ1→ขั้น2, ระดับ2→ขั้น3, ระดับ3→ขั้น4, ระดับ4ขึ้นไป→ขั้น5</b>) ระดับที่จัดมีผล <b>2 ปี</b> และหากสอบประเมินเบื้องต้นใหม่ ประวัติการเรียนก่อนหน้าจะถือเป็นโมฆะ", "영주 종합평가": "การประเมินรวมถิ่นที่อยู่ถาวร", "영주용 종합평가": "การประเมินรวมเพื่อถิ่นที่อยู่ถาวร", "영주용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "การประเมินรวมเพื่อถิ่นที่อยู่ถาวรคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "응시 자격: 사회통합프로그램 <b>5단계 기본과정 수료</b>, 또는 <b>사전평가 85점 이상 득점 후 2년 이내</b>. 영주용은 <b>지필(PBT)로만</b> 시행됩니다.": "คุณสมบัติผู้สอบ: จบ<b>หลักสูตรพื้นฐานระดับ 5</b> ของโครงการบูรณาการสังคม หรืออยู่ภายใน <b>2 ปีหลังได้คะแนนประเมินเบื้องต้นตั้งแต่ 85 คะแนนขึ้นไป</b> แบบถิ่นที่อยู่ถาวรจัดสอบ <b>ด้วยกระดาษ-ปากกา (PBT) เท่านั้น</b>", "사회통합 사전평가": "การประเมินเบื้องต้นบูรณาการสังคม", "사회통합프로그램 사전평가": "การประเมินเบื้องต้นโครงการบูรณาการสังคม", "단계 배정 모의평가": "การประเมินจำลองเพื่อจัดระดับ", "어휘·문법·읽기·대화·문화·사회": "คำศัพท์·ไวยากรณ์·การอ่าน·บทสนทนา·วัฒนธรรม·สังคม", "사회통합프로그램 <b>사전평가</b>는 합격·불합격 시험이 아니라, 점수에 따라 <b>0~5단계</b>를 배정하는 레벨 평가입니다.": "<b>การประเมินเบื้องต้น</b> ของโครงการบูรณาการสังคมไม่ใช่การสอบผ่าน·ไม่ผ่าน แต่เป็นการประเมินระดับที่จัด <b>ระดับ 0~5</b> ตามคะแนน", "실제 시험은 <b>필기 50문항(60분, 75점)</b> + <b>구술 5문항(10분, 25점)</b> = 100점입니다. 이 모의평가는 필기(객관식+작문)를 풀고 이어서 구술을 연습합니다.": "สอบจริงคือ <b>ข้อเขียน 50 ข้อ (60 นาที, 75 คะแนน)</b> + <b>พูด 5 ข้อ (10 นาที, 25 คะแนน)</b> = 100 คะแนน การประเมินจำลองนี้ให้ทำภาคข้อเขียน (ปรนัย+เขียน) แล้วฝึกพูดต่อ", "객관식은 ①②③④ 중 하나를 고르고, 작문은 빈칸에 알맞은 표현을 짧게 씁니다.": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนให้เติมคำที่เหมาะสมลงในช่องว่างสั้นๆ", "객관식만 자동 채점되어 <b>예상 배정 단계</b>를 알려줍니다. 작문·구술은 모범답안으로 스스로 점검합니다.": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัยแล้วบอก <b>ระดับที่คาดว่าจะได้รับการจัด</b> ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง", "실제로는 <b>구술 점수가 3점 미만이면 0단계</b>로 배정됩니다. 정확한 단계는 시험 당일 점수로 정해지며, 표시되는 단계는 <b>연습용 참고치</b>입니다.": "ในความเป็นจริง <b>หากคะแนนพูดต่ำกว่า 3 คะแนนจะถูกจัดเป็นระดับ 0</b> ระดับที่แน่นอนกำหนดจากคะแนนในวันสอบ ส่วนระดับที่แสดงเป็น <b>ค่าอ้างอิงสำหรับฝึกซ้อม</b>", "5단계 · 한국사회이해": "ระดับ 5 · ความเข้าใจสังคมเกาหลี", "81~100점": "81~100 คะแนน", "4단계 · 중급2": "ระดับ 4 · กลาง 2", "61~80점": "61~80 คะแนน", "3단계 · 중급1": "ระดับ 3 · กลาง 1", "41~60점": "41~60 คะแนน", "2단계 · 초급2": "ระดับ 2 · ต้น 2", "21~40점": "21~40 คะแนน", "1단계 · 초급1": "ระดับ 1 · ต้น 1", "3~20점": "3~20 คะแนน", "0단계 · 한국어기초": "ระดับ 0 · ภาษาเกาหลีพื้นฐาน", "구술 3점 미만": "พูดต่ำกว่า 3 คะแนน"};
 Object.assign(I18N.ko, {
   'sheet.writing': '작문', 'sheet.oral': '구술',
+  'ws.grade': '채점하기', 'ws.again': '다시 채점하기',
+  'confirm.submitN': '아직 답하지 않은 문항이 {0}개 있습니다. 지금 제출하고 채점할까요?',
   'sheet.mark': '{0}번 문항, {1}번 보기 고르기',
   'quiz.full': '전체화면', 'quiz.fullOff': '전체화면 끄기',
   'member.loginShort': '회원 로그인',
@@ -342,6 +344,8 @@ Object.assign(I18N.ko, {
 });
 Object.assign(I18N.zh, {
   'sheet.writing': '写作', 'sheet.oral': '口试',
+  'ws.grade': '评分', 'ws.again': '重新评分',
+  'confirm.submitN': '还有 {0} 道题没有作答。现在就提交并评分吗？',
   'sheet.mark': '第{0}题，选第{1}项',
   'quiz.full': '全屏', 'quiz.fullOff': '退出全屏',
   'member.loginShort': '会员登录',
@@ -396,6 +400,8 @@ Object.assign(I18N.zh, {
 });
 Object.assign(I18N.vi, {
   'sheet.writing': 'Viết', 'sheet.oral': 'Nói',
+  'ws.grade': 'Chấm điểm', 'ws.again': 'Chấm lại',
+  'confirm.submitN': 'Còn {0} câu chưa trả lời. Nộp bài và chấm điểm ngay?',
   'sheet.mark': 'Câu {0}, chọn đáp án {1}',
   'quiz.full': 'Toàn màn hình', 'quiz.fullOff': 'Tắt toàn màn hình',
   'nav.title': 'Phiếu trả lời', 'nav.answered': 'Đã trả lời {0}/{1}', 'nav.question': 'Câu {0}',
@@ -429,6 +435,8 @@ Object.assign(I18N.vi, {
 });
 Object.assign(I18N.th, {
   'sheet.writing': 'เขียน', 'sheet.oral': 'พูด',
+  'ws.grade': 'ตรวจคำตอบ', 'ws.again': 'ตรวจอีกครั้ง',
+  'confirm.submitN': 'ยังมี {0} ข้อที่ยังไม่ได้ตอบ ส่งคำตอบและตรวจเลยหรือไม่',
   'sheet.mark': 'ข้อ {0} เลือกตัวเลือกที่ {1}',
   'quiz.full': 'เต็มหน้าจอ', 'quiz.fullOff': 'ออกจากเต็มหน้าจอ',
   'nav.title': 'กระดาษคำตอบ', 'nav.answered': 'ตอบแล้ว {0}/{1}', 'nav.question': 'ข้อ {0}',
@@ -1576,6 +1584,37 @@ function matchSocialLevel(picked, pool) {
   return out;
 }
 
+/* 지시문 한 줄로 끝나는 문항을 줄인다.
+   2026-11-02. 사용자가 사전평가 모의고사를 풀고 "짧은 문제가 너무 많다" 고 했다.
+   한 회차 48문항을 세어 보니 읽을 거리가 아예 없는 문항이 8개였고, 그중 6개가
+   한국문화·한국사회였다 — "개천절은 몇 월 며칠입니까?" 처럼 날짜·이름을 바로 묻는
+   단답 지식 문항이다. 실제 시험 39~46번은 상황이나 설명문을 하나 놓고 묻는 꼴이
+   대부분이라, 그냥 뽑으면 연습이 실제보다 가볍다.
+   영역별 개수는 건드리지 않는다 — 같은 영역 안에서만, 읽을 거리가 붙은 문항으로 바꾼다.
+   읽을 거리가 있는지는 문제 상자를 그릴 때 쓰는 splitMode 로 본다(지시문 / 읽을 글).
+   전부 없애지는 않는다. 실제 시험에도 이런 문항이 한둘은 나오고, 영역에 따라서는
+   題庫에 바꿔 끼울 것이 모자랄 수도 있다. */
+const BARE_OK = 2;
+function matchStemBody(picked, pool) {
+  const bare = (q) => !splitMode(String(q && q.q || ''));
+  let extra = picked.filter(bare).length - BARE_OK;
+  if (extra <= 0) return picked;
+  const out = picked.slice();
+  const used = new Set(out.map((q) => q.id));
+  const recent = recentSet();
+  for (let i = 0; i < out.length && extra > 0; i++) {
+    const q = out[i];
+    // 심화는 회차마다 개수가 정해져 있으니(교재 430쪽 교체표) 빼지도 넣지도 않는다
+    if (!bare(q) || q.tier === 'advanced') continue;
+    const cand = freshFirst(pool.filter((p) => p.category === q.category && !bare(p)
+      && p.tier !== 'advanced' && !used.has(p.id)), recent);
+    if (!cand.length) continue;
+    used.delete(q.id); used.add(cand[0].id);
+    out[i] = cand[0]; extra -= 1;
+  }
+  return out;
+}
+
 /* =====================================================================
    무료 체험 — 트랙마다 한 번씩 모의고사를 끝까지 풀어 볼 수 있다.
    문항은 public.trial_questions 에서 읽는다(로그인 불필요).
@@ -1716,7 +1755,16 @@ async function startMockExam() {
        이 앱 사용자가 실제 시험을 보고 와서 "읽기가 많고 길어서 한 시간이 모자랐다,
        집에서는 30분에 끝났다" 고 했다. 분량 차이가 거기서 났다.
        題庫 쪽도 긴 읽기 문항을 20개에서 62개로 늘려 8개를 채울 수 있다. */
-    mc = matchPassageLength(picked, all, 8, 4);
+    /* 지시문 한 줄짜리를 먼저 걷어 내고 그 다음에 길이를 맞춘다. 순서를 바꾸면
+       길이로 넣어 둔 문항을 읽을 거리 맞추기가 도로 빼낼 수 있다. */
+    picked = matchStemBody(picked, all);
+    /* 중간 길이(100~199자)를 4에서 12로 올린다. 2026-11-02 사용자 말:
+       "모의고사에 짧은 문제가 너무 많다." 48문항 가운데 100자를 넘는 것이 읽기 12문항
+       뿐이고 나머지 36문항은 전부 짧았다. 어휘·문법도 실제 시험에서는 대화나 문장 속에
+       들어 있는 꼴이 많으므로, 같은 영역 안에서 그런 문항으로 바꿔 끼운다.
+       여덟 자리를 더 채우면 짧은 문항이 36개에서 28개로 준다.
+       題庫에 중간 길이가 모자란 영역은 있는 만큼만 채우고 지나간다. */
+    mc = matchPassageLength(picked, all, 8, 12);
     // 길이를 맞추며 문항이 바뀌었으므로 한국어 영역을 다시 난이도순으로 세운다
     const isKor = (q) => korCats.includes(q.category);
     mc = mc.filter(isKor).sort((a, b) => (a.level || 2) - (b.level || 2))
@@ -2331,7 +2379,13 @@ function renderQuestion() {
   if (quiz.mode === 'mock') {
     $('nextBtn').classList.toggle('hidden', last);
     $('nextBtn').disabled = false; $('nextBtn').style.opacity = '1'; $('nextBtn').textContent = t('quiz.next');
-    $('submitBtn').classList.toggle('hidden', !last);
+    /* 제출 단추는 첫 문항부터 보여 둔다. 마지막 문항에서만 나타나면 한 문항만 풀고
+       끝내려 해도 55번까지 눌러 넘겨야 한다. 실제 시험장 화면에도 제출은 늘 떠 있다.
+       끝 문항에서만 주된 색을 입혀, 그 전에는 '다음' 이 눈에 먼저 들어오게 한다. */
+    const sub = $('submitBtn');
+    sub.classList.remove('hidden');
+    sub.classList.toggle('btn--primary', last);
+    sub.classList.toggle('btn--ghost', !last);
   } else {
     $('nextBtn').classList.toggle('hidden', false);
     $('nextBtn').textContent = last ? t('quiz.result') : t('quiz.next');
@@ -2537,6 +2591,10 @@ function wsScore(q, text) {
   if (!q || q.type !== 'writing') return null;
   return (q.exam === 'pre') ? wsScorePre(q, text) : wsScoreNat(q, text);
 }
+/* 이 문항에 채점 자료(accept 또는 parts)가 들어 있는지. 자료가 없으면 wsScore 가
+   null 을 돌려주므로 아무 글이나 한 번 재어 보면 알 수 있다 —
+   사전평가는 accept, 종합평가는 parts 라는 분기를 두 군데 적지 않는다. */
+function wsCanScore(q) { return !!wsScore(q, 'x'); }
 
 /* =====================================================================
    결과
@@ -3068,8 +3126,14 @@ function renderWriting() {
     const card = document.createElement('div');
     card.className = 'writing-card' + (isOralMode ? ' writing-card--oral' : '');
     const isWriting = q.type === 'writing';
+    /* 작문 채점 — 쓴 글을 문항의 정답 자료와 대조한다.
+       그때까지 작문 카드에는 판정이 하나도 없었다. 구술 카드에는 '스스로 평가' 세 단추가
+       있는데 작문은 글을 적어도 맞았는지 알 길이 없었다(모범답안을 펼쳐 눈으로 견주는 것이
+       전부였다). 채점기(wsScore)와 채점 자료는 모의고사 결과 화면에서 이미 쓰고 있었고
+       연결만 빠져 있었다. 자료가 없는 문항은 구술과 같은 세 단추로 넘긴다. */
+    const canAuto = isWriting && wsCanScore(q);
     // A6: 구술 = "가리고 말하기" — 질문 표시 → 낭독 안내 → 모범답안 보기 → 자가확인 3버튼
-    const oralSelf = isOralMode && q.model ? `
+    const oralSelf = ((isOralMode && q.model) || (isWriting && !canAuto && q.model)) ? `
       <div class="oral-self">
         <span class="oral-self__label">${t('oral.selfHead')}</span>
         <div class="oral-self__btns">
@@ -3084,6 +3148,8 @@ function renderWriting() {
       ${isOralMode && !hasListen(q) ? `<div class="oral-recite">${t('oral.recite')}</div>` : ''}
       ${isWriting ? `<textarea data-id="${q.id}" placeholder="${t('writing.draftPh')}">${drafts[q.id] || ''}</textarea>
         <div class="writing-card__meta"><span class="writing-card__count">0${CHAR_UNIT[LANG] || '자'}</span></div>` : ''}
+      ${canAuto ? `<button type="button" class="writing-card__grade-btn">${t('ws.grade')}</button>
+        <div class="writing-card__auto"></div>` : ''}
       <button class="writing-card__guide-toggle">${t('guide.show')}</button>
       <div class="writing-card__guide hidden">${bi(q.guide || '', gl(q, 'guide'))}</div>
       ${q.model ? `<button class="writing-card__model-toggle">${isOralMode ? t('oral.reveal') : t('model.show')}</button>
@@ -3094,6 +3160,21 @@ function renderWriting() {
       const upd = () => { const n = ta.value.length; cnt.textContent = t('count.char', n); cnt.classList.toggle('over', n > 200); };
       ta.addEventListener('input', () => { upd(); const d = ls(ekey(K.drafts), {}); d[q.id] = ta.value; save(ekey(K.drafts), d); });
       upd();
+    }
+    const gb = card.querySelector('.writing-card__grade-btn');
+    if (gb) {
+      const slot = card.querySelector('.writing-card__auto');
+      const box = card.querySelector('textarea');
+      /* 통계에는 처음 채점한 것만 넣는다. 틀린 곳을 고쳐 다시 채점하는 것이 보통인데,
+         누를 때마다 쌓으면 한 문항이 정답률을 여러 번 깎는다. */
+      let counted = false;
+      gb.addEventListener('click', () => {
+        const r = wsScore(q, box ? box.value : '');
+        if (!r) return;
+        slot.innerHTML = autoBox(q, r);
+        gb.textContent = t('ws.again');
+        if (!counted) { recordSelfGrade(q, r.frac); counted = true; }
+      });
     }
     if (hasListen(q)) wireListen(card.querySelector('.listen-card'), q);
     const tg = card.querySelector('.writing-card__guide-toggle'); const gd = card.querySelector('.writing-card__guide');
@@ -3109,15 +3190,17 @@ function renderWriting() {
     card.querySelectorAll('.oral-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         card.querySelectorAll('.oral-btn').forEach((b) => b.classList.toggle('is-on', b === btn));
-        recordOral(q, parseFloat(btn.dataset.frac));
+        recordSelfGrade(q, parseFloat(btn.dataset.frac));
         toast(t('oral.saved'));
       });
     });
     wrap.appendChild(card);
   });
 }
-/* A6: 구술 자가확인 결과를 통계에 기록(잘함=정답, 보통=반영 부분정답, 부족=오답 취급) */
-function recordOral(q, frac) {
+/* A6: 구술 자가확인·작문 채점 결과를 통계에 기록
+   (잘함=정답, 보통=반영 부분정답, 부족=오답 취급). 영역은 q.category 를 따르므로
+   작문 문항은 '작문' 에, 구술 문항은 '구술' 에 쌓인다. */
+function recordSelfGrade(q, frac) {
   const s = ls(ekey(K.stats), { total: 0, correct: 0, cat: {} });
   const ok = frac >= 1;
   s.total++; if (ok) s.correct++;
@@ -3270,7 +3353,13 @@ function wireEvents() {
     navWasNarrow = now;
     setNavCollapsed(now);
   });
-  $('submitBtn').addEventListener('click', () => { if (confirm(t('confirm.submit'))) gradeMock(); });
+  /* 제출 단추를 첫 문항부터 보여 주기로 했으므로(renderQuestion), 잘못 눌러 시험이
+     끝나는 일이 생긴다. 남은 문항 수를 세어 함께 묻는다. */
+  $('submitBtn').addEventListener('click', () => {
+    if (!quiz) return;
+    const left = quiz.list.reduce((n, q, i) => n + (isQuestionAnswered(i) ? 0 : 1), 0);
+    if (confirm(left ? t('confirm.submitN', left) : t('confirm.submit'))) gradeMock();
+  });
   $('examStartBtn').addEventListener('click', () => requireMembership(startMockExam));
   $('resumeBanner').addEventListener('click', () => requireMembership(resumeMock, { loadBank: true }));
   $('examResumeBtn').addEventListener('click', () => requireMembership(resumeMock, { loadBank: true }));
