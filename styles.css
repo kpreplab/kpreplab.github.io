@@ -246,7 +246,10 @@ a.menu-card, a.menu-card:link, a.menu-card:visited { color: var(--ink); text-dec
      세로가 짧은 화면(가로로 든 휴대폰)에서는 카드가 화면 밖으로 나가 아래쪽 번호에
      닿을 수 없으므로, 넘치면 카드 안에서 굴러가게 한다. */
   flex: 0 0 auto; width: 176px; align-self: flex-start; position: sticky; top: 70px;
-  max-height: calc(100vh - 86px); overflow-y: auto; overscroll-behavior: contain;
+  /* 세로로 칸을 쌓는다: 머리 · 번호 격자 · 범례 · 제출. 넘치는 것은 번호 격자뿐이고
+     제출은 칸 맨 아래에 붙어 늘 보인다. 예전처럼 칸 전체를 굴리면 제출이 밀려 나간다. */
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 86px); overflow: hidden;
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md);
   padding: 14px 13px; box-shadow: var(--shadow-soft);
 }
@@ -258,7 +261,11 @@ a.menu-card, a.menu-card:link, a.menu-card:visited { color: var(--ink); text-dec
 .question-nav__chev { display: none; }
 .question-nav__head strong { color: var(--ink); font-size: .88rem; }
 .question-nav__head span { color: var(--muted); font-size: .76rem; font-weight: 600; }
-.question-nav__grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.question-nav__grid {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
+  /* 굴러가는 것은 여기뿐이다. min-height:0 이 없으면 flex 칸이 내용만큼 버텨서 안 줄어든다. */
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+}
 .question-nav__item {
   aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--border); border-radius: 7px;
   background: var(--card); color: var(--ink-soft); font-family: var(--font-mono); font-size: .82rem; cursor: pointer;
@@ -286,6 +293,19 @@ a.menu-card, a.menu-card:link, a.menu-card:visited { color: var(--ink); text-dec
 .question-nav__legend .dot--flag { border-color: #e6a6ad; background: var(--bad-bg); }
 
 .question-nav__legend .dot--todo { background: var(--cream-2); }
+
+/* 세로가 짧은 창(가로로 든 휴대폰 852×393 같은 것)에서는 범례를 접는다.
+   머리 59 + 범례 88 + 여백 30 이면 번호가 들어설 자리가 거의 없다. 범례는 색깔 설명일
+   뿐이고, 그 자리에 번호를 두세 줄 더 보여 주는 편이 낫다. 제출은 이 높이에서
+   placeSubmit() 이 아래 단추 줄로 보낸다(app.js NAV_SUBMIT_MIN_VH). */
+@media (max-height: 579px) {
+  body.exam-mode #view-quiz .question-nav__legend { display: none; }
+}
+
+/* 답안지 맨 아래의 제출 자리. 비어 있으면(좁거나 낮은 화면 — 단추가 아래 줄에 가 있다) 사라진다. */
+.question-nav__submit { flex: 0 0 auto; margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--border); }
+.question-nav__submit:empty { display: none; }
+.question-nav__submit .btn { width: 100%; flex: 0 0 auto; padding: 10px 8px; font-size: .86rem; }
 .question-nav__item:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 
 /* ===== 답안지 줄 (번호 + ①②③④) =====
@@ -399,6 +419,8 @@ body.exam-mode #view-quiz .quiz-foot .quiz-actions { margin-top: 10px; }
    끝 문항에서는 '다음' 이 사라지므로 renderQuestion 이 파란 주 단추로 바꾼다. */
 .quiz-submit { display: none; }
 body.exam-mode #view-quiz .quiz-submit { display: flex; }
+/* 넓은 화면에서는 제출이 답안지로 가 있다. 빈 줄이 자리를 먹지 않게 한다. */
+body.exam-mode #view-quiz .quiz-submit:empty { display: none; }
 .quiz-submit .btn { flex: 0 0 auto; padding: 10px 18px; font-size: .95rem; }
 
 /* 휴대폰에서는 '헷갈림 표시'가 한 줄을 따로 쓰는 탓에 이 띠가 두꺼워진다.

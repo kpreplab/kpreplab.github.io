@@ -200,6 +200,11 @@
             <li><i class="dot dot--flag"></i><span data-i18n="nav.legendFlag">헷갈리는 것</span></li>
             <li><i class="dot dot--todo"></i><span data-i18n="nav.legendTodo">안 푼 것</span></li>
           </ul>
+          <!-- 제출은 답안지 맨 아래에 붙인다. 실제 시험장 화면이 그렇고(사용자가 그려 보냈다),
+               '다음' 과 아예 다른 칸이라 넘기다가 잘못 누를 일이 없다.
+               번호 격자만 안에서 굴러가므로 이 자리는 늘 보인다.
+               좁은 화면에서는 답안지가 접히므로 placeSubmit() 이 아래 단추 줄로 옮긴다. -->
+          <div id="navSubmitSlot" class="question-nav__submit"></div>
         </aside>
 
         <div class="quiz-main">
@@ -225,7 +230,8 @@
                제출은 '다음' 옆에 두지 않는다 — 넘기려다 잘못 누르면 시험이 끝난다.
                왼쪽 윗줄, '다음'(오른쪽 아랫줄)에서 가장 먼 자리에 따로 세운다. -->
           <div class="quiz-foot">
-            <div class="quiz-submit">
+            <!-- 좁은 화면에서 제출이 들어오는 자리. 넓은 화면에서는 비어 있고(:empty) 사라진다. -->
+            <div id="footSubmitSlot" class="quiz-submit">
               <button id="submitBtn" class="btn btn--ghost hidden" data-i18n="quiz.submit">제출하고 채점</button>
             </div>
             <div class="quiz-actions">

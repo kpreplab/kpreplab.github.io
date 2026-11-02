@@ -2101,17 +2101,80 @@ function renderQuestionNavigator() {
   /* 지금 푸는 줄이 답안지 안에서 보이게 한다. 55문항이면 한 번에 스무 줄쯤만 보이는데,
      '다음' 으로 넘기다 보면 지금 줄이 칸 밖으로 밀려 어디를 푸는지 알 수 없다.
      창 전체를 굴리면 읽던 지문이 함께 움직이므로 답안지 안에서만 굴린다. */
-  const cur = grid.children[quiz.i];
-  if (cur && nav.scrollHeight > nav.clientHeight + 4) {
-    const top = cur.offsetTop, bot = top + cur.offsetHeight;
+  fitNavHeight();   // 칸 높이를 먼저 맞추고 나서 지금 줄을 가운데로 데려와야 한다
+  /* 굴러가는 것은 이제 번호 격자다(답안지 칸은 세로로 쌓기만 한다 — 제출을 맨 아래에
+     붙여 두려고 그렇게 바꿨다). offsetTop 은 position 을 가진 답안지 칸 기준이라
+     머리 높이가 섞여 들어온다. 화면 위 좌표로 재면 그런 가정이 필요 없다. */
+  /* 768px 아래에서는 줄 상자가 display:contents 라 상자가 없다(getBoundingClientRect 가
+     전부 0 이다). 그대로 재면 '맨 위로 벗어났다' 로 읽혀 굴림이 0 으로 되돌아간다.
+     그럴 때는 그 줄의 번호 칸을 대신 잰다. */
+  const row = grid.children[quiz.i];
+  const cur = (row && row.getBoundingClientRect().height) ? row : (row && row.querySelector('.omr__no'));
+  if (cur && grid.scrollHeight > grid.clientHeight + 4) {
+    const cr = cur.getBoundingClientRect(), gr = grid.getBoundingClientRect();
     /* 칸 밖으로 나갔을 때만 움직이고, 움직일 때는 가운데로 데려온다.
-       가장자리에 붙여 놓으면 답안지 아래쪽이 창 밖에 걸쳐 있을 때 그 줄이 안 보인다.
-       가운데로 두면 다음 열몇 줄은 더 움직이지 않아도 보인다. */
-    if (top < nav.scrollTop + 8 || bot > nav.scrollTop + nav.clientHeight - 8) {
-      const mid = top - (nav.clientHeight - cur.offsetHeight) / 2;
-      nav.scrollTop = Math.max(0, Math.min(nav.scrollHeight - nav.clientHeight, mid));
+       가장자리에 붙여 놓으면 다음 한 줄만 넘겨도 또 움직인다. */
+    if (cr.top < gr.top + 8 || cr.bottom > gr.bottom - 8) {
+      grid.scrollTop += (cr.top - gr.top) - (gr.height - cr.height) / 2;
     }
   }
+}
+
+/* 답안지 칸이 창 아래로 걸치지 않게 높이를 맞춘다.
+   칸은 sticky 라 굴리기 전에는 제자리(화면 위에서 211px쯤)에 있다가 굴리면 70px 로
+   올라붙는다. CSS 의 max-height 한 줄로는 두 자리를 다 맞출 수 없어서, 굴리기 전에는
+   칸 아래쪽 — 제출 단추가 붙어 있는 자리 — 이 창 밖으로 나가 있었다.
+   지금 칸이 놓인 자리에서 창 바닥까지로 그때그때 맞춘다. 좁은 화면에서는 칸이 문제 위에
+   접혀 있으므로 건드리지 않는다. */
+function fitNavHeight() {
+  const nav = $('questionNavigator');
+  if (!nav) return;
+  if (nav.classList.contains('hidden') || navIsNarrow()) { nav.style.maxHeight = ''; return; }
+  /* 창 높이에서 sticky 로 올라붙는 자리(CSS 의 max-height)를 뺀 값이 위 한계다.
+     이 한계가 없으면 늘어난다: 칸을 키우면 문서가 길어지고, 길어지면 더 굴릴 수 있고,
+     더 굴리면 칸의 top 이 작아져 또 키우게 된다. 재어 보니 한 번 오갈 때마다 76px 씩
+     자랐다(543 → 684 → 743 → …). 한계를 두면 문서 길이가 고정되어 멈춘다.
+     한계에 걸린 뒤에도 칸 아래쪽은 창 안에 남는다 — top 이 70 이하로 내려갈수록
+     칸의 바닥도 같이 올라오기 때문이다. */
+  const capped = Math.round(window.innerHeight - 86);
+  const fits = Math.round(window.innerHeight - nav.getBoundingClientRect().top - 14);
+  /* 바닥값은 번호 두세 줄은 남기려는 것이다. 낮은 창에서는 제출이 아래 줄로 빠지고
+     범례도 숨으므로(CSS @media max-height) 160 이면 칸이 창 안에 들어가면서도
+     번호가 두세 줄 보인다. 240 으로 두면 낮은 창에서 칸이 창 밖으로 걸친다. */
+  const want = Math.max(160, Math.min(capped, fits));
+  /* 2px 안쪽이면 그냥 둔다. 높이를 줄이면 문서가 짧아지고, 그러면 브라우저가 스크롤을
+     끌어올려 칸의 위치가 다시 바뀐다 — 매번 쓰면 둘이 서로를 밀며 떨린다. */
+  if (Math.abs(parseFloat(nav.style.maxHeight) - want) > 2 || !nav.style.maxHeight) {
+    nav.style.maxHeight = want + 'px';
+  }
+}
+let navFitPending = false;
+function queueNavFit() {
+  if (navFitPending) return;
+  navFitPending = true;
+  requestAnimationFrame(() => { navFitPending = false; placeSubmit(); fitNavHeight(); });
+}
+
+/* 답안지 칸에 제출 단추까지 담을 만큼 창이 높은가.
+   폭만 보고 정하면 안 된다. 휴대폰을 가로로 들면 852×393 처럼 폭은 넓고 세로가 짧은데,
+   그 창에서 답안지에 제출을 넣으면 머리·범례·제출만으로 칸이 꽉 차 번호 격자가 0px 이
+   되고(칸은 overflow:hidden 이라 번호를 아예 볼 수 없다) 제출은 창 밖으로 밀린다 —
+   굴리기 전에는 누를 수 있는 제출이 화면 어디에도 없다. 그런 창에서는 아래 단추 줄에
+   둔다. 거기는 화면 바닥에 붙어 있어 언제나 보인다.
+   580 = 답안지가 시작하는 높이(약 210) + 고정 부분(머리·범례·제출 약 240) +
+   번호 네 줄쯤(약 130). 스크롤 위치에 따라 흔들리지 않도록 창 높이만 본다. */
+const NAV_SUBMIT_MIN_VH = 580;
+function navCanHoldSubmit() { return !navIsNarrow() && window.innerHeight >= NAV_SUBMIT_MIN_VH; }
+
+/* 제출 단추의 자리. 넓고 높은 화면에서는 답안지 맨 아래(실제 시험장과 같다),
+   그 밖에는 아래 단추 줄 위에 둔다.
+   단추는 하나뿐이고 자리만 옮긴다 — 둘로 늘리면 같은 id 가 두 번 생긴다. */
+function placeSubmit() {
+  const btn = $('submitBtn');
+  if (!btn) return;
+  const inNav = !!quiz && quiz.mode === 'mock' && navCanHoldSubmit();
+  const slot = inNav ? $('navSubmitSlot') : $('footSubmitSlot');
+  if (slot && btn.parentElement !== slot) slot.appendChild(btn);
 }
 
 /* 답안지에서 바로 답을 표시한다.
@@ -2382,6 +2445,7 @@ function renderQuestion() {
     sub.classList.remove('hidden');
     sub.classList.toggle('btn--primary', last);
     sub.classList.toggle('btn--ghost', !last);
+    placeSubmit();
   } else {
     $('nextBtn').classList.toggle('hidden', false);
     $('nextBtn').textContent = last ? t('quiz.result') : t('quiz.next');
@@ -3386,7 +3450,12 @@ function wireEvents() {
     if (now === navWasNarrow) return;   // 경계를 넘을 때만 건드린다(사용자가 편 것을 뺏지 않는다)
     navWasNarrow = now;
     setNavCollapsed(now);
+    placeSubmit();   // 좁아지면 답안지가 접히므로 제출을 아래 줄로 데려온다(그 반대도)
   });
+  /* 창 크기가 바뀌거나 굴릴 때마다 답안지 높이를 다시 맞춘다. 굴리면 칸이 위로
+     올라붙으므로 그만큼 더 길게 쓸 수 있다. rAF 로 한 번만 묶어서 돌린다. */
+  window.addEventListener('resize', queueNavFit);
+  window.addEventListener('scroll', queueNavFit, { passive: true });
   /* 제출 단추를 첫 문항부터 보여 주기로 했으므로(renderQuestion), 잘못 눌러 시험이
      끝나는 일이 생긴다. 남은 문항 수를 세어 함께 묻는다. */
   $('submitBtn').addEventListener('click', () => {
