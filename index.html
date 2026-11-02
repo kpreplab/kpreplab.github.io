@@ -220,12 +220,19 @@
           <div id="feedback" class="feedback hidden"></div>
 
           <!-- 버튼은 선택지 바로 밑, 왼쪽 칸 안에 둔다. 오른쪽 답안지는 세로로 길어서
-               바깥에 두면 문제가 짧아도 '다음' 이 화면 밖으로 밀린다. -->
-          <div class="quiz-actions">
-            <button id="flagBtn" class="btn btn--flag hidden" type="button" data-i18n="quiz.flag">헷갈림 표시</button>
-            <button id="prevBtn" class="btn btn--ghost hidden" data-i18n="quiz.prev">← 이전</button>
-            <button id="nextBtn" class="btn btn--primary" data-i18n="quiz.next">다음 →</button>
-            <button id="submitBtn" class="btn btn--primary hidden" data-i18n="quiz.submit">제출하고 채점</button>
+               바깥에 두면 문제가 짧아도 '다음' 이 화면 밖으로 밀린다.
+               모의고사에서는 이 묶음째 화면 바닥에 붙는다(CSS .quiz-foot).
+               제출은 '다음' 옆에 두지 않는다 — 넘기려다 잘못 누르면 시험이 끝난다.
+               왼쪽 윗줄, '다음'(오른쪽 아랫줄)에서 가장 먼 자리에 따로 세운다. -->
+          <div class="quiz-foot">
+            <div class="quiz-submit">
+              <button id="submitBtn" class="btn btn--ghost hidden" data-i18n="quiz.submit">제출하고 채점</button>
+            </div>
+            <div class="quiz-actions">
+              <button id="flagBtn" class="btn btn--flag hidden" type="button" data-i18n="quiz.flag">헷갈림 표시</button>
+              <button id="prevBtn" class="btn btn--ghost hidden" data-i18n="quiz.prev">← 이전</button>
+              <button id="nextBtn" class="btn btn--primary" data-i18n="quiz.next">다음 →</button>
+            </div>
           </div>
         </div>
       </div>

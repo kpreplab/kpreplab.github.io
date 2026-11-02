@@ -288,7 +288,6 @@ T2.vi = {"귀화 종합평가": "Đánh giá tổng hợp nhập tịch", "사�
 T2.th = {"귀화 종합평가": "การประเมินรวมแปลงสัญชาติ", "사회통합프로그램 (KIIP)": "โครงการบูรณาการสังคม (KIIP)", "귀화용 종합평가": "การประเมินรวมเพื่อแปลงสัญชาติ", "필기시험 모의고사": "ข้อสอบจำลองภาคข้อเขียน", "실제 시험처럼 풀기 (객관식+작문+구술)": "ทำเหมือนสอบจริง (ปรนัย+เขียน+พูด)", "9개 영역별로 풀기": "ฝึกตาม 9 หมวด", "귀화용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "การประเมินรวมเพื่อแปลงสัญชาติคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "이 모의고사는 <b>필기(객관식+작문)를 60분 안에</b> 풀고, 이어서 <b>구술 문항</b>까지 연습합니다.": "ข้อสอบจำลองนี้ให้ทำ <b>ภาคข้อเขียน (ปรนัย+เขียน) ภายใน 60 นาที</b> แล้วฝึก <b>ข้อสอบพูด</b> ต่อ", "객관식은 ①②③④ 중 하나를 고르고, 작문은 <b>4문제가 통합된 1문제</b>를 <b>200자 원고지 1장 이내</b>로 작성합니다.": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนเป็น<b>ข้อสอบ 1 ข้อที่รวมมาจาก 4 คำถาม</b> เขียนภายใน<b>กระดาษคำตอบแบบช่อง 200 ตัวอักษร 1 แผ่น</b>", "객관식만 자동 채점되며, 작문·구술은 모범답안·도움말로 스스로 점검합니다.": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัย ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง·คำแนะนำ", "실제 시험의 구술은 별도 10분 세션(<b>5문항×5점</b>)입니다. 사회통합프로그램 <b>5단계 전 과정(기본+심화) 이수</b> + 합격 시 <b>귀화 면접심사가 면제</b>됩니다.": "การพูดในสอบจริงเป็นช่วงแยกต่างหาก 10 นาที (<b>5 ข้อ × 5 คะแนน</b>) เมื่อเรียนจบ<b>หลักสูตรระดับ 5 ทั้งหมด (พื้นฐาน+เชิงลึก)</b>ของโครงการบูรณาการสังคมและสอบผ่าน จะ<b>ได้รับการยกเว้นการสัมภาษณ์แปลงสัญชาติ</b>", "귀화허가 신청자는 <b>신청일로부터 1년 이내 재응시 2회</b>(최초 포함 총 3회)까지 가능하며, <b>3회 모두 불합격하면 귀화신청이 불허</b>됩니다.": "ผู้ยื่นขอแปลงสัญชาติสามารถ<b>สอบใหม่ได้ไม่เกิน 2 ครั้งภายใน 1 ปีนับจากวันยื่นคำขอ</b> (รวมครั้งแรกทั้งหมด 3 ครั้ง) หาก<b>ไม่ผ่านทั้ง 3 ครั้ง คำขอแปลงสัญชาติจะไม่ได้รับอนุมัติ</b>", "TOPIK 급수가 있으면 사전평가 없이 단계 배정이 가능합니다(<b>1급→2단계, 2급→3단계, 3급→4단계, 4급 이상→5단계</b>). 배정 단계는 <b>2년간 유효</b>하며, 사전평가에 재응시하면 이전 교육 이수 기록이 무효가 됩니다.": "หากมีระดับ TOPIK สามารถจัดระดับได้โดยไม่ต้องสอบประเมินเบื้องต้น (<b>ระดับ1→ขั้น2, ระดับ2→ขั้น3, ระดับ3→ขั้น4, ระดับ4ขึ้นไป→ขั้น5</b>) ระดับที่จัดมีผล <b>2 ปี</b> และหากสอบประเมินเบื้องต้นใหม่ ประวัติการเรียนก่อนหน้าจะถือเป็นโมฆะ", "영주 종합평가": "การประเมินรวมถิ่นที่อยู่ถาวร", "영주용 종합평가": "การประเมินรวมเพื่อถิ่นที่อยู่ถาวร", "영주용 종합평가는 <b>객관식 36문항(65점) + 작문형(10점) + 구술(25점) = 100점</b>, <b>60점 이상이면 합격</b>입니다.": "การประเมินรวมเพื่อถิ่นที่อยู่ถาวรคือ <b>ปรนัย 36 ข้อ (65 คะแนน) + เขียน (10 คะแนน) + พูด (25 คะแนน) = 100 คะแนน</b>, <b>ได้ 60 คะแนนขึ้นไปถือว่าผ่าน</b>", "응시 자격: 사회통합프로그램 <b>5단계 기본과정 수료</b>, 또는 <b>사전평가 85점 이상 득점 후 2년 이내</b>. 영주용은 <b>지필(PBT)로만</b> 시행됩니다.": "คุณสมบัติผู้สอบ: จบ<b>หลักสูตรพื้นฐานระดับ 5</b> ของโครงการบูรณาการสังคม หรืออยู่ภายใน <b>2 ปีหลังได้คะแนนประเมินเบื้องต้นตั้งแต่ 85 คะแนนขึ้นไป</b> แบบถิ่นที่อยู่ถาวรจัดสอบ <b>ด้วยกระดาษ-ปากกา (PBT) เท่านั้น</b>", "사회통합 사전평가": "การประเมินเบื้องต้นบูรณาการสังคม", "사회통합프로그램 사전평가": "การประเมินเบื้องต้นโครงการบูรณาการสังคม", "단계 배정 모의평가": "การประเมินจำลองเพื่อจัดระดับ", "어휘·문법·읽기·대화·문화·사회": "คำศัพท์·ไวยากรณ์·การอ่าน·บทสนทนา·วัฒนธรรม·สังคม", "사회통합프로그램 <b>사전평가</b>는 합격·불합격 시험이 아니라, 점수에 따라 <b>0~5단계</b>를 배정하는 레벨 평가입니다.": "<b>การประเมินเบื้องต้น</b> ของโครงการบูรณาการสังคมไม่ใช่การสอบผ่าน·ไม่ผ่าน แต่เป็นการประเมินระดับที่จัด <b>ระดับ 0~5</b> ตามคะแนน", "실제 시험은 <b>필기 50문항(60분, 75점)</b> + <b>구술 5문항(10분, 25점)</b> = 100점입니다. 이 모의평가는 필기(객관식+작문)를 풀고 이어서 구술을 연습합니다.": "สอบจริงคือ <b>ข้อเขียน 50 ข้อ (60 นาที, 75 คะแนน)</b> + <b>พูด 5 ข้อ (10 นาที, 25 คะแนน)</b> = 100 คะแนน การประเมินจำลองนี้ให้ทำภาคข้อเขียน (ปรนัย+เขียน) แล้วฝึกพูดต่อ", "객관식은 ①②③④ 중 하나를 고르고, 작문은 빈칸에 알맞은 표현을 짧게 씁니다.": "ปรนัยให้เลือกหนึ่งข้อจาก ①②③④ ส่วนการเขียนให้เติมคำที่เหมาะสมลงในช่องว่างสั้นๆ", "객관식만 자동 채점되어 <b>예상 배정 단계</b>를 알려줍니다. 작문·구술은 모범답안으로 스스로 점검합니다.": "ตรวจคะแนนอัตโนมัติเฉพาะปรนัยแล้วบอก <b>ระดับที่คาดว่าจะได้รับการจัด</b> ส่วนเขียน·พูดให้ตรวจสอบด้วยตนเองจากคำตอบตัวอย่าง", "실제로는 <b>구술 점수가 3점 미만이면 0단계</b>로 배정됩니다. 정확한 단계는 시험 당일 점수로 정해지며, 표시되는 단계는 <b>연습용 참고치</b>입니다.": "ในความเป็นจริง <b>หากคะแนนพูดต่ำกว่า 3 คะแนนจะถูกจัดเป็นระดับ 0</b> ระดับที่แน่นอนกำหนดจากคะแนนในวันสอบ ส่วนระดับที่แสดงเป็น <b>ค่าอ้างอิงสำหรับฝึกซ้อม</b>", "5단계 · 한국사회이해": "ระดับ 5 · ความเข้าใจสังคมเกาหลี", "81~100점": "81~100 คะแนน", "4단계 · 중급2": "ระดับ 4 · กลาง 2", "61~80점": "61~80 คะแนน", "3단계 · 중급1": "ระดับ 3 · กลาง 1", "41~60점": "41~60 คะแนน", "2단계 · 초급2": "ระดับ 2 · ต้น 2", "21~40점": "21~40 คะแนน", "1단계 · 초급1": "ระดับ 1 · ต้น 1", "3~20점": "3~20 คะแนน", "0단계 · 한국어기초": "ระดับ 0 · ภาษาเกาหลีพื้นฐาน", "구술 3점 미만": "พูดต่ำกว่า 3 คะแนน"};
 Object.assign(I18N.ko, {
   'sheet.writing': '작문', 'sheet.oral': '구술',
-  'ws.grade': '채점하기', 'ws.again': '다시 채점하기',
   'confirm.submitN': '아직 답하지 않은 문항이 {0}개 있습니다. 지금 제출하고 채점할까요?',
   'sheet.mark': '{0}번 문항, {1}번 보기 고르기',
   'quiz.full': '전체화면', 'quiz.fullOff': '전체화면 끄기',
@@ -344,7 +343,6 @@ Object.assign(I18N.ko, {
 });
 Object.assign(I18N.zh, {
   'sheet.writing': '写作', 'sheet.oral': '口试',
-  'ws.grade': '评分', 'ws.again': '重新评分',
   'confirm.submitN': '还有 {0} 道题没有作答。现在就提交并评分吗？',
   'sheet.mark': '第{0}题，选第{1}项',
   'quiz.full': '全屏', 'quiz.fullOff': '退出全屏',
@@ -400,7 +398,6 @@ Object.assign(I18N.zh, {
 });
 Object.assign(I18N.vi, {
   'sheet.writing': 'Viết', 'sheet.oral': 'Nói',
-  'ws.grade': 'Chấm điểm', 'ws.again': 'Chấm lại',
   'confirm.submitN': 'Còn {0} câu chưa trả lời. Nộp bài và chấm điểm ngay?',
   'sheet.mark': 'Câu {0}, chọn đáp án {1}',
   'quiz.full': 'Toàn màn hình', 'quiz.fullOff': 'Tắt toàn màn hình',
@@ -435,7 +432,6 @@ Object.assign(I18N.vi, {
 });
 Object.assign(I18N.th, {
   'sheet.writing': 'เขียน', 'sheet.oral': 'พูด',
-  'ws.grade': 'ตรวจคำตอบ', 'ws.again': 'ตรวจอีกครั้ง',
   'confirm.submitN': 'ยังมี {0} ข้อที่ยังไม่ได้ตอบ ส่งคำตอบและตรวจเลยหรือไม่',
   'sheet.mark': 'ข้อ {0} เลือกตัวเลือกที่ {1}',
   'quiz.full': 'เต็มหน้าจอ', 'quiz.fullOff': 'ออกจากเต็มหน้าจอ',
@@ -2770,12 +2766,14 @@ function autoBox(q, r) {
   if (q.exam === 'pre') {
     const k = r.frac === 1 ? 'ok' : (r.frac === 0.5 ? 'mid' : 'no');
     const label = t(r.frac === 1 ? 'auto.ok' : (r.frac === 0.5 ? 'auto.mid' : (r.why === 'empty' ? 'auto.empty' : 'auto.no')));
-    /* hint 는 2026-10-26 까지 한국어만 있었다. 題庫 전체에서 번역이 빠진 유일한 필드였고,
-       정작 도움말이 필요한 비한국어 사용자에게 한국어로만 나가고 있었다. bi() 로 병기한다. */
-    const hint = (r.frac < 1 && q.hint)
-      ? `<div class="auto-hint">💡 ${bi(esc(q.hint), esc(gl(q, 'hint')))}</div>` : '';
+    /* 2026-11-02. 틀리면 문항의 hint 를 점수 밑에 같이 내보내고 있었다. 뺀다.
+       사용자 말: "자동으로 채점은 하되 뒤에 힌트는 없었으면".
+       채점이 글을 쓰는 동안 저절로 돌게 되었으니, 틀린 그 자리에서 답을 가리키는 줄이
+       따라 나오면 스스로 다시 생각해 볼 틈이 없다. 도움말은 카드의 '도움말 보기' 와
+       '모범답안 보기' 에 그대로 있다 — 눌러야 열리므로 보고 말고를 스스로 고른다.
+       (題庫의 hint 필드는 그대로 둔다. 지금은 화면 어디에도 쓰지 않는다.) */
     return `<div class="auto-box auto-box--${k}"><div class="auto-head"><span class="auto-verdict">${label}</span>` +
-      `<span class="auto-pts">${r.frac * 1.5} / 1.5</span></div>${hint}` +
+      `<span class="auto-pts">${r.frac * 1.5} / 1.5</span></div>` +
       `<div class="auto-note">${t('auto.notePre')}</div></div>`;
   }
   const parts = q.parts || [];
@@ -3111,6 +3109,14 @@ function wireWongojiToggle(el) {
   const gd = el.querySelector('.writing-card__guide');
   tg.addEventListener('click', () => { gd.classList.toggle('hidden'); tg.textContent = gd.classList.contains('hidden') ? t('guide.show') : t('guide.hide'); });
 }
+/* 작문 연습에서 통계에 이미 넣은 문항. 카드 안에 두면 안 된다 —
+   renderWriting 은 언어를 바꾸거나 작문/구술 탭을 누르거나 홈에서 다시 들어올 때마다
+   카드를 통째로 버리고 새로 만들기 때문에(wrap.innerHTML = ''), 카드 안의 표시는
+   그때마다 0 으로 돌아간다. 그러면 적어 둔 글이 되살아난 칸을 한 번 눌렀다 빼기만 해도
+   같은 답이 또 쌓여, 학습 통계의 정답률과 '작문' 막대가 한없이 내려간다.
+   창을 닫을 때까지 기억한다. 한 문항은 한 번만 센다. */
+const wsCountedIds = new Set();
+
 function renderWriting() {
   const list = writingQuestionsForView();
   // E: 원고지 카드는 작문 탭 + 종합평가(nat/perm)에서만, 목록 위에 한 번만 표시(문항마다 반복하지 않음)
@@ -3148,8 +3154,7 @@ function renderWriting() {
       ${isOralMode && !hasListen(q) ? `<div class="oral-recite">${t('oral.recite')}</div>` : ''}
       ${isWriting ? `<textarea data-id="${q.id}" placeholder="${t('writing.draftPh')}">${drafts[q.id] || ''}</textarea>
         <div class="writing-card__meta"><span class="writing-card__count">0${CHAR_UNIT[LANG] || '자'}</span></div>` : ''}
-      ${canAuto ? `<button type="button" class="writing-card__grade-btn">${t('ws.grade')}</button>
-        <div class="writing-card__auto"></div>` : ''}
+      ${canAuto ? '<div class="writing-card__auto"></div>' : ''}
       <button class="writing-card__guide-toggle">${t('guide.show')}</button>
       <div class="writing-card__guide hidden">${bi(q.guide || '', gl(q, 'guide'))}</div>
       ${q.model ? `<button class="writing-card__model-toggle">${isOralMode ? t('oral.reveal') : t('model.show')}</button>
@@ -3161,21 +3166,50 @@ function renderWriting() {
       ta.addEventListener('input', () => { upd(); const d = ls(ekey(K.drafts), {}); d[q.id] = ta.value; save(ekey(K.drafts), d); });
       upd();
     }
-    const gb = card.querySelector('.writing-card__grade-btn');
-    if (gb) {
+    /* 채점은 저절로 돈다 — 누를 단추가 없다. 다만 글자를 칠 때마다 보여 주면
+       '가정통…' 까지 쳤을 때 빨간 ❌ 가 떠서 다 쓰기도 전에 틀렸다고 한다.
+       그래서 아직 한 번도 안 띄운 칸에서는 **맞았을 때만** 바로 띄우고,
+       칸을 벗어나면(다 썼다는 뜻) 맞든 틀리든 띄운다.
+       한 번 띄운 뒤로는 고치는 대로 따라 바뀐다.
+       통계는 칸을 벗어날 때 한 번만 넣는다. 고쳐 쓰는 것이 보통인데 글자마다 쌓으면
+       한 문항이 정답률을 수십 번 깎는다. */
+    if (canAuto) {
       const slot = card.querySelector('.writing-card__auto');
       const box = card.querySelector('textarea');
-      /* 통계에는 처음 채점한 것만 넣는다. 틀린 곳을 고쳐 다시 채점하는 것이 보통인데,
-         누를 때마다 쌓으면 한 문항이 정답률을 여러 번 깎는다. */
-      let counted = false;
-      gb.addEventListener('click', () => {
-        const r = wsScore(q, box ? box.value : '');
+      let shown = false;
+      const grade = (why) => {
+        if (!box) return;
+        if (!box.value.trim()) { shown = false; slot.innerHTML = ''; return; }
+        const r = wsScore(q, box.value);
         if (!r) return;
+        if (!shown && why === 'input' && r.frac < 1) return;
+        shown = true;
         slot.innerHTML = autoBox(q, r);
-        gb.textContent = t('ws.again');
-        if (!counted) { recordSelfGrade(q, r.frac); counted = true; }
+        if (why === 'blur' && !wsCountedIds.has(q.id)) { recordSelfGrade(q, r.frac); wsCountedIds.add(q.id); }
+      };
+      box.addEventListener('input', () => grade('input'));
+      box.addEventListener('blur', (e) => {
+        /* blur 는 다른 앱으로 창을 옮길 때도 일어난다. 그때까지 친 글을 '다 썼다' 로 보면
+           사전을 찾으러 잠깐 나갔다 온 사람에게 ❌ 를 띄우고 통계에 0 을 박아 버린다. */
+        if (!document.hasFocus()) return;
+        /* '도움말 보기'·'모범답안 보기'는 이 칸 바로 밑에 있다. 누르면 칸에서 초점이
+           빠지면서 blur 가 먼저 일어난다. 쓰다 말고 도움말을 열어 본 것까지 '다 썼다'
+           로 보면 '가정통' 까지 친 글에 ❌ 를 띄우고 통계에 0 을 박는다.
+           힌트를 뺀 자리를 그 두 단추로 메워 놓고 누르는 것을 벌로 만들 수는 없다.
+           이 카드 안으로 초점이 옮겨 간 것이면 아직 쓰는 중이다. */
+        if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+        grade('blur');
       });
+      /* 지난번에 적어 둔 글이 있으면 열자마자 지금 몇 점인지 보여 준다. 통계에는 넣지
+         않고 이미 센 것으로 쳐 둔다 — 적을 때 셌다. 다시 그렸다고 또 셀 일이 아니다. */
+      if (box.value.trim()) wsCountedIds.add(q.id);
+      grade('restore');
     }
+    /* 도움말·모범답안을 눌러도 쓰던 칸에서 초점이 빠지지 않게 한다. 읽고 나서 그대로
+       이어 쓸 수 있고, 단추에 초점을 주지 않는 브라우저(사파리)와 주는 브라우저(크롬)가
+       같게 움직인다. mousedown 만 막으므로 누르는 것 자체는 그대로 된다. */
+    card.querySelectorAll('.writing-card__guide-toggle, .writing-card__model-toggle')
+      .forEach((b) => b.addEventListener('mousedown', (e) => e.preventDefault()));
     if (hasListen(q)) wireListen(card.querySelector('.listen-card'), q);
     const tg = card.querySelector('.writing-card__guide-toggle'); const gd = card.querySelector('.writing-card__guide');
     tg.addEventListener('click', () => { gd.classList.toggle('hidden'); tg.textContent = gd.classList.contains('hidden') ? t('guide.show') : t('guide.hide'); });
