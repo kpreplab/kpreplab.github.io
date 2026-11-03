@@ -2290,25 +2290,36 @@ function splitQuote(text) {
   if (plainLen(head) < 4 || plainLen(body) < 8) return null;
   return { stem: head, body: body, ask: ask };
 }
-function splitStem(text, mode) {
+function splitStem(text, mode, forceFlip) {
   const raw = String(text || '');
   if (mode === 'single') {
     const at = raw.indexOf('<br>');
     if (at < 0) return null;
-    return { stem: raw.slice(0, at), body: raw.slice(at + 4), ask: '' };
+    return { stem: raw.slice(0, at), body: raw.slice(at + 4), ask: '', flipped: false };
   }
-  if (mode === 'bare') return { stem: '', body: raw, ask: '' };
-  if (mode === 'quote') return splitQuote(raw);
+  if (mode === 'bare') return { stem: '', body: raw, ask: '', flipped: false };
+  if (mode === 'quote') { const r = splitQuote(raw); return r ? Object.assign(r, { flipped: false }) : null; }
   const parts = raw.split(STEM_SEP);
   if (parts.length < 2) return null;
   /* 거의 모든 문항이 '지시문 / 지문' 순서지만(2토막 678문항 중 669), 안내문을 먼저 놓고
      "위 안내에 따라 …는?" 으로 나중에 묻는 문항이 있다. 그대로 가르면 묻는 말이
-     노란 상자 안으로 들어간다. 앞이 훨씬 길고 뒤가 물음표로 끝나면 순서를 뒤집어 읽는다. */
-  if (parts.length === 2 && plainLen(parts[0]) > plainLen(parts[1]) * 2
-      && String(parts[1]).replace(/<[^>]+>/g, '').trim().endsWith('?')) {
-    return { stem: '', body: parts[0], ask: parts[1] };
-  }
-  return { stem: parts[0], body: parts.slice(1, -1).join(STEM_SEP) || parts[1], ask: parts.length > 2 ? parts[parts.length - 1] : '' };
+     노란 상자 안으로 들어간다. 앞이 훨씬 길고 뒤가 물음표로 끝나면 순서를 뒤집어 읽는다.
+
+     2026-11-03. 이 판단을 번역문이 따로 내리게 두면 안 된다.
+     사용자가 중국어로 풀다가 "이 문제는 왜 중국어가 없냐" 고 물어 왔다. 온돌 지문
+     문항이었는데, 한국어는 뒤집혀 '지문 / 묻는 말' 로 갈렸고 중국어는 안 뒤집혀
+     '지문 / 묻는 말' 이 '지시문 / 지문' 으로 갈렸다. 그래서 노란 상자에는 한국어 지문과
+     중국어 '묻는 말' 이 나란히 놓이고, 중국어 지문은 상자 위 번호 옆으로 밀려났다.
+     까닭은 물음표다 — 題庫의 중국어는 전각 문장부호를 쓰므로(。）？) ASCII '?' 로
+     끝나지 않고, 태국어는 물음표를 아예 쓰지 않는다. 길이 비율도 언어마다 다르다.
+     가르는 방법은 한국어가 정하고 번역은 그 결정을 그대로 받는다(forceFlip).
+     혼자 설 때를 위해 물음표 검사에 전각 ？ 도 넣는다. */
+  const flip = (forceFlip === undefined)
+    ? (parts.length === 2 && plainLen(parts[0]) > plainLen(parts[1]) * 2
+       && /[?？]$/.test(plainOf(parts[1])))
+    : (!!forceFlip && parts.length === 2);
+  if (flip) return { stem: '', body: parts[0], ask: parts[1], flipped: true };
+  return { stem: parts[0], body: parts.slice(1, -1).join(STEM_SEP) || parts[1], ask: parts.length > 2 ? parts[parts.length - 1] : '', flipped: false };
 }
 /* 지문에 딸린 어휘 노트. 공식 견본 읽기 지문을 세어 보니 題庫에 한 번도 안 나오는 낱말이
    지문 한 편에 4~6개씩 있었다(템플스테이·발우공양·순차 가동 …). 분량이 아니라 이 낱말들이
@@ -2334,7 +2345,9 @@ function questionHtml(q, showNo) {
   const trRaw = qLabel(gl(q, 'q'));
   const mode = splitMode(koRaw);
   const ko = mode ? splitStem(koRaw, mode) : null;
-  const tr = (mode && trRaw) ? splitStem(trRaw, mode) : null;
+  /* 번역은 한국어와 같은 자리로, 같은 순서로 가른다. 스스로 판단하게 두면
+     물음표 모양과 길이 비율이 언어마다 달라 토막의 역할이 어긋난다(splitStem 주석). */
+  const tr = (mode && trRaw) ? splitStem(trRaw, mode, ko ? ko.flipped : undefined) : null;
   const no = showNo ? `<span class="question-box__no">${quiz.i + 1}</span>` : '';
   const head = (a, b) => `<div class="question-box__stem">${no}<span>${bi(a, b)}</span></div>`;
   const box = (a, b) => `<div class="question-box__passage">${bi(a, b)}</div>`;
