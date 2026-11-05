@@ -583,6 +583,16 @@ body.exam-mode #view-quiz .quiz-submit:empty { display: none; }
   margin-bottom: 12px; font-size: .9rem; font-weight: 600; color: var(--copper);
   background: var(--copper-bg); border: 1px solid var(--copper-line); border-radius: var(--radius-md); padding: 10px 12px;
 }
+/* 오답 노트의 작문 카드 — 다시 써 보는 칸. 작문 연습 카드와 같은 생김새를 쓴다. */
+.wrong-card__write {
+  width: 100%; min-height: 96px; margin-top: 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 12px; font-size: 1rem; font-family: var(--font-ko); resize: vertical;
+  background: #fff; color: var(--ink);
+}
+/* 채점이 끝난 칸. 객관식 오답 카드가 보기를 잠그는 것과 같은 뜻이다 — 다시 쓰려면
+   '다시 풀기' 를 눌러야 한다. 잠긴 것이 눈에 보여야 왜 안 고쳐지는지 알 수 있다. */
+.wrong-card__write[readonly] { background: var(--cream-2); color: var(--muted); }
 .oral-self { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
 .oral-self__label { display: block; font-size: .8rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
 .oral-self__btns { display: flex; gap: 8px; }
