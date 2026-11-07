@@ -471,12 +471,31 @@ body.exam-mode #view-quiz .quiz-submit:empty { display: none; }
 .bd-row.bd-total { border-bottom: 0; border-top: 2px solid var(--navy); margin-top: 4px; font-size: 1.05rem; }
 .bd-row.bd-total span:last-child { color: var(--navy); }
 .bd-prompt { margin-top: 10px; font-size: .85rem; font-weight: 700; color: var(--copper); background: var(--copper-bg); border-radius: var(--radius-md); padding: 8px 12px; text-align: center; }
+/* 자동채점 자료가 없는 작문에 붙는 한 줄. 경고가 아니라 '직접 매겨 달라'는 안내라
+   붉은색을 쓰지 않는다 — 학습자 잘못이 아니라 문항에 자료가 없는 것이다. */
+.sg-noauto { margin-top: 10px; padding: 9px 12px; border-radius: var(--radius-md);
+  background: var(--cream-2); border: 1px dashed var(--border);
+  font-size: .85rem; line-height: 1.6; color: var(--muted); }
 .sg-grade { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .sg-grade__label { display: block; font-size: .8rem; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
 .sg-btns { display: flex; gap: 8px; }
 .sg-btn { flex: 1; padding: 9px 6px; border: 1px solid var(--border); background: var(--card); border-radius: var(--radius-md); font-family: var(--font-ko); font-size: .92rem; font-weight: 700; color: var(--ink); cursor: pointer; transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease); }
 .sg-btn:hover { border-color: var(--copper-line); }
 .sg-btn.is-on { background: var(--copper); border-color: var(--copper); color: #fff; }
+/* 자동 채점된 작문에서 '직접 고치기' 는 접힌 작은 글줄 단추다. 자동 점수가 결과이고
+   고치는 것은 예외라는 것이 보기만으로 드러나야 한다(2026-11-07). */
+.sg-fix { background: none; border: none; padding: 2px 0; cursor: pointer;
+  font: inherit; font-size: .82rem; color: var(--muted); text-decoration: underline;
+  text-underline-offset: 3px; }
+.sg-fix:hover { color: var(--ink-soft); }
+.sg-fix[aria-expanded="true"] { color: var(--ink-soft); }
+.sg-fix__body { margin-top: 10px; }
+
+/* 한 번 매기고 나면 잠근다 — 오답 노트 카드에서. 고른 것은 그대로 보이게 둔다. */
+.sg-btn:disabled { cursor: default; opacity: .55; }
+.sg-btn.is-on:disabled { opacity: 1; }
+.wrong-card .sg-grade { border-top: none; padding-top: 0; }
+.wrong-card .sg-noauto { margin-bottom: 10px; }
 
 .cat-breakdown { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 .cat-row { display: flex; align-items: center; gap: 10px; font-size: .92rem; }
