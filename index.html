@@ -268,8 +268,12 @@
           <div id="scorePass" class="score-card__pass"></div>
         </div>
       </div>
-      <div id="levelResult" class="level-result hidden"></div>
+      <!-- 분해표(객관식·작문·구술 점수)를 단계표보다 위에 둔다. 2026-11-10.
+           아래에 두었더니 휴대폰에서 '작문 0 / 3' 이 큰 점수에서 476px 아래로 밀려,
+           "작문이 점수에 들어갔나" 를 보려면 긴 안내문과 여섯 줄짜리 단계표를
+           다 넘겨야 했다. 큰 숫자를 설명하는 줄이 큰 숫자 바로 밑에 있어야 한다. -->
       <div id="scoreBreakdown" class="score-breakdown hidden"></div>
+      <div id="levelResult" class="level-result hidden"></div>
       <div id="catBreakdown" class="cat-breakdown"></div>
       <h3 class="subhead" data-i18n="result.reviewHead">문제 다시보기</h3>
       <div id="reviewList" class="review-list"></div>
